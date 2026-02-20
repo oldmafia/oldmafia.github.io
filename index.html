@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLD MAFIA</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#0f0f0f;
+    color:white;
+}
+
+header{
+    background:#8b0000;
+    padding:18px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+}
+
+/* MAIN LAYOUT */
+.main{
+    display:flex;
+    min-height:calc(100vh - 60px);
+}
+
+/* LEFT SIDE */
+.sidebar{
+    width:260px;
+    background:#111;
+    padding:20px;
+    box-sizing:border-box;
+    border-right:2px solid #8b0000;
+}
+
+.room{
+    padding:14px;
+    margin-bottom:12px;
+    border-radius:8px;
+    background:#1c1c1c;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.room:hover{
+    background:#8b0000;
+}
+
+/* RIGHT SIDE */
+.chat{
+    flex:1;
+    padding:25px;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+}
+
+#roomTitle{
+    margin-top:0;
+    margin-bottom:15px;
+}
+
+.messages{
+    background:#1a1a1a;
+    border-radius:12px;
+    padding:15px;
+    height:300px;
+    overflow-y:auto;
+    margin-bottom:15px;
+}
+
+.message{
+    background:#2a2a2a;
+    padding:8px 12px;
+    border-radius:8px;
+    margin-bottom:10px;
+    max-width:80%;
+}
+
+textarea{
+    width:100%;
+    height:70px;
+    border:none;
+    border-radius:8px;
+    padding:10px;
+    box-sizing:border-box;
+    resize:none;
+    margin-bottom:10px;
+}
+
+button{
+    background:#8b0000;
+    color:white;
+    border:none;
+    padding:12px;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* MOBILE FIX */
+@media(max-width:768px){
+    .main{
+        flex-direction:column;
+    }
+
+    .sidebar{
+        width:100%;
+        border-right:none;
+        border-bottom:2px solid #8b0000;
+    }
+
+    .messages{
+        height:250px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>OLD MAFIA</header>
+
+<div class="main">
+
+    <div class="sidebar">
+        <div class="room" onclick="openRoom('შტაბი')">შტაბი</div>
+        <div class="room" onclick="openRoom('პირადი საუბრები')">პირადი საუბრები</div>
+        <div class="room" onclick="openRoom('შიფროგრამა')">შიფროგრამა</div>
+        <div class="room" onclick="openRoom('ვიქტორინა')">ვიქტორინა</div>
+        <div class="room" onclick="openRoom('ფორუმი')">ფორუმი</div>
+        <div class="room" onclick="openRoom('იარაღის საწყობი')">იარაღის საწყობი</div>
+    </div>
+
+    <div class="chat">
+        <h2 id="roomTitle">აირჩიე ოთახი</h2>
+        <div class="messages" id="messages"></div>
+
+        <textarea id="messageInput" placeholder="დაწერე შეტყობინება..."></textarea>
+        <button onclick="sendMessage()">გაგზავნა</button>
+    </div>
+
+</div>
+
+<script>
+function openRoom(roomName){
+    document.getElementById("roomTitle").innerText = roomName;
+    document.getElementById("messages").innerHTML = "";
+}
+
+function sendMessage(){
+    let input = document.getElementById("messageInput");
+    if(input.value.trim() === "") return;
+
+    let message = document.createElement("div");
+    message.className = "message";
+    message.textContent = input.value;
+
+    document.getElementById("messages").appendChild(message);
+    input.value = "";
+}
+</script>
+
+</body>
+</html>
