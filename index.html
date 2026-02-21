@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ბებერი მაფიოზები</title>
+
+<style>
+
+body{
+margin:0;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:#000;
+font-family:Arial;
+}
+
+/* დახრილი ჩარჩო */
+.frame{
+padding:8px;
+border-radius:28px;
+background:linear-gradient(45deg,#ff0000,#8b0000,#ff0000);
+box-shadow:0 0 70px rgba(255,0,0,0.9);
+transform:rotate(-4deg);
+}
+
+/* შიდა ბარათი */
+.container{
+width:340px;
+padding:40px 25px;
+border-radius:24px;
+background:#111;
+text-align:center;
+transform:rotate(4deg);
+}
+
+/* სათაური */
+h1{
+color:white;
+margin-bottom:30px;
+font-size:26px;
+text-shadow:0 0 25px red;
+}
+
+/* ღილაკები */
+button{
+width:100%;
+padding:16px;
+margin:12px 0;
+border:none;
+border-radius:14px;
+font-size:17px;
+font-weight:bold;
+cursor:pointer;
+color:white;
+background:linear-gradient(90deg,#8b0000,#ff0000);
+}
+
+/* ფორმა */
+.form{
+display:none;
+}
+
+input{
+width:100%;
+padding:14px;
+margin:10px 0;
+border-radius:10px;
+border:1px solid #333;
+background:#1a1a1a;
+color:white;
+font-size:16px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="frame">
+<div class="container">
+
+<h1>ბებერი მაფიოზები 🔥</h1>
+
+<button id="btnRegister">რეგისტრაცია</button>
+<button id="btnLogin">შესვლა</button>
+
+<div id="register" class="form">
+<input type="text" id="nickname" placeholder="ნიკი">
+<input type="email" id="regEmail" placeholder="ელფოსტა">
+<input type="password" id="regPassword" placeholder="პაროლი">
+<button id="doRegister">დარეგისტრირდი</button>
+</div>
+
+<div id="login" class="form">
+<input type="email" id="logEmail" placeholder="ელფოსტა">
+<input type="password" id="logPassword" placeholder="პაროლი">
+<button id="doLogin">შედი</button>
+</div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF80Pw_TP2";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+const registerForm = document.getElementById("register");
+const loginForm = document.getElementById("login");
+
+document.getElementById("btnRegister").onclick = function(){
+registerForm.style.display="block";
+loginForm.style.display="none";
+};
+
+document.getElementById("btnLogin").onclick = function(){
+loginForm.style.display="block";
+registerForm.style.display="none";
+};
+
+document.getElementById("doRegister").onclick = async function(){
+
+const email = document.getElementById("regEmail").value;
+const password = document.getElementById("regPassword").value;
+const nickname = document.getElementById("nickname").value;
+
+if(!nickname || !email || !password){
+alert("შეავსე ყველა ველი");
+return;
+}
+
+const { error } = await supabase.auth.signUp({
+email: email,
+password: password,
+options:{ data:{ nickname:nickname } }
+});
+
+if(error){
+alert(error.message);
+}else{
+alert("რეგისტრაცია წარმატებულია 🔥");
+registerForm.style.display="none";
+}
+
+};
+
+document.getElementById("doLogin").onclick = async function(){
+
+const email = document.getElementById("logEmail").value;
+const password = document.getElementById("logPassword").value;
+
+if(!email || !password){
+alert("შეავსე ყველა ველი");
+return;
+}
+
+const { error } = await supabase.auth.signInWithPassword({
+email: email,
+password: password
+});
+
+if(error){
+alert(error.message);
+}else{
+alert("შესვლა წარმატებულია 🔥");
+loginForm.style.display="none";
+}
+
+};
+
+});
+
+</script>
+
+</body>
+</html>
