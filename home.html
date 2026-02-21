@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Mafia</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+font-family:Arial;
+background:#1a0000;
+color:white;
+display:flex;
+height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+width:230px;
+background:#2b0000;
+padding:15px;
+display:flex;
+flex-direction:column;
+gap:10px;
+overflow-y:auto;
+}
+
+.room{
+padding:12px;
+border-radius:14px;
+background:#3b0000;
+cursor:pointer;
+transition:0.2s;
+font-size:14px;
+}
+
+.room:hover{background:#550000;}
+.room.active{background:#ff1a1a;}
+
+hr{
+border:1px solid #550000;
+margin:8px 0;
+}
+
+/* MAIN */
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
+}
+
+.topbar{
+width:100%;
+max-width:800px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+
+.room-title{
+color:#ff2e2e;
+font-weight:bold;
+font-size:16px;
+}
+
+.icons{
+display:flex;
+gap:10px;
+}
+
+.icon{
+width:38px;
+height:38px;
+border-radius:50%;
+background:#3b0000;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+}
+
+.icon:hover{background:#ff1a1a;}
+
+.chat-box{
+width:100%;
+max-width:800px;
+background:#111;
+border-radius:20px;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+flex:1;
+}
+
+.chat{
+flex:1;
+padding:15px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:8px;
+}
+
+.message{
+background:#2a2a2a;
+padding:10px 14px;
+border-radius:15px;
+max-width:75%;
+}
+
+.input-area{
+display:flex;
+padding:10px;
+background:#220000;
+gap:10px;
+}
+
+.input-area input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:12px;
+background:#1e1e1e;
+color:white;
+outline:none;
+}
+
+.input-area button{
+padding:10px 18px;
+border:none;
+border-radius:12px;
+background:#ff1a1a;
+color:white;
+cursor:pointer;
+}
+
+@media(max-width:768px){
+.sidebar{width:110px;}
+.room{font-size:11px;padding:8px;}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<div class="room active" onclick="changeRoom(this,'general')">💬 ზოგადი ჩატი</div>
+<div class="room" onclick="changeRoom(this,'vip')">💎 VIP საუბრები</div>
+<div class="room" onclick="changeRoom(this,'cipher')">🔐 შიფროგრამა</div>
+<div class="room" onclick="changeRoom(this,'hangman')">🪢 ჩამოხრჩობანა</div>
+<div class="room" onclick="changeRoom(this,'quiz')">🧠 ვიქტორინა</div>
+<div class="room" onclick="changeRoom(this,'forum')">📜 ფორუმი</div>
+<div class="room" onclick="changeRoom(this,'help')">🆘 დახმარება</div>
+<div class="room" onclick="changeRoom(this,'guns')">🔫 იარაღის ოთახი</div>
+
+<hr>
+
+<div class="room" onclick="changeRoom(this,'fun')">😂 იუმორი</div>
+<div class="room" onclick="changeRoom(this,'music')">🎵 მუსიკა</div>
+<div class="room" onclick="changeRoom(this,'gallery')">📸 გალერეა</div>
+</div>
+
+<div class="main">
+
+<div class="topbar">
+<div class="room-title" id="roomTitle">💬 ზოგადი ჩატი</div>
+<div class="icons">
+<div class="icon">✉️</div>
+<div class="icon">👤</div>
+</div>
+</div>
+
+<div class="chat-box">
+<div class="chat" id="chat"></div>
+
+<div class="input-area">
+<input type="text" id="msgInput" placeholder="დაწერე მესიჯი...">
+<button onclick="sendMessage()">გაგზავნა</button>
+</div>
+</div>
+
+</div>
+
+<script>
+
+let currentRoom="general";
+
+let rooms={
+general:[],
+vip:[],
+cipher:[],
+hangman:[],
+quiz:[],
+forum:[],
+help:[],
+guns:[],
+fun:[],
+music:[],
+gallery:[]
+};
+
+let titles={
+general:"💬 ზოგადი ჩატი",
+vip:"💎 VIP საუბრები",
+cipher:"🔐 შიფროგრამა",
+hangman:"🪢 ჩამოხრჩობანა",
+quiz:"🧠 ვიქტორინა",
+forum:"📜 ფორუმი",
+help:"🆘 დახმარება",
+guns:"🔫 იარაღის ოთახი",
+fun:"😂 იუმორი",
+music:"🎵 მუსიკა",
+gallery:"📸 გალერეა"
+};
+
+function changeRoom(element,room){
+document.querySelectorAll(".room").forEach(r=>r.classList.remove("active"));
+element.classList.add("active");
+currentRoom=room;
+document.getElementById("roomTitle").innerText=titles[room];
+renderMessages();
+}
+
+function sendMessage(){
+let input=document.getElementById("msgInput");
+if(input.value.trim()==="")return;
+
+rooms[currentRoom].push(input.value);
+input.value="";
+renderMessages();
+}
+
+function renderMessages(){
+let chat=document.getElementById("chat");
+chat.innerHTML="";
+rooms[currentRoom].forEach(msg=>{
+let div=document.createElement("div");
+div.className="message";
+div.innerText=msg;
+chat.appendChild(div);
+});
+}
+
+</script>
+
+</body>
+</html>
