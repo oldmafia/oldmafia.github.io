@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Mafia</title>
+
+<style>
+body {
+  background: #0f0f0f;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding-top: 50px;
+}
+
+h1 {
+  color: crimson;
+}
+
+input {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+  width: 250px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  background: crimson;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: darkred;
+}
+
+#message {
+  margin-top: 15px;
+  font-weight: bold;
+}
+</style>
+
+</head>
+<body>
+
+<h1>რეგისტრაცია / შესვლა</h1>
+
+<input type="email" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
+
+<button onclick="register()">რეგისტრაცია</button>
+<button onclick="login()">შესვლა</button>
+
+<p id="message"></p>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://ftfciebnywbondaiarnc.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0ZmNpZWJueXdib25kYWlhcm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMjYwNTYsImV4cCI6MjA4NjkwMjA1Nn0.2A5wgpS2gaFmgnGB2mWH7dpmjLvo75IE0QPRPrtUbzI";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function register() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { error } = await supabase.auth.signUp({
+    email: email,
+    password: password,
+  });
+
+  if (error) {
+    document.getElementById("message").innerText = error.message;
+  } else {
+    document.getElementById("message").innerText = "რეგისტრაცია წარმატებულია!";
+  }
+}
+
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password,
+  });
+
+  if (error) {
+    document.getElementById("message").innerText = error.message;
+  } else {
+    document.getElementById("message").innerText = "შესვლა წარმატებულია!";
+  }
+}
+</script>
+
+</body>
+</html>
