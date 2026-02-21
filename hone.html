@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: Arial, sans-serif;
+}
+
+body{
+    background:#0e0e0e;
+    color:white;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+}
+
+/* HEADER */
+header{
+    height:60px;
+    background:linear-gradient(to right,#111,#1a0000);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+    border-bottom:1px solid #400000;
+}
+
+.logo{
+    font-weight:bold;
+    font-size:18px;
+    color:#ff1a1a;
+}
+
+.header-right{
+    display:flex;
+    gap:20px;
+    font-size:20px;
+    cursor:pointer;
+}
+
+/* MAIN LAYOUT */
+.main{
+    flex:1;
+    display:flex;
+    overflow:hidden;
+}
+
+/* SIDEBAR */
+.sidebar{
+    width:250px;
+    background:linear-gradient(to bottom,#120000,#1c0000);
+    padding:15px 0;
+    border-right:1px solid #400000;
+    display:flex;
+    flex-direction:column;
+}
+
+.room{
+    padding:12px 20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    transition:0.2s;
+}
+
+.room:hover{
+    background:#2a0000;
+}
+
+.room.active{
+    background:#330000;
+    border-left:4px solid red;
+}
+
+/* CHAT AREA */
+.chat-area{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+.chat-header{
+    padding:15px;
+    border-bottom:1px solid #400000;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.messages{
+    flex:1;
+    padding:15px;
+    overflow-y:auto;
+}
+
+.message{
+    margin-bottom:10px;
+    padding:8px 12px;
+    background:#1f1f1f;
+    border-radius:10px;
+    width:fit-content;
+    max-width:70%;
+}
+
+.message.self{
+    background:#660000;
+    margin-left:auto;
+}
+
+/* INPUT */
+.chat-input{
+    display:flex;
+    border-top:1px solid #400000;
+}
+
+.chat-input input{
+    flex:1;
+    padding:12px;
+    border:none;
+    outline:none;
+    background:#1a1a1a;
+    color:white;
+}
+
+.chat-input button{
+    padding:12px 20px;
+    border:none;
+    background:red;
+    color:white;
+    cursor:pointer;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+    .sidebar{
+        width:180px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">MAFIA ROOM</div>
+    <div class="header-right">
+        <span onclick="goProfile()">👤</span>
+        <span onclick="goPrivate()">✉️</span>
+    </div>
+</header>
+
+<div class="main">
+
+    <div class="sidebar">
+        <div class="room active" onclick="changeRoom(this,'💬 ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
+        <div class="room" onclick="changeRoom(this,'💎 VIP საუბრები')">💎 VIP საუბრები</div>
+        <div class="room" onclick="changeRoom(this,'🔐 შიფროგრამა')">🔐 შიფროგრამა</div>
+        <div class="room" onclick="changeRoom(this,'🧠 ვიქტორინა')">🧠 ვიქტორინა</div>
+        <div class="room" onclick="changeRoom(this,'📜 ფორუმი')">📜 ფორუმი</div>
+        <div class="room" onclick="changeRoom(this,'🆘 დახმარება')">🆘 დახმარება</div>
+        <div class="room" onclick="changeRoom(this,'🔫 იარაღის ოთახი')">🔫 იარაღის ოთახი</div>
+    </div>
+
+    <div class="chat-area">
+        <div class="chat-header" id="roomTitle">💬 ზოგადი ჩატი</div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="chat-input">
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება...">
+            <button onclick="sendMessage()">გაგზავნა</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+let currentRoom = "💬 ზოგადი ჩატი";
+
+function changeRoom(element,title){
+    document.querySelectorAll(".room").forEach(r=>r.classList.remove("active"));
+    element.classList.add("active");
+    currentRoom = title;
+    document.getElementById("roomTitle").innerText = title;
+    document.getElementById("messages").innerHTML = "";
+}
+
+function sendMessage(){
+    let input = document.getElementById("msgInput");
+    if(input.value.trim()==="") return;
+
+    let msgDiv = document.createElement("div");
+    msgDiv.className="message self";
+    msgDiv.innerText=input.value;
+
+    document.getElementById("messages").appendChild(msgDiv);
+    input.value="";
+}
+
+function goProfile(){
+    window.location.href="profile.html";
+}
+
+function goPrivate(){
+    window.location.href="private.html";
+}
+
+</script>
+
+</body>
+</html>
