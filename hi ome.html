@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Mafia</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial, sans-serif;
+background:#1a0000;
+color:white;
+height:100vh;
+display:flex;
+}
+
+/* ================= DESKTOP ================= */
+
+.sidebar{
+width:230px;
+background:#2b0000;
+padding:15px;
+display:flex;
+flex-direction:column;
+gap:12px;
+overflow-y:auto;
+}
+
+.room{
+padding:14px;
+border-radius:16px;
+background:#3b0000;
+cursor:pointer;
+font-size:14px;
+white-space:nowrap;
+}
+
+.room:hover{background:#550000;}
+.room.active{background:#ff1a1a;}
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+padding:15px;
+min-width:0;
+}
+
+.room-title{
+color:#ff2e2e;
+font-weight:bold;
+font-size:18px;
+margin-bottom:10px;
+}
+
+.chat-box{
+flex:1;
+background:#111;
+border-radius:25px;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+}
+
+.chat{
+flex:1;
+padding:15px;
+overflow-y:auto;
+}
+
+.input-area{
+display:flex;
+gap:8px;
+padding:12px;
+background:#220000;
+}
+
+.input-area input{
+flex:1;
+height:40px;
+padding:0 12px;
+border:none;
+border-radius:15px;
+background:#1e1e1e;
+color:white;
+}
+
+.emoji-btn{
+width:40px;
+height:40px;
+border:none;
+border-radius:10px;
+background:#3b0000;
+color:white;
+cursor:pointer;
+}
+
+.send-btn{
+height:40px;
+padding:0 16px;
+border:none;
+border-radius:15px;
+background:#ff1a1a;
+color:white;
+cursor:pointer;
+}
+
+/* ================= MOBILE FIX ================= */
+
+@media (max-width:768px){
+
+body{
+flex-direction:column;
+height:auto;
+}
+
+.sidebar{
+width:100%;
+flex-direction:row;
+overflow-x:auto;
+overflow-y:hidden;
+}
+
+.room{
+flex:0 0 auto;
+}
+
+.main{
+width:100%;
+padding:10px;
+}
+
+.chat-box{
+height:60vh;
+}
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<div class="room active">💬 ზოგადი ჩატი</div>
+<div class="room">💎 VIP საუბრები</div>
+<div class="room">🔐 შიფროგრამა</div>
+<div class="room">🪢 ჩამოხრჩობანა</div>
+<div class="room">🧠 ვიქტორინა</div>
+<div class="room">📜 ფორუმი</div>
+<div class="room">🆘 დახმარება</div>
+<div class="room">🔫 იარაღის ოთახი</div>
+<div class="room">😂 იუმორი</div>
+<div class="room">🎵 მუსიკა</div>
+<div class="room">📸 გალერეა</div>
+</div>
+
+<div class="main">
+<div class="room-title">💬 ზოგადი ჩატი</div>
+
+<div class="chat-box">
+<div class="chat"></div>
+
+<div class="input-area">
+<button class="emoji-btn">😊</button>
+<input type="text" placeholder="დაწერე მესიჯი...">
+<button class="send-btn">გაგზავნა</button>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>
