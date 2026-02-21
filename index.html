@@ -1,10 +1,3 @@
-<!DOCTYPE html>
-<html lang="ka">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ბებერი მაფიოზები</title>
-
 <style>
 body {
     margin: 0;
@@ -16,7 +9,8 @@ body {
 
 h1 {
     margin-top: 80px;
-    font-size: 32px;
+    font-size: 36px;
+    letter-spacing: 1px;
 }
 
 .container {
@@ -24,28 +18,51 @@ h1 {
 }
 
 button {
-    padding: 12px 25px;
+    padding: 14px 30px;
     margin: 10px;
-    border: none;
-    cursor: pointer;
     font-size: 16px;
     border-radius: 8px;
-    transition: 0.3s;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 🔥 რეგისტრაცია - ნეონ წითელი */
+.register-btn,
+.submit-btn {
+    background: linear-gradient(45deg, #8b0000, #ff0000);
+    color: white;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+}
+
+.register-btn:hover,
+.submit-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 25px rgba(255, 0, 0, 1);
+}
+
+/* ⚫ შესვლა - მუქი სტილი */
+.login-btn {
+    background: #111;
+    color: white;
+    border: 1px solid #ff0000;
+}
+
+.login-btn:hover {
+    background: #1a1a1a;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+    transform: scale(1.05);
+}
+
+/* glow animation */
+@keyframes pulseRed {
+    0% { box-shadow: 0 0 10px rgba(255,0,0,0.4); }
+    50% { box-shadow: 0 0 25px rgba(255,0,0,1); }
+    100% { box-shadow: 0 0 10px rgba(255,0,0,0.4); }
 }
 
 .register-btn {
-    background: #b30000;
-    color: white;
-}
-
-.login-btn {
-    background: #1a1a1a;
-    color: white;
-    border: 1px solid #b30000;
-}
-
-button:hover {
-    transform: scale(1.05);
+    animation: pulseRed 2s infinite;
 }
 
 .form-box {
@@ -56,54 +73,9 @@ button:hover {
 input {
     display: block;
     margin: 10px auto;
-    padding: 10px;
-    width: 250px;
+    padding: 12px;
+    width: 260px;
     border-radius: 6px;
     border: none;
 }
-
-.submit-btn {
-    background: #b30000;
-    color: white;
-}
 </style>
-</head>
-
-<body>
-
-<h1>ბებერი მაფიოზები 🔥</h1>
-
-<div class="container">
-    <button class="register-btn" onclick="showRegister()">რეგისტრაცია</button>
-    <button class="login-btn" onclick="showLogin()">შესვლა</button>
-
-    <div id="registerForm" class="form-box">
-        <h3>რეგისტრაცია</h3>
-        <input type="text" placeholder="სახელი">
-        <input type="email" placeholder="Email">
-        <input type="password" placeholder="პაროლი">
-        <button class="submit-btn">დარეგისტრირდი</button>
-    </div>
-
-    <div id="loginForm" class="form-box">
-        <h3>შესვლა</h3>
-        <input type="email" placeholder="Email">
-        <input type="password" placeholder="პაროლი">
-        <button class="submit-btn">შესვლა</button>
-    </div>
-</div>
-
-<script>
-function showRegister() {
-    document.getElementById("registerForm").style.display = "block";
-    document.getElementById("loginForm").style.display = "none";
-}
-
-function showLogin() {
-    document.getElementById("loginForm").style.display = "block";
-    document.getElementById("registerForm").style.display = "none";
-}
-</script>
-
-</body>
-</html>
