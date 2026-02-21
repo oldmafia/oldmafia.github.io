@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Mafia</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial, sans-serif;
+background:#1a0000;
+color:white;
+height:100vh;
+display:flex;
+overflow:hidden;
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar{
+width:230px;
+background:#2b0000;
+padding:15px;
+display:flex;
+flex-direction:column;
+gap:12px;
+overflow-y:auto;
+}
+
+.room{
+padding:14px;
+border-radius:16px;
+background:#3b0000;
+cursor:pointer;
+transition:0.2s;
+font-size:14px;
+white-space:nowrap;
+}
+
+.room:hover{background:#550000;}
+.room.active{background:#ff1a1a;}
+
+/* ================= MAIN ================= */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+padding:15px;
+min-width:0;
+}
+
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+
+.room-title{
+color:#ff2e2e;
+font-weight:bold;
+font-size:18px;
+}
+
+.chat-box{
+flex:1;
+background:#111;
+border-radius:25px;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+}
+
+.chat{
+flex:1;
+padding:15px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.message{
+background:#2a2a2a;
+padding:10px 14px;
+border-radius:18px;
+max-width:75%;
+font-size:14px;
+}
+
+.nickname{
+color:#ff4d4d;
+font-size:12px;
+margin-bottom:3px;
+}
+
+/* ================= INPUT ================= */
+
+.input-area{
+display:flex;
+align-items:center;
+gap:8px;
+padding:12px;
+background:#220000;
+}
+
+.emoji-btn{
+width:40px;
+height:40px;
+border:none;
+border-radius:10px;
+background:#3b0000;
+color:white;
+font-size:18px;
+cursor:pointer;
+flex-shrink:0;
+}
+
+.input-area input{
+flex:1;
+min-width:0;
+height:40px;
+padding:0 12px;
+border:none;
+border-radius:15px;
+background:#1e1e1e;
+color:white;
+outline:none;
+}
+
+.send-btn{
+height:40px;
+padding:0 16px;
+border:none;
+border-radius:15px;
+background:#ff1a1a;
+color:white;
+cursor:pointer;
+flex-shrink:0;
+}
+
+/* ================= EMOJI PANEL ================= */
+
+.emoji-panel{
+display:none;
+position:absolute;
+bottom:80px;
+right:25px;
+background:#2b0000;
+padding:10px;
+border-radius:15px;
+width:200px;
+flex-wrap:wrap;
+gap:8px;
+}
+
+.emoji-panel span{
+cursor:pointer;
+font-size:18px;
+margin:4px;
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width:768px){
+
+body{
+flex-direction:column;
+overflow:auto;
+}
+
+.sidebar{
+width:100%;
+flex-direction:row;
+overflow-x:auto;
+overflow-y:hidden;
+}
+
+.room{
+flex:0 0 auto;
+}
+
+.main{
+width:100%;
+padding:10px;
+}
+
+.chat-box{
+width:100%;
+}
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<div class="room active" onclick="changeRoom(this,'general')">💬 ზოგადი ჩატი</div>
+<div class="room" onclick="changeRoom(this,'vip')">💎 VIP საუბრები</div>
+<div class="room" onclick="changeRoom(this,'cipher')">🔐 შიფროგრამა</div>
+<div class="room" onclick="changeRoom(this,'hangman')">🪢 ჩამოხრჩობანა</div>
+<div class="room" onclick="changeRoom(this,'quiz')">🧠 ვიქტორინა</div>
+<div class="room" onclick="changeRoom(this,'forum')">📜 ფორუმი</div>
+<div class="room" onclick="changeRoom(this,'help')">🆘 დახმარება</div>
+<div class="room" onclick="changeRoom(this,'guns')">🔫 იარაღის ოთახი</div>
+<div class="room" onclick="changeRoom(this,'fun')">😂 იუმორი</div>
+<div class="room" onclick="changeRoom(this,'music')">🎵 მუსიკა</div>
+<div class="room" onclick="changeRoom(this,'gallery')">📸 გალერეა</div>
+</div>
+
+<div class="main">
+
+<div class="topbar">
+<div class="room-title" id="roomTitle">💬 ზოგადი ჩატი</div>
+</div>
+
+<div class="chat-box">
+<div class="chat" id="chat"></div>
+
+<div class="input-area">
+<button class="emoji-btn" onclick="toggleEmoji()">😊</button>
+<input type="text" id="msgInput" placeholder="დაწერე მესიჯი...">
+<button class="send-btn" onclick="sendMessage()">გაგზავნა</button>
+</div>
+</div>
+
+<div class="emoji-panel" id="emojiPanel">
+<span onclick="addEmoji('😂')">😂</span>
+<span onclick="addEmoji('🔥')">🔥</span>
+<span onclick="addEmoji('❤️')">❤️</span>
+<span onclick="addEmoji('😎')">😎</span>
+<span onclick="addEmoji('👏')">👏</span>
+<span onclick="addEmoji('💀')">💀</span>
+</div>
+
+</div>
+
+<script>
+
+/* ===== ნიკი რეგისტრაციიდან ===== */
+let nickname = localStorage.getItem("nickname");
+if(!nickname){ nickname="Guest"; }
+
+/* ===== ROOMS ===== */
+let currentRoom="general";
+
+let rooms={
+general:[],
+vip:[],
+cipher:[],
+hangman:[],
+quiz:[],
+forum:[],
+help:[],
+guns:[],
+fun:[],
+music:[],
+gallery:[]
+};
+
+let titles={
+general:"💬 ზოგადი ჩატი",
+vip:"💎 VIP საუბრები",
+cipher:"🔐 შიფროგრამა",
+hangman:"🪢 ჩამოხრჩობანა",
+quiz:"🧠 ვიქტორინა",
+forum:"📜 ფორუმი",
+help:"🆘 დახმარება",
+guns:"🔫 იარაღის ოთახი",
+fun:"😂 იუმორი",
+music:"🎵 მუსიკა",
+gallery:"📸 გალერეა"
+};
+
+function changeRoom(element,room){
+document.querySelectorAll(".room").forEach(r=>r.classList.remove("active"));
+element.classList.add("active");
+currentRoom=room;
+document.getElementById("roomTitle").innerText=titles[room];
+renderMessages();
+}
+
+function sendMessage(){
+let input=document.getElementById("msgInput");
+if(input.value.trim()==="")return;
+
+rooms[currentRoom].push({
+name:nickname,
+text:input.value
+});
+
+input.value="";
+renderMessages();
+}
+
+function renderMessages(){
+let chat=document.getElementById("chat");
+chat.innerHTML="";
+rooms[currentRoom].forEach(msg=>{
+let div=document.createElement("div");
+div.className="message";
+
+let name=document.createElement("div");
+name.className="nickname";
+name.innerText=msg.name;
+
+let text=document.createElement("div");
+text.innerText=msg.text;
+
+div.appendChild(name);
+div.appendChild(text);
+chat.appendChild(div);
+});
+}
+
+function toggleEmoji(){
+let panel=document.getElementById("emojiPanel");
+panel.style.display = panel.style.display==="flex" ? "none" : "flex";
+}
+
+function addEmoji(e){
+document.getElementById("msgInput").value += e;
+}
+
+</script>
+
+</body>
+</html>
