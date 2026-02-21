@@ -17,16 +17,16 @@ body{
 }
 
 .frame{
-    padding:8px;
-    border-radius:30px;
+    padding:6px;
+    border-radius:26px;
     background:linear-gradient(45deg,#ff0000,#8b0000,#ff0000);
-    box-shadow:0 0 60px rgba(255,0,0,0.8);
+    box-shadow:0 0 50px rgba(255,0,0,0.8);
 }
 
 .container{
-    width:320px;
-    padding:45px 25px;
-    border-radius:25px;
+    width:290px;
+    padding:35px 20px;
+    border-radius:22px;
     background:#111;
     text-align:center;
     transform:rotate(-3deg);
@@ -34,17 +34,18 @@ body{
 
 h1{
     color:white;
-    margin-bottom:30px;
-    text-shadow:0 0 20px red;
+    font-size:22px;
+    margin-bottom:25px;
+    text-shadow:0 0 18px red;
 }
 
 button{
     width:100%;
-    padding:16px;
-    margin:12px 0;
+    padding:14px;
+    margin:10px 0;
     border:none;
-    border-radius:14px;
-    font-size:17px;
+    border-radius:12px;
+    font-size:15px;
     font-weight:bold;
     cursor:pointer;
     color:white;
@@ -57,16 +58,25 @@ button{
 
 input{
     width:100%;
-    padding:12px;
+    padding:10px;
     margin:6px 0;
-    border-radius:10px;
+    border-radius:8px;
     border:1px solid #333;
     background:#1a1a1a;
     color:white;
+    font-size:14px;
 }
 </style>
 
+<!-- Supabase Library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+
+const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF80Pw_TP2"; // შენი key
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 function showRegister(){
     document.getElementById("register").style.display="block";
     document.getElementById("login").style.display="none";
@@ -76,6 +86,39 @@ function showLogin(){
     document.getElementById("login").style.display="block";
     document.getElementById("register").style.display="none";
 }
+
+async function registerUser(){
+    const email = document.getElementById("regEmail").value;
+    const password = document.getElementById("regPassword").value;
+
+    const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password
+    });
+
+    if(error){
+        alert("შეცდომა: " + error.message);
+    } else {
+        alert("რეგისტრაცია წარმატებულია! 🔥");
+    }
+}
+
+async function loginUser(){
+    const email = document.getElementById("logEmail").value;
+    const password = document.getElementById("logPassword").value;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+    if(error){
+        alert("შეცდომა: " + error.message);
+    } else {
+        alert("შესვლა წარმატებულია! 🔥");
+    }
+}
+
 </script>
 
 </head>
@@ -90,16 +133,15 @@ function showLogin(){
 <button onclick="showLogin()">შესვლა</button>
 
 <div id="register" class="form">
-    <input type="text" placeholder="მომხმარებლის სახელი">
-    <input type="email" placeholder="ელფოსტა">
-    <input type="password" placeholder="პაროლი">
-    <button>დარეგისტრირდი</button>
+    <input type="email" id="regEmail" placeholder="ელფოსტა">
+    <input type="password" id="regPassword" placeholder="პაროლი">
+    <button onclick="registerUser()">დარეგისტრირდი</button>
 </div>
 
 <div id="login" class="form">
-    <input type="email" placeholder="ელფოსტა">
-    <input type="password" placeholder="პაროლი">
-    <button>შედი</button>
+    <input type="email" id="logEmail" placeholder="ელფოსტა">
+    <input type="password" id="logPassword" placeholder="პაროლი">
+    <button onclick="loginUser()">შედი</button>
 </div>
 
 </div>
