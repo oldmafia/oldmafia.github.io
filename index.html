@@ -1,9 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="ka">
 <head>
-<title>OLD MAFIA</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ბებერი მაფიოზები</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #000;
+    color: white;
+    text-align: center;
+}
+
+h1 {
+    margin-top: 80px;
+    font-size: 32px;
+}
+
+.container {
+    margin-top: 40px;
+}
+
+button {
+    padding: 12px 25px;
+    margin: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.register-btn {
+    background: #b30000;
+    color: white;
+}
+
+.login-btn {
+    background: #1a1a1a;
+    color: white;
+    border: 1px solid #b30000;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+.form-box {
+    display: none;
+    margin-top: 30px;
+}
+
+input {
+    display: block;
+    margin: 10px auto;
+    padding: 10px;
+    width: 250px;
+    border-radius: 6px;
+    border: none;
+}
+
+.submit-btn {
+    background: #b30000;
+    color: white;
+}
+</style>
 </head>
-<body style="background:black;color:white;text-align:center;margin-top:100px;">
-<h1>OLD MAFIA WORKS 🔥</h1>
+
+<body>
+
+<h1>ბებერი მაფიოზები 🔥</h1>
+
+<div class="container">
+    <button class="register-btn" onclick="showRegister()">რეგისტრაცია</button>
+    <button class="login-btn" onclick="showLogin()">შესვლა</button>
+
+    <div id="registerForm" class="form-box">
+        <h3>რეგისტრაცია</h3>
+        <input type="text" placeholder="სახელი">
+        <input type="email" placeholder="Email">
+        <input type="password" placeholder="პაროლი">
+        <button class="submit-btn">დარეგისტრირდი</button>
+    </div>
+
+    <div id="loginForm" class="form-box">
+        <h3>შესვლა</h3>
+        <input type="email" placeholder="Email">
+        <input type="password" placeholder="პაროლი">
+        <button class="submit-btn">შესვლა</button>
+    </div>
+</div>
+
+<script>
+function showRegister() {
+    document.getElementById("registerForm").style.display = "block";
+    document.getElementById("loginForm").style.display = "none";
+}
+
+function showLogin() {
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("registerForm").style.display = "none";
+}
+</script>
+
 </body>
 </html>
