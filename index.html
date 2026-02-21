@@ -11,41 +11,43 @@ body{
     background:#000;
     font-family:Arial, sans-serif;
     color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
     text-align:center;
 }
 
+.wrapper{
+    width:100%;
+}
+
 h1{
-    margin-top:80px;
     font-size:28px;
+    margin-bottom:30px;
 }
 
-.container{
-    margin-top:30px;
-}
-
-/* ყველა მთავარი ღილაკი ერთნაირი */
-.main-btn,
-.submit-btn{
-    width:80%;
-    max-width:300px;
+button{
+    width:85%;
+    max-width:320px;
     padding:16px;
-    margin:10px;
+    margin:10px auto;
     font-size:18px;
-    border-radius:10px;
+    border-radius:12px;
     border:none;
     cursor:pointer;
     color:white;
     background: linear-gradient(270deg, #ff0000, #8b0000, #ff1a1a);
     background-size:600% 600%;
-    box-shadow:0 0 25px rgba(255,0,0,0.8);
+    box-shadow:0 0 30px rgba(255,0,0,0.9);
     animation: gradientMove 4s ease infinite;
     transition:0.3s;
+    display:block;
 }
 
-.main-btn:hover,
-.submit-btn:hover{
+button:hover{
     transform:scale(1.05);
-    box-shadow:0 0 45px rgba(255,0,0,1);
+    box-shadow:0 0 50px rgba(255,0,0,1);
 }
 
 @keyframes gradientMove{
@@ -56,12 +58,12 @@ h1{
 
 .form-box{
     display:none;
-    margin-top:25px;
+    margin-top:20px;
 }
 
 input{
-    width:80%;
-    max-width:300px;
+    width:85%;
+    max-width:320px;
     padding:14px;
     margin:8px auto;
     display:block;
@@ -74,24 +76,24 @@ input{
 
 <body>
 
+<div class="wrapper">
 <h1>ბებერი მაფიოზები 🔥</h1>
 
-<div class="container">
-    <button class="main-btn" onclick="showRegister()">რეგისტრაცია</button>
-    <button class="main-btn" onclick="showLogin()">შესვლა</button>
-</div>
+<button onclick="showRegister()">რეგისტრაცია</button>
+<button onclick="showLogin()">შესვლა</button>
 
 <div id="registerForm" class="form-box">
     <input type="text" placeholder="მომხმარებლის სახელი">
     <input type="email" placeholder="ელფოსტა">
     <input type="password" placeholder="პაროლი">
-    <button class="submit-btn">დარეგისტრირდი</button>
+    <button>დარეგისტრირდი</button>
 </div>
 
 <div id="loginForm" class="form-box">
     <input type="email" placeholder="ელფოსტა">
     <input type="password" placeholder="პაროლი">
-    <button class="submit-btn">შედი</button>
+    <button>შედი</button>
+</div>
 </div>
 
 <script>
