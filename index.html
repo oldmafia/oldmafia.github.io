@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ბებერი მაფიოზები</title>
+
+<style>
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#000;
+    font-family:Arial, sans-serif;
+}
+
+.frame{
+    padding:8px;
+    border-radius:30px;
+    background:linear-gradient(45deg,#ff0000,#8b0000,#ff0000);
+    box-shadow:0 0 60px rgba(255,0,0,0.8);
+}
+
+.container{
+    width:320px;
+    padding:45px 25px;
+    border-radius:25px;
+    background:#111;
+    text-align:center;
+    transform:rotate(-3deg);
+}
+
+h1{
+    color:white;
+    margin-bottom:30px;
+    text-shadow:0 0 20px red;
+}
+
+button{
+    width:100%;
+    padding:16px;
+    margin:12px 0;
+    border:none;
+    border-radius:14px;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+    color:white;
+    background:linear-gradient(90deg,#8b0000,#ff0000);
+}
+
+.form{
+    display:none;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:6px 0;
+    border-radius:10px;
+    border:1px solid #333;
+    background:#1a1a1a;
+    color:white;
+}
+</style>
+
+<script>
+function showRegister(){
+    document.getElementById("register").style.display="block";
+    document.getElementById("login").style.display="none";
+}
+
+function showLogin(){
+    document.getElementById("login").style.display="block";
+    document.getElementById("register").style.display="none";
+}
+</script>
+
+</head>
+<body>
+
+<div class="frame">
+<div class="container">
+
+<h1>ბებერი მაფიოზები 🔥</h1>
+
+<button onclick="showRegister()">რეგისტრაცია</button>
+<button onclick="showLogin()">შესვლა</button>
+
+<div id="register" class="form">
+    <input type="text" placeholder="მომხმარებლის სახელი">
+    <input type="email" placeholder="ელფოსტა">
+    <input type="password" placeholder="პაროლი">
+    <button>დარეგისტრირდი</button>
+</div>
+
+<div id="login" class="form">
+    <input type="email" placeholder="ელფოსტა">
+    <input type="password" placeholder="პაროლი">
+    <button>შედი</button>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>
