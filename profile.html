@@ -1,1 +1,75 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>პროფილი</title>
 
+<style>
+body{
+margin:0;
+background:#0e0e0e;
+color:white;
+font-family:Arial;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.card{
+background:#1a0000;
+padding:30px;
+border-radius:20px;
+width:90%;
+max-width:400px;
+text-align:center;
+box-shadow:0 0 20px red;
+}
+
+h2{
+margin-bottom:20px;
+color:#ff1a1a;
+}
+
+.info{
+margin-bottom:10px;
+}
+
+button{
+margin-top:20px;
+padding:10px 20px;
+border:none;
+border-radius:10px;
+background:red;
+color:white;
+cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2>👤 შენი პროფილი</h2>
+<div class="info" id="nickname"></div>
+<div class="info" id="email"></div>
+<button onclick="goHome()">უკან</button>
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem("currentUser"));
+
+if(!user){
+window.location.href="index.html";
+}else{
+document.getElementById("nickname").innerText = "ნიკნეიმი: " + user.nickname;
+document.getElementById("email").innerText = "ელფოსტა: " + user.email;
+}
+
+function goHome(){
+window.location.href="home.html";
+}
+</script>
+
+</body>
+</html>
