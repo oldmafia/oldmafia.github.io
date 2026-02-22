@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია - Home</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        body { background: #050505; color: white; display: flex; height: 100vh; overflow: hidden; }
+
+        /* გვერდითა მენიუ - გაფართოებული სახელებისთვის */
+        .sidebar {
+            width: 220px; /* სიგანე მოვუმატე რომ სახელები დაეტიოს */
+            background: #111;
+            border-right: 2px solid #ff3131;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            box-shadow: 2px 0 10px rgba(255, 49, 49, 0.1);
+        }
+
+        .sidebar-header {
+            padding: 25px 15px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff3131;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #222;
+        }
+
+        .nav-list { list-style: none; overflow-y: auto; flex-grow: 1; padding-top: 10px; }
+        
+        .nav-list li a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 15px;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-list li a:hover {
+            background: #1a1a1a;
+            color: #ff3131;
+            border-left: 4px solid #ff3131;
+        }
+
+        .nav-list li a i { font-size: 20px; min-width: 30px; }
+        .nav-list li a span { margin-left: 10px; font-weight: 500; }
+
+        /* მთავარი ჩატის არე */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; background: #0d0d0d; position: relative; }
+
+        /* ზედა ზოლი ნიკისთვის */
+        .top-nav {
+            height: 70px;
+            background: #151515;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+            border-bottom: 1px solid #222;
+        }
+
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { 
+            width: 40px; height: 40px; 
+            background: #222; border: 2px solid #ff3131; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .nickname-text { font-weight: bold; color: #fff; font-size: 16px; }
+        .status-on { color: #00ff44; font-size: 11px; font-weight: normal; }
+
+        /* ჩატის შეტყობინებები */
+        .chat-display { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .bubble { background: #1a1a1a; padding: 12px 18px; border-radius: 15px; max-width: 75%; font-size: 15px; border-bottom-left-radius: 2px; }
+        .bubble b { color: #ff3131; display: block; margin-bottom: 3px; font-size: 13px; }
+
+        /* სმაილების მენიუ (Pop-up) */
+        .emoji-panel {
+            display: none;
+            position: absolute;
+            bottom: 85px;
+            left: 20px;
+            background: #1a1a1a;
+            border: 1px solid #ff3131;
+            padding: 15px;
+            border-radius: 12px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .emoji-panel span { cursor: pointer; font-size: 24px; transition: 0.2s; }
+        .emoji-panel span:hover { transform: scale(1.3); }
+
+        /* ქვედა საწერი ზოლი */
+        .footer-input { 
+            padding: 20px; background: #111; border-top: 1px solid #222; 
+            display: flex; align-items: center; gap: 15px;
+        }
+        .emoji-trigger { font-size: 26px; cursor: pointer; opacity: 0.8; transition: 0.3s; }
+        .emoji-trigger:hover { opacity: 1; transform: rotate(15deg); }
+        
+        input#messageInput {
+            flex-grow: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 14px 20px;
+            border-radius: 30px;
+            color: white;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .send-button {
+            background: #ff3131;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .send-button:hover { background: #d62828; box-shadow: 0 0 10px rgba(255, 49, 49, 0.4); }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">Old Mafia</div>
+        <ul class="nav-list">
+            <li><a href="#">🏠 <span>მთავარი გვერდი</span></a></li>
+            <li><a href="#">💬 <span>ზოგადი ჩატი</span></a></li>
+            <li><a href="#">🔐 <span>შიფროგრამა</span></a></li>
+            <li><a href="#">⚔️ <span>იარაღის ოთახი</span></a></li>
+            <li><a href="#">🎵 <span>მუსიკა</span></a></li>
+            <li><a href="#">🖼️ <span>გალერეა</span></a></li>
+            <li><a href="#">🆘 <span>დახმარება</span></a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-nav">
+            <div class="user-info">
+                <div class="user-avatar">👤</div>
+                <div>
+                    <div class="nickname-text" id="userNick">სტუმარი</div>
+                    <div class="status-on">● ონლაინშია</div>
+                </div>
+            </div>
+            <div style="font-size: 22px; cursor: pointer;">⚙️</div>
+        </header>
+
+        <div class="chat-display">
+            <div class="bubble">
+                <b>სისტემა:</b>
+                კეთილი იყოს შენი მობრძანება! აირჩიე სასურველი ოთახი და დაიწყე მიმოწერა.
+            </div>
+        </div>
+
+        <div class="emoji-panel" id="emojiPanel">
+            <span onclick="insertEmoji('😂')">😂</span>
+            <span onclick="insertEmoji('😍')">😍</span>
+            <span onclick="insertEmoji('🔥')">🔥</span>
+            <span onclick="insertEmoji('😎')">😎</span>
+            <span onclick="insertEmoji('🙌')">🙌</span>
+            <span onclick="insertEmoji('🔫')">🔫</span>
+            <span onclick="insertEmoji('💣')">💣</span>
+            <span onclick="insertEmoji('💀')">💀</span>
+            <span onclick="insertEmoji('👿')">👿</span>
+            <span onclick="insertEmoji('🚀')">🚀</span>
+            <span onclick="insertEmoji('💯')">💯</span>
+            <span onclick="insertEmoji('🎉')">🎉</span>
+        </div>
+
+        <div class="footer-input">
+            <div class="emoji-trigger" onclick="toggleEmojis()">😊</div>
+            <input type="text" id="messageInput" placeholder="დაწერე შეტყობინება...">
+            <button class="send-button">გაგზავნა</button>
+        </div>
+    </main>
+
+    <script>
+        // ნიკის წამოღება (რეგისტრაციისას თუ შეინახავ 'username' სახელით)
+        window.onload = function() {
+            const savedName = localStorage.getItem('username');
+            if (savedName) {
+                document.getElementById('userNick').innerText = savedName;
+            }
+        };
+
+        // სმაილების გამოჩენა/დამალვა
+        function toggleEmojis() {
+            const panel = document.getElementById('emojiPanel');
+            panel.style.display = (panel.style.display === 'grid') ? 'none' : 'grid';
+        }
+
+        // სმაილის ჩამატება
+        function insertEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+            input.focus();
+            // სურვილისამებრ შეგიძლია დახურო პანელი არჩევის მერე:
+            // document.getElementById('emojiPanel').style.display = 'none';
+        }
+
+        // ეკრანზე ნებისმიერ ადგილას დაჭერისას სმაილების დახურვა
+        window.onclick = function(event) {
+            if (!event.target.matches('.emoji-trigger') && !event.target.matches('.emoji-panel span')) {
+                document.getElementById('emojiPanel').style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+</html>
