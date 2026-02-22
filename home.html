@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - ჩატი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --neon-red: #ff0000; --wine-red: #8b0000; --bg-black: #050505; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg-black); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ზედა ბარი */
+        .header {
+            height: 65px; background: #111; border-bottom: 2px solid var(--neon-red);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
+            z-index: 100; box-shadow: 0 0 15px rgba(255,0,0,0.4);
+        }
+        .menu-btn { font-size: 28px; color: var(--neon-red); cursor: pointer; text-shadow: 0 0 10px red; }
+        .room-indicator { font-weight: bold; color: var(--neon-red); font-size: 13px; text-transform: uppercase; }
+        
+        .user-meta { display: flex; align-items: center; gap: 12px; }
+        #display-nick { font-weight: bold; font-size: 14px; color: #fff; }
+        .top-icon { font-size: 20px; cursor: pointer; position: relative; }
+        .badge { position: absolute; top: -5px; right: -8px; background: red; font-size: 10px; padding: 2px 5px; border-radius: 50%; box-shadow: 0 0 5px red; }
+
+        /* გვერდითა მენიუ */
+        .sidebar {
+            position: absolute; left: -260px; top: 0; width: 240px; height: 100%;
+            background: #080808; border-right: 2px solid var(--neon-red);
+            transition: 0.4s; z-index: 99; overflow-y: auto; padding: 10px;
+        }
+        .sidebar.open { left: 0; box-shadow: 10px 0 30px #000; }
+        .nav-link {
+            display: flex; align-items: center; padding: 12px; color: #fff; text-decoration: none; 
+            margin-bottom: 8px; border-radius: 10px; background: #111; border: 1px solid #300; font-size: 14px;
+        }
+        .nav-link:hover, .nav-link.active { background: var(--wine-red); border-color: var(--neon-red); }
+
+        /* ჩატის სივრცე */
+        .chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        .msg-box { background: #111; padding: 12px; border-radius: 12px; max-width: 85%; border-left: 4px solid var(--neon-red); position: relative; align-self: flex-start; word-wrap: break-word; }
+        .msg-box b { color: var(--neon-red); font-size: 11px; display: block; margin-bottom: 4px; }
+        .del-btn { color: #444; font-size: 14px; cursor: pointer; position: absolute; right: 8px; top: 8px; }
+
+        /* გვერდები */
+        .pagination { display: flex; justify-content: center; gap: 8px; padding: 8px; background: #000; border-top: 1px solid #111; }
+        .page-btn { padding: 4px 10px; background: #111; border: 1px solid #444; color: #ccc; cursor: pointer; border-radius: 4px; font-size: 12px; }
+        .page-btn.active { background: var(--neon-red); color: white; border-color: var(--neon-red); }
+
+        /* ქვედა პანელი */
+        .footer { padding: 12px; background: #0a0a0a; border-top: 1px solid #111; display: flex; align-items: center; gap: 10px; }
+        .input-wrap { flex: 1; background: #1a1a1a; border-radius: 25px; padding: 5px 15px; display: flex; align-items: center; border: 1px solid #333; }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 8px; outline: none; }
+        .send-btn { background: var(--neon-red); border: none; width: 42px; height: 42px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px red; }
+
+        /* სმაილების პანელი */
+        .emoji-panel { display: none; position: absolute; bottom: 75px; left: 15px; background: #111; border: 1px solid var(--neon-red); padding: 10px; border-radius: 10px; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 101; box-shadow: 0 0 20px black; }
+        .emoji-panel span { font-size: 24px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+        <div class="room-indicator" id="currentRoom">ზოგადი ჩატი</div>
+        <div class="user-meta">
+            <div class="top-icon">✉️ <span class="badge">1</span></div>
+            <span id="display-nick">იტვირთება...</span>
+            <div class="top-icon">👤</div>
+        </div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+        <div style="padding: 20px; color: red; font-weight: bold; text-align: center; border-bottom: 1px solid #222; margin-bottom: 15px; letter-spacing: 2px;">OLD MAFIA</div>
+        <a href="#" class="nav-link active" onclick="changeRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('შიფროგრამა', this)">🔐 შიფროგრამა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('ვიქტორინა', this)">🎯 ვიქტორინა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('იარაღის ოთახი', this)">⚔️ იარაღის ოთახი</a>
+        <a href="index.html" class="nav-link" style="margin-top: 50px; color: #777;">🚪 გასვლა</a>
+    </nav>
+
+    <div class="chat-container" onclick="closeSidebar()">
+        <div id="chat-window"></div>
+        <div class="pagination" id="pagination"></div>
+
+        <div class="emoji-panel" id="emojiPanel">
+            <span onclick="addEmoji('😂')">😂</span> <span onclick="addEmoji('🔥')">🔥</span>
+            <span onclick="addEmoji('😍')">😍</span> <span onclick="addEmoji('🔫')">🔫</span>
+            <span onclick="addEmoji('💀')">💀</span> <span onclick="addEmoji('🍷')">🍷</span>
+            <span onclick="addEmoji('😎')">😎</span> <span onclick="addEmoji('⚠️')">⚠️</span>
+            <span onclick="addEmoji('🤫')">🤫</span> <span onclick="addEmoji('💸')">💸</span>
+        </div>
+
+        <div class="footer">
+            <span style="font-size: 26px; cursor: pointer;" onclick="toggleEmoji()">😊</span>
+            <div class="input-wrap">
+                <input type="text" id="message-input" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter')sendMessage()">
+            </div>
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // Supabase-ის კონფიგურაცია
+        const { createClient } = supabase;
+        const supabaseClient = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        // ნიკის შემოწმება (Login Check)
+        let myNick = localStorage.getItem('username');
+        if (!myNick || myNick === "null") {
+            window.location.href = "index.html"; 
+        } else {
+            document.getElementById('display-nick').innerText = myNick;
+        }
+
+        let currentPage = 1;
+        const messagesPerPage = 15;
+
+        // ინტერფეისის ფუნქციები
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
+        function toggleEmoji() { const p = document.getElementById('emojiPanel'); p.style.display = (p.style.display === 'grid') ? 'none' : 'grid'; }
+        function addEmoji(e) { document.getElementById('message-input').value += e; document.getElementById('message-input').focus(); }
+        
+        function changeRoom(name, el) { 
+            document.getElementById('currentRoom').innerText = name; 
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+            closeSidebar();
+            loadMessages(1); // ოთახის შეცვლისას მესიჯები თავიდან იტვირთება
+        }
+
+        // მესიჯების ჩატვირთვა ბაზიდან
+        async function loadMessages(page = 1) {
+            currentPage = page;
+            const from = (page - 1) * messagesPerPage;
+            const to = from + messagesPerPage - 1;
+
+            const { data, error, count } = await supabaseClient
+                .from('messages')
+                .select('*', { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (error) { console.error(error); return; }
+
+            const chatWindow = document.getElementById('chat-window');
+            chatWindow.innerHTML = "";
+
+            // წესების მესიჯი მხოლოდ პირველ გვერდზე
+            if(page === 1) {
+                chatWindow.innerHTML = `
+                    <div class="msg-box" style="border-left-color: gold; border-right: 1px solid rgba(255,215,0,0.2);">
+                        <b>ადმინი:</b> აქ ჩვენი წესებია!!!! ⚠️<br>არ შეიგინოთ და იყავით კარგად! 😎🍷
+                    </div>
+                `;
+            }
+
+            // მესიჯების რენდერი
+            data.reverse().forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = "msg-box";
+                
+                // თუ მესიჯი შენია, ოდნავ სხვაფერი იყოს (სურვილისამებრ)
+                if(msg.nickname === myNick) { msgDiv.style.background = "#1a0a0a"; }
+
+                // ადმინ წაშლის ღილაკი (მხოლოდ abu007-ისთვის)
+                let deleteHtml = "";
+                if (myNick === "abu007") {
+                    deleteHtml = `<span class="del-btn" onclick="deleteMsg('${msg.id}')">✖</span>`;
+                }
+
+                msgDiv.innerHTML = `<b>${msg.nickname}:</b> ${deleteHtml} <div>${msg.content}</div>`;
+                chatWindow.appendChild(msgDiv);
+            });
+
+            renderPagination(count);
+            if(page === 1) chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // გვერდების დახატვა
+        function renderPagination(totalCount) {
+            const totalPages = Math.ceil(totalCount / messagesPerPage);
+            const pgContainer = document.getElementById('pagination');
+            pgContainer.innerHTML = "";
+
+            if(totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.innerText = i;
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.onclick = () => { loadMessages(i); window.scrollTo(0,0); };
+                pgContainer.appendChild(btn);
+            }
+        }
+
+        // მესიჯის გაგზავნა
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = "";
+            document.getElementById('emojiPanel').style.display = 'none';
+
+            const { error } = await supabaseClient
+                .from('messages')
+                .insert([{ nickname: myNick, content: text }]);
+
+            if (error) alert("გაგზავნა ვერ მოხერხდა!");
+        }
+
+        // მესიჯის წაშლა
+        async function deleteMsg(id) {
+            if (confirm("ნამდვილად გინდა ამ მესიჯის წაშლა?")) {
+                const { error } = await supabaseClient.from('messages').delete().eq('id', id);
+                if (!error) loadMessages(currentPage);
+            }
+        }
+
+        // Realtime განახლება
+        supabaseClient
+            .channel('chat-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+                if(currentPage === 1) loadMessages(1);
+            })
+            .subscribe();
+
+        // სტარტი
+        loadMessages();
+    </script>
+</body>
+</html>
