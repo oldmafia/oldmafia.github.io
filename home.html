@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ჩატი</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(to bottom,#1a0000,#000);
+color:white;
+}
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px;
+background:#111;
+border-bottom:2px solid red;
+}
+
+.rooms{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+gap:15px;
+padding:20px;
+}
+
+.room{
+background:#1a1a1a;
+padding:20px;
+border-radius:12px;
+text-align:center;
+cursor:pointer;
+transition:0.3s;
+border:1px solid #222;
+}
+
+.room:hover{
+background:red;
+transform:scale(1.05);
+}
+
+.top-icons{
+display:flex;
+gap:15px;
+align-items:center;
+}
+
+.icon{
+cursor:pointer;
+font-size:20px;
+}
+
+.chat-box{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#111;
+padding:10px;
+display:none;
+flex-direction:column;
+height:50%;
+border-top:2px solid red;
+}
+
+.messages{
+flex:1;
+overflow-y:auto;
+margin-bottom:10px;
+}
+
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+width:80%;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+background:red;
+color:white;
+cursor:pointer;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+<div id="nickname">...</div>
+
+<div class="top-icons">
+<div class="icon" onclick="openPrivate()">✉️</div>
+<div class="icon" onclick="logout()">გასვლა</div>
+</div>
+</header>
+
+<div class="rooms">
+
+<div class="room" onclick="openRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
+<div class="room" onclick="openRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
+<div class="room" onclick="openRoom('ვიქტორინა')">🧠 ვიქტორინა</div>
+<div class="room" onclick="openRoom('ჩამოხრჩობანა')">🪢 ჩამოხრჩობანა</div>
+<div class="room" onclick="openRoom('ფორუმი')">📢 ფორუმი</div>
+<div class="room" onclick="openRoom('იარაღის ოთახი')">🔫 იარაღის ოთახი</div>
+<div class="room" onclick="openRoom('VIP საუბრები')">👑 VIP საუბრები</div>
+<div class="room" onclick="openRoom('მუსიკა')">🎵 მუსიკა</div>
+<div class="room" onclick="openRoom('გალერეა')">🖼 გალერეა</div>
+<div class="room" onclick="openRoom('იუმორი')">😂 იუმორი</div>
+<div class="room" onclick="openRoom('დახმარება')">❓ დახმარება</div>
+
+</div>
+
+<div class="chat-box" id="chatBox">
+<div id="roomTitle"></div>
+<div class="messages" id="messages"></div>
+
+<div>
+<input id="messageInput" placeholder="დაწერე მესიჯი">
+<button onclick="sendMessage()">გაგზავნა</button>
+</div>
+</div>
+
+<script>
+
+const supabase = window.supabase.createClient(
+"YOUR_SUPABASE_URL",
+"YOUR_SUPABASE_ANON_KEY"
+);
+
+let currentUser = null;
+let currentRoom = null;
+
+async function loadUser(){
+const {data:{user}} = await supabase.auth.getUser();
+
+if(!user){
+window.location.href="index.html";
+return;
+}
+
+currentUser = user;
+document.getElementById("nickname").innerText =
+user.user_metadata?.nickname || user.email;
+}
+
+async function openRoom(room){
+currentRoom = room;
+document.getElementById("chatBox").style.display="flex";
+document.getElementById("roomTitle").innerText=room;
+loadMessages();
+}
+
+async function loadMessages(){
+const {data} = await supabase
+.from("messages")
+.select("*")
+.eq("room",currentRoom)
+.order("created_at",{ascending:true});
+
+const box = document.getElementById("messages");
+box.innerHTML="";
+
+data?.forEach(msg=>{
+box.innerHTML += `<div><b>${msg.nickname}:</b> ${msg.text}</div>`;
+});
+}
+
+async function sendMessage(){
+const text = document.getElementById("messageInput").value;
+if(!text) return;
+
+await supabase.from("messages").insert({
+room:currentRoom,
+text:text,
+nickname:currentUser.user_metadata?.nickname || currentUser.email
+});
+
+document.getElementById("messageInput").value="";
+loadMessages();
+}
+
+function openPrivate(){
+openRoom("პირადი შეტყობინებები");
+}
+
+async function logout(){
+await supabase.auth.signOut();
+window.location.href="index.html";
+}
+
+loadUser();
+
+</script>
+
+</body>
+</html>
