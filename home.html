@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLD MAFIA</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #000; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+
+        /* მენიუ შენი საიტის ფერებში */
+        .sidebar {
+            width: 160px; background: #0a0a0a; border-right: 1px solid #4a0000;
+            display: flex; flex-direction: column; flex-shrink: 0;
+        }
+        .sidebar-brand { padding: 15px; color: #8b0000; font-weight: bold; text-align: center; border-bottom: 1px solid #1a0000; }
+        .nav-link {
+            display: flex; align-items: center; padding: 12px; color: #aaa; 
+            text-decoration: none; font-size: 13px; border-bottom: 1px solid #1a0000;
+        }
+        .nav-link:hover { background: #4a0000; color: #fff; }
+        .nav-link span { margin-left: 8px; }
+
+        /* ჩატი */
+        .main-chat { flex-grow: 1; display: flex; flex-direction: column; background: #080808; }
+
+        /* ზედა ბარი */
+        .top-header {
+            height: 50px; background: #2b0000; border-bottom: 1px solid #4a0000;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
+        }
+        .user-block { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 10px; height: 10px; background: #00ff44; border-radius: 50%; box-shadow: 0 0 5px #00ff44; }
+        #nickname-display { font-weight: bold; font-size: 14px; }
+
+        /* ჩატის სივრცე */
+        #chat-area { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { background: #1a0000; padding: 10px; border-radius: 8px; max-width: 85%; font-size: 13px; border-left: 3px solid #8b0000; align-self: flex-start; }
+        .bubble.me { align-self: flex-end; background: #4a0000; border-left: none; border-right: 3px solid #ff3131; }
+        .bubble b { color: #ff3131; display: block; font-size: 11px; margin-bottom: 3px; }
+
+        /* სმაილები */
+        .emoji-popup {
+            display: none; position: absolute; bottom: 70px; left: 10px;
+            background: #111; border: 1px solid #8b0000; padding: 10px;
+            border-radius: 10px; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 100;
+        }
+        .emoji-popup span { cursor: pointer; font-size: 20px; }
+
+        /* ქვედა პანელი */
+        .input-bar { padding: 10px; background: #0a0a0a; display: flex; align-items: center; gap: 8px; border-top: 1px solid #222; }
+        input#text-input { flex-grow: 1; background: #1a1a1a; border: 1px solid #333; padding: 10px; border-radius: 5px; color: #fff; outline: none; }
+        .btn-send { background: #8b0000; border: none; padding: 10px 15px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-send:hover { background: #ff3131; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">OLD MAFIA</div>
+        <div class="nav-list">
+            <a href="#" class="nav-link">🏠 <span>მთავარი</span></a>
+            <a href="#" class="nav-link">💬 <span>ზოგადი ჩატი</span></a>
+            <a href="#" class="nav-link">🔐 <span>შიფროგრამა</span></a>
+            <a href="#" class="nav-link">⚔️ <span>იარაღის ოთახი</span></a>
+            <a href="#" class="nav-link">🆘 <span>დახმარება</span></a>
+        </div>
+    </div>
+
+    <div class="main-chat">
+        <header class="top-header">
+            <div class="user-block">
+                <div class="dot"></div>
+                <span id="nickname-display">სტუმარი</span>
+            </div>
+            <div style="font-size: 18px; cursor: pointer;">⚙️</div>
+        </header>
+
+        <div id="chat-area">
+            </div>
+
+        <div class="emoji-popup" id="emojiBox">
+            <span onclick="addEmoji('😂')">😂</span> <span onclick="addEmoji('🔥')">🔥</span>
+            <span onclick="addEmoji('😎')">😎</span> <span onclick="addEmoji('🔫')">🔫</span>
+            <span onclick="addEmoji('🚀')">🚀</span>
+        </div>
+
+        <div class="input-bar">
+            <span onclick="toggleEmoji()" style="cursor:pointer; font-size: 20px;">😊</span>
+            <input type="text" id="text-input" placeholder="დაწერე შეტყობინება..." onkeypress="handleKey(event)">
+            <button class="btn-send" onclick="sendMessage()">გაგზავნა</button>
+        </div>
+    </div>
+
+    <script>
+        // ნიკის წამოღება
+        const myNick = localStorage.getItem('username') || "სტუმარი";
+        document.getElementById('nickname-display').innerText = myNick;
+
+        // მესიჯის გაგზავნის ფუნქცია
+        function sendMessage() {
+            const input = document.getElementById('text-input');
+            const message = input.value.trim();
+            const chatArea = document.getElementById('chat-area');
+
+            if (message !== "") {
+                const div = document.createElement('div');
+                div.className = "bubble me"; // "me" კლასი ნიშნავს რომ შენი გაგზავნილია
+                div.innerHTML = `<b>${myNick}:</b> ${message}`;
+                chatArea.appendChild(div);
+                
+                input.value = ""; // ველის გასუფთავება
+                chatArea.scrollTop = chatArea.scrollHeight; // სქროლი ბოლოში
+            }
+        }
+
+        // Enter-ზე გაგზავნა
+        function handleKey(e) {
+            if (e.key === "Enter") { sendMessage(); }
+        }
+
+        function toggleEmoji() {
+            const b = document.getElementById('emojiBox');
+            b.style.display = (b.style.display === 'grid') ? 'none' : 'grid';
+        }
+
+        function addEmoji(e) {
+            document.getElementById('text-input').value += e;
+        }
+    </script>
+</body>
+</html>
