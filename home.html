@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLD MAFIA</title>
+    <style>
+        :root {
+            --neon-red: #ff0000;
+            --dark-red: #4a0000;
+            --bg-black: #050505;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ზედა ბარი (Header) */
+        .header {
+            height: 60px; background: #111; border-bottom: 2px solid var(--neon-red);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
+            box-shadow: 0 0 15px var(--dark-red); z-index: 100;
+        }
+        .menu-btn { font-size: 24px; color: var(--neon-red); cursor: pointer; }
+        .room-title { font-weight: bold; color: var(--neon-red); text-shadow: 0 0 5px red; font-size: 14px; }
+        .user-nick { font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 5px #00ff00; }
+
+        /* მთავარი კონტეინერი (მენიუ + ჩატი) */
+        .main-body { display: flex; flex-grow: 1; position: relative; }
+
+        /* ჩამოსაშლელი მენიუ - მობილურზე რომ დაეტიოს */
+        .sidebar {
+            position: absolute; left: -250px; top: 0; width: 220px; height: 100%;
+            background: #0a0a0a; border-right: 2px solid var(--neon-red);
+            transition: 0.3s; z-index: 99; overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .nav-link {
+            display: flex; align-items: center; padding: 15px; color: #ccc;
+            text-decoration: none; border-bottom: 1px solid #1a1a1a; font-size: 14px;
+        }
+        .nav-link:active { background: var(--dark-red); color: white; }
+        .nav-link b { margin-right: 10px; color: var(--neon-red); }
+
+        /* ჩატის სივრცე - დიდი და სუფთა */
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; width: 100%; background: #000; }
+        #messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: #111; padding: 10px 15px; border-radius: 12px; max-width: 85%; border-left: 3px solid var(--neon-red); font-size: 14px; }
+        .msg.me { align-self: flex-end; background: var(--dark-red); border-left: none; border-right: 3px solid var(--neon-red); }
+
+        /* სმაილების პანელი (დამალული) */
+        .emoji-panel {
+            display: none; position: absolute; bottom: 70px; left: 10px;
+            background: #111; border: 1px solid var(--neon-red); padding: 10px;
+            border-radius: 10px; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 101;
+        }
+        .emoji-panel span { font-size: 22px; cursor: pointer; }
+
+        /* ქვედა პანელი (საწერი) */
+        .footer { padding: 10px; background: #0a0a0a; border-top: 1px solid #222; display: flex; align-items: center; gap: 10px; }
+        .input-box { flex-grow: 1; background: #1a1a1a; border: 1.5px solid var(--dark-red); border-radius: 20px; padding: 10px 15px; color: white; outline: none; }
+        .send-btn { background: var(--neon-red); border: none; padding: 10px 15px; border-radius: 20px; color: white; font-weight: bold; box-shadow: 0 0 10px var(--neon-red); }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="menu-btn" onclick="toggleMenu()">☰</div>
+        <div class="room-title" id="roomName">ზოგადი ჩატი</div>
+        <div class="user-nick">
+            <div class="dot"></div>
+            <span id="myNick">სტუმარი</span>
+        </div>
+    </header>
+
+    <div class="main-body">
+        <nav class="sidebar" id="sidebar">
+            <div style="padding: 20px; color: var(--neon-red); font-weight: bold; text-align: center; border-bottom: 1px solid #222;">OLD MAFIA</div>
+            <a href="#" class="nav-link" onclick="setRoom('ზოგადი ჩატი')"><b>💬</b> ზოგადი ჩატი</a>
+            <a href="#" class="nav-link" onclick="setRoom('შიფროგრამა')"><b>🔐</b> შიფროგრამა</a>
+            <a href="#" class="nav-link" onclick="setRoom('ვიქტორინა')"><b>🎯</b> ვიქტორინა</a>
+            <a href="#" class="nav-link" onclick="setRoom('ჩამომხრჩობელა')"><b>💀</b> ჩამომხრჩობელა</a>
+            <a href="#" class="nav-link" onclick="setRoom('იარაღის ოთახი')"><b>⚔️</b> იარაღის ოთახი</a>
+            <a href="#" class="nav-link" onclick="setRoom('VIP საუბრები')"><b>👑</b> VIP საუბრები</a>
+            <a href="#" class="nav-link" onclick="setRoom('მუსიკა')"><b>🎵</b> მუსიკა</a>
+            <a href="#" class="nav-link" onclick="setRoom('გალერეა')"><b>🖼️</b> გალერეა</a>
+            <a href="#" class="nav-link" onclick="setRoom('დახმარება')"><b>🆘</b> დახმარება</a>
+        </nav>
+
+        <div class="chat-area" onclick="closeMenu()">
+            <div id="messages">
+                <div class="msg"><b>ადმინი:</b> მოგესალმებით! მენიუ დამალულია (☰), სმაილებიც დამალულია (😊). ფერები კი ნამდვილი ნეონია! 🔥</div>
+            </div>
+
+            <div class="emoji-panel" id="emojis">
+                <span onclick="addE('😂')">😂</span> <span onclick="addE('😍')">😍</span>
+                <span onclick="addE('🔥')">🔥</span> <span onclick="addE('😎')">😎</span>
+                <span onclick="addE('🔫')">🔫</span> <span onclick="addE('🚀')">🚀</span>
+                <span onclick="addE('💀')">💀</span> <span onclick="addE('😈')">😈</span>
+            </div>
+
+            <div class="footer">
+                <span style="font-size: 24px; cursor: pointer;" onclick="toggleEmoji()">😊</span>
+                <input type="text" id="mInput" class="input-box" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter')send()">
+                <button class="send-btn" onclick="send()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ნიკი
+        document.getElementById('myNick').innerText = localStorage.getItem('username') || "სტუმარი";
+
+        function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+        function closeMenu() { document.getElementById('sidebar').classList.remove('open'); }
+        
+        function setRoom(name) {
+            document.getElementById('roomName').innerText = name;
+            toggleMenu();
+        }
+
+        function toggleEmoji() {
+            const p = document.getElementById('emojis');
+            p.style.display = (p.style.display === 'grid') ? 'none' : 'grid';
+        }
+
+        function addE(e) { document.getElementById('mInput').value += e; }
+
+        function send() {
+            const input = document.getElementById('mInput');
+            if(input.value.trim() !== "") {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = "msg me";
+                msgDiv.innerHTML = input.value;
+                document.getElementById('messages').appendChild(msgDiv);
+                input.value = "";
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+                document.getElementById('emojis').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
