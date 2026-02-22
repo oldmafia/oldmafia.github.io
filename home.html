@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - ULTIMATE</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff0000; --bg: #050505; --dark: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        .header { height: 60px; background: #111; border-bottom: 2px solid var(--red); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; }
+        
+        /* Sidebar */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0d0d0d; border-right: 2px solid var(--red); transition: 0.3s; z-index: 2000; padding: 20px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .nav-link { display: block; padding: 12px; color: white; text-decoration: none; background: #1a1a1a; margin-bottom: 8px; border-radius: 10px; border: 1px solid #333; font-size: 14px; }
+        .nav-link.active { background: #8b0000; border-color: var(--red); }
+
+        /* Chat Window - ყველაფერი მარცხნივ */
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: var(--dark); padding: 10px; border-radius: 10px; border-left: 3px solid #444; width: 95%; align-self: flex-start; cursor: pointer; }
+        .msg.me { border-left-color: var(--red); background: #1a0a0a; }
+
+        /* Emoji Panels */
+        .emoji-panel { display: none; background: #111; padding: 10px; border-top: 1px solid #333; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .emoji-panel.show { display: flex; }
+        .emoji { font-size: 24px; cursor: pointer; padding: 5px; }
+
+        /* Footers */
+        .footer { padding: 10px; background: #0a0a0a; display: flex; align-items: center; gap: 8px; border-top: 1px solid #222; }
+        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; outline: none; }
+        .btn-send { background: var(--red); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        /* PM Modal */
+        #pm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 3000; flex-direction: column; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1500; }
+        .overlay.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <header class="header">
+        <div onclick="toggleSidebar()" style="font-size:25px; color:red; cursor:pointer;">☰</div>
+        <div id="room-title" style="color:red; font-weight:bold;">🍷 ზოგადი ჩატი</div>
+        <div style="font-size: 20px; cursor:pointer;">✉️</div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+        <h2 style="color:red; margin-bottom:20px; text-align:center;">MAFIA ROOMS</h2>
+        <a href="#" class="nav-link active" onclick="changeRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('ვიპ საუბრები', this)">💎 ვიპ საუბრები</a>
+        <a href="#" class="nav-link" onclick="changeRoom('შიფროგრამა', this)">🔐 შიფროგრამა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('ვიქტორინა', this)">🎯 ვიქტორინა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('იარაღის ოთახი', this)">⚔️ იარაღის ოთახი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('ფორუმი', this)">🏛️ ფორუმი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('იუმორი', this)">😂 იუმორი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('მუსიკა', this)">🎵 მუსიკა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('გალერეა', this)">🖼️ გალერეა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('დახმარება', this)">🆘 დახმარება</a>
+        <a href="index.html" class="nav-link" style="margin-top:20px; color:gray;">🚪 გასვლა</a>
+    </nav>
+
+    <div id="chat-window"></div>
+
+    <div class="emoji-panel" id="emoji-main">
+        <span class="emoji" onclick="addEmoji('😊', 'msg-input')">😊</span>
+        <span class="emoji" onclick="addEmoji('😂', 'msg-input')">😂</span>
+        <span class="emoji" onclick="addEmoji('🍷', 'msg-input')">🍷</span>
+        <span class="emoji" onclick="addEmoji('🔥', 'msg-input')">🔥</span>
+        <span class="emoji" onclick="addEmoji('🔫', 'msg-input')">🔫</span>
+    </div>
+
+    <div class="footer">
+        <button onclick="toggleEmoji('emoji-main')" style="background:none; border:none; font-size:20px;">😊</button>
+        <input type="text" id="msg-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter')send()">
+        <button class="btn-send" onclick="send()">➤</button>
+    </div>
+
+    <div id="pm-modal">
+        <div style="padding:15px; border-bottom:1px solid red; display:flex; justify-content:space-between; align-items:center;">
+            <span id="pm-nick" style="color:red; font-weight:bold;">პირადი</span>
+            <span onclick="closePM()" style="color:white; cursor:pointer; font-size: 30px;">&times;</span>
+        </div>
+        <div id="pm-chat" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px;"></div>
+        
+        <div class="emoji-panel" id="emoji-pm">
+            <span class="emoji" onclick="addEmoji('😊', 'pm-input')">😊</span>
+            <span class="emoji" onclick="addEmoji('😂', 'pm-input')">😂</span>
+            <span class="emoji" onclick="addEmoji('🍷', 'pm-input')">🍷</span>
+            <span class="emoji" onclick="addEmoji('🔫', 'pm-input')">🔫</span>
+        </div>
+
+        <div class="footer">
+            <button onclick="toggleEmoji('emoji-pm')" style="background:none; border:none; font-size:20px;">😊</button>
+            <input type="text" id="pm-input" placeholder="მიწერე პირადში..." onkeypress="if(event.key==='Enter')sendPM()">
+            <button class="btn-send" onclick="sendPM()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const client = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        let myNick = localStorage.getItem('username') || "abu007";
+        let currentRoom = 'ზოგადი ჩატი';
+        let activePM = null;
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
+        
+        function toggleEmoji(id) { 
+            const p = document.getElementById(id); 
+            p.classList.toggle('show');
+        }
+
+        function addEmoji(emoji, inputId) { 
+            document.getElementById(inputId).value += emoji; 
+        }
+
+        function changeRoom(name, el) {
+            currentRoom = name;
+            document.getElementById('room-title').innerText = "🍷 " + name;
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+            toggleSidebar();
+            load();
+        }
+
+        async function load() {
+            const { data } = await client.from('messages').select('*').eq('room_id', currentRoom).order('created_at', { ascending: false }).limit(50);
+            if (data) {
+                document.getElementById('chat-window').innerHTML = data.reverse().map(m => `
+                    <div class="msg ${m.nickname === myNick ? 'me' : ''}" onclick="openPM('${m.nickname}')">
+                        <b style="color:red; font-size:11px;">${m.nickname}:</b><br>${m.content}
+                    </div>
+                `).join('');
+                document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+            }
+        }
+
+        async function send() {
+            const el = document.getElementById('msg-input');
+            if(!el.value.trim()) return;
+            await client.from('messages').insert([{ nickname: myNick, content: el.value, room_id: currentRoom }]);
+            el.value = "";
+            document.getElementById('emoji-main').classList.remove('show');
+            load();
+        }
+
+        function openPM(nick) {
+            if(nick === myNick) return;
+            activePM = nick;
+            document.getElementById('pm-nick').innerText = "პირადი: " + nick;
+            document.getElementById('pm-modal').style.display = "flex";
+            loadPM();
+        }
+        function closePM() { document.getElementById('pm-modal').style.display = "none"; activePM = null; }
+
+        async function loadPM() {
+            if(!activePM) return;
+            const { data } = await client.from('private_messages').select('*')
+                .or(`and(sender.eq."${myNick}",receiver.eq."${activePM}"),and(sender.eq."${activePM}",receiver.eq."${myNick}")`)
+                .order('created_at', { ascending: true });
+            
+            if(data) {
+                document.getElementById('pm-chat').innerHTML = data.map(m => `
+                    <div style="padding:10px; background:${m.sender === myNick ? '#1a0a0a' : '#222'}; border-radius:10px; border-left:2px solid red; width:90%;">
+                        <small style="color:red;">${m.sender}:</small><br>${m.message}
+                    </div>
+                `).join('');
+                document.getElementById('pm-chat').scrollTop = document.getElementById('pm-chat').scrollHeight;
+            }
+        }
+
+        async function sendPM() {
+            const el = document.getElementById('pm-input');
+            if(!el.value.trim()) return;
+            await client.from('private_messages').insert([{ sender: myNick, receiver: activePM, message: el.value }]);
+            el.value = "";
+            document.getElementById('emoji-pm').classList.remove('show');
+            loadPM();
+        }
+
+        client.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, load).subscribe();
+        client.channel('pms').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, loadPM).subscribe();
+        load();
+    </script>
+</body>
+</html>
