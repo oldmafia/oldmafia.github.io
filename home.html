@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA</title>
+    <style>
+        :root {
+            --neon-red: #ff0000; /* ის კაშკაშა წითელი, რაც გინდოდა */
+            --dark-red: #4a0000;
+            --bg-black: #050505;
+            --panel-bg: #0d0d0d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg-black); color: white; height: 100vh; display: flex; overflow: hidden; }
+
+        /* მენიუ ყველა ოთახით */
+        .sidebar {
+            width: 70px; background: #080808; border-right: 1px solid var(--neon-red);
+            display: flex; flex-direction: column; align-items: center; 
+            padding-top: 10px; overflow-y: auto; transition: width 0.3s;
+        }
+        /* მობილურზე რომ არ დაიბნეს, დავაჭერთ და გაიხსნება */
+        .sidebar.open { width: 200px; }
+
+        .nav-item {
+            width: 100%; display: flex; align-items: center; padding: 15px 20px;
+            color: #ccc; text-decoration: none; transition: 0.3s; cursor: pointer;
+        }
+        .nav-item i { min-width: 30px; font-size: 20px; text-align: center; }
+        .nav-item span { margin-left: 15px; display: none; white-space: nowrap; }
+        .sidebar.open span { display: inline; }
+
+        .nav-item.active { background: var(--dark-red); color: white; box-shadow: inset 0 0 15px var(--neon-red); }
+
+        /* მთავარი სივრცე */
+        .main { flex-grow: 1; display: flex; flex-direction: column; width: 100%; }
+
+        /* ზედა ბარი */
+        .header {
+            height: 60px; background: #111; border-bottom: 1.5px solid var(--neon-red);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.2);
+        }
+        .user-status { display: flex; align-items: center; gap: 8px; }
+        .online-dot { width: 10px; height: 10px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 10px #00ff00; }
+        .room-indicator { color: var(--neon-red); font-weight: bold; font-size: 14px; text-transform: uppercase; }
+
+        /* ჩატი */
+        #chat-flow { flex-grow: 1; padding: 15px; overflow-y: auto; background: black; }
+        .bubble { 
+            background: #151515; border: 1px solid #222; padding: 12px; 
+            border-radius: 12px; margin-bottom: 10px; max-width: 85%; font-size: 14px;
+        }
+        .bubble.admin { border-left: 4px solid var(--neon-red); background: #1a0000; }
+        .bubble b { color: var(--neon-red); display: block; margin-bottom: 5px; }
+
+        /* ქვედა პანელი - გაფართოებული */
+        .footer { padding: 15px; background: #0a0a0a; border-top: 1px solid #1a1a1a; display: flex; flex-direction: column; gap: 10px; }
+        .emoji-bar { display: flex; gap: 10px; font-size: 20px; padding-bottom: 5px; overflow-x: auto; }
+        
+        .input-row { display: flex; gap: 10px; align-items: center; }
+        .input-container { 
+            flex-grow: 1; background: #1a1a1a; border: 2px solid var(--dark-red); 
+            border-radius: 25px; padding: 5px 15px; display: flex; align-items: center;
+        }
+        input { flex-grow: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 15px; }
+        
+        .send-btn { 
+            background: var(--neon-red); color: white; border: none; padding: 10px 20px; 
+            border-radius: 20px; font-weight: bold; box-shadow: 0 0 10px var(--neon-red);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar" onclick="this.classList.toggle('open')">
+        <div style="padding: 20px 0; color: var(--neon-red); font-weight: bold; text-shadow: 0 0 5px red;">M</div>
+        <div class="nav-item active" onclick="setR('ზოგადი ჩატი')"><i>💬</i><span>ზოგადი ჩატი</span></div>
+        <div class="nav-item" onclick="setR('შიფროგრამა')"><i>🔐</i><span>შიფროგრამა</span></div>
+        <div class="nav-item" onclick="setR('ვიქტორინა')"><i>🎯</i><span>ვიქტორინა</span></div>
+        <div class="nav-item" onclick="setR('ჩამოხრჩობანა')"><i>💀</i><span>ჩამოხრჩობანა</span></div>
+        <div class="nav-item" onclick="setR('ფორუმი')"><i>📜</i><span>ფორუმი</span></div>
+        <div class="nav-item" onclick="setR('იარაღის ოთახი')"><i>⚔️</i><span>იარაღის ოთახი</span></div>
+        <div class="nav-item" onclick="setR('VIP საუბრები')"><i>👑</i><span>VIP საუბრები</span></div>
+        <div class="nav-item" onclick="setR('მუსიკა')"><i>🎵</i><span>მუსიკა</span></div>
+        <div class="nav-item" onclick="setR('გალერეა')"><i>🖼️</i><span>გალერეა</span></div>
+        <div class="nav-item" onclick="setR('იუმორი')"><i>😂</i><span>იუმორი</span></div>
+        <div class="nav-item" onclick="setR('დახმარება')"><i>🆘</i><span>დახმარება</span></div>
+    </div>
+
+    <div class="main">
+        <header class="header">
+            <div class="user-status">
+                <div class="online-dot"></div>
+                <span id="uName">სტუმარი</span>
+            </div>
+            <div class="room-indicator" id="rName">/ ზოგადი ჩატი</div>
+            <div style="display: flex; gap: 15px; font-size: 20px;">
+                <span onclick="alert('პირადი შეტყობინებები მალე!')">✉️</span>
+                <span onclick="alert('პროფილზე გადასვლა')">👤</span>
+            </div>
+        </header>
+
+        <div id="chat-flow">
+            <div class="bubble admin">
+                <b>ადმინი:</b>
+                ყველა ოთახი დაემატა და ფერებიც "აღაჟღაჟდა"! 🍷
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="emoji-bar">😂 😍 🔥 😎 🙌 🤔 😢 🎉 🚀 💯 👿</div>
+            <div class="input-row">
+                <div class="input-container">
+                    <span style="cursor:pointer">😊</span>
+                    <input type="text" id="mInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter')send()">
+                </div>
+                <button class="send-btn" onclick="send()">გაგზავნა</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uName').innerText = localStorage.getItem('username') || "სტუმარი";
+
+        function setR(name) {
+            document.getElementById('rName').innerText = "/ " + name;
+        }
+
+        function send() {
+            const input = document.getElementById('mInput');
+            if(input.value.trim() !== "") {
+                const flow = document.getElementById('chat-flow');
+                const div = document.createElement('div');
+                div.className = "bubble";
+                div.style.alignSelf = "flex-end";
+                div.style.borderColor = "var(--neon-red)";
+                div.innerHTML = `<b>შენ:</b> ${input.value}`;
+                flow.appendChild(div);
+                input.value = "";
+                flow.scrollTop = flow.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
