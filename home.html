@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MAFIA CHAT - FIXED</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff0000; --bg: #050505; }
+        body { background: var(--bg); color: white; margin: 0; font-family: sans-serif; height: 100dvh; display: flex; flex-direction: column; }
+        .header { height: 60px; background: #111; border-bottom: 2px solid var(--red); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: #111; padding: 10px; border-radius: 10px; border-left: 3px solid var(--red); max-width: 85%; }
+        .msg.me { align-self: flex-end; border-left: none; border-right: 3px solid #555; background: #1a0a0a; }
+        .footer { padding: 10px; background: #0a0a0a; display: flex; gap: 10px; }
+        input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: white; padding: 12px; border-radius: 20px; outline: none; }
+        button { background: var(--red); border: none; color: white; padding: 0 20px; border-radius: 20px; cursor: pointer; }
+        
+        /* PM Modal */
+        #pm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 2000; flex-direction: column; }
+        .pm-head { padding: 15px; border-bottom: 1px solid var(--red); display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div style="color:var(--red); font-weight:bold;">OLD MAFIA</div>
+    <div id="mail-btn" onclick="openInbox()" style="cursor:pointer;">✉️ <span id="pm-badge" style="color:red; display:none;">●</span></div>
+    <div id="my-nick" style="font-size: 12px;"></div>
+</header>
+
+<div id="chat-window"></div>
+
+<div class="footer">
+    <input type="text" id="msg-input" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter')send()">
+    <button onclick="send()">➤</button>
+</div>
+
+<div id="pm-modal">
+    <div class="pm-head">
+        <span id="pm-target">პირადი</span>
+        <span onclick="closePM()" style="color:red; font-size: 20px; cursor:pointer;">✖</span>
+    </div>
+    <div id="pm-messages" style="flex:1; overflow-y:auto; padding:15px;"></div>
+    <div class="footer">
+        <input type="text" id="pm-input" placeholder="პირადი მესიჯი...">
+        <button onclick="sendPM()">➤</button>
+    </div>
+</div>
+
+<script>
+    const { createClient } = supabase;
+    const client = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+    let myNick = localStorage.getItem('username') || "Guest";
+    document.getElementById('my-nick').innerText = myNick;
+    let activePM = null;
+
+    async function load() {
+        const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(40);
+        if (error) console.error(error);
+        const win = document.getElementById('chat-window');
+        win.innerHTML = data.reverse().map(m => `
+            <div class="msg ${m.nickname === myNick ? 'me' : ''}" onclick="openPM('${m.nickname}')">
+                <b style="color:red; font-size:11px;">${m.nickname}</b><br>
+                ${m.content}
+            </div>
+        `).join('');
+        win.scrollTop = win.scrollHeight;
+    }
+
+    async function send() {
+        const el = document.getElementById('msg-input');
+        if (!el.value.trim()) return;
+        const { error } = await client.from('messages').insert([{ nickname: myNick, content: el.value }]);
+        if (error) alert("შეცდომა: " + error.message);
+        el.value = "";
+        load();
+    }
+
+    // --- PM LOGIC ---
+    function openPM(nick) {
+        if (nick === myNick) return;
+        activePM = nick;
+        document.getElementById('pm-target').innerText = "ჩატი: " + nick;
+        document.getElementById('pm-modal').style.display = "flex";
+        loadPM();
+    }
+
+    function closePM() { document.getElementById('pm-modal').style.display = "none"; activePM = null; }
+
+    async function loadPM() {
+        if (!activePM) return;
+        const { data } = await client.from('private_messages').select('*')
+            .or(`and(sender.eq."${myNick}",receiver.eq."${activePM}"),and(sender.eq."${activePM}",receiver.eq."${myNick}")`)
+            .order('created_at', { ascending: true });
+        
+        document.getElementById('pm-messages').innerHTML = data.map(m => `
+            <div style="margin:5px; padding:8px; background:${m.sender === myNick ? '#222' : '#8b0000'}; border-radius:8px; align-self:${m.sender === myNick ? 'flex-end' : 'flex-start'};">
+                ${m.message}
+            </div>
+        `).join('');
+        
+        await client.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', activePM);
+    }
+
+    async function sendPM() {
+        const el = document.getElementById('pm-input');
+        if (!el.value.trim()) return;
+        await client.from('private_messages').insert([{ sender: myNick, receiver: activePM, message: el.value }]);
+        el.value = "";
+        loadPM();
+    }
+
+    // Realtime
+    client.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, load).subscribe();
+    client.channel('pms').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, loadPM).subscribe();
+
+    load();
+</script>
+</body>
+</html>
+
