@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>კაიფმანია - მთავარი</title>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(to bottom,#1a0000,#000);
+color:white;
+}
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px;
+background:#111;
+box-shadow:0 0 20px red;
+}
+
+.logo{
+color:red;
+font-size:24px;
+font-weight:bold;
+}
+
+.user-box{
+background:#222;
+padding:10px 20px;
+border-radius:20px;
+}
+
+.rooms{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:15px;
+padding:20px;
+}
+
+.room{
+background:#330000;
+padding:20px;
+border-radius:20px;
+text-align:center;
+cursor:pointer;
+transition:0.3s;
+}
+
+.room:hover{
+background:red;
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">🔥 კაიფმანია</div>
+<div class="user-box">
+👤 <span id="username">იტვირთება...</span>
+</div>
+</header>
+
+<div class="rooms">
+<div class="room">ზოგადი ჩატი</div>
+<div class="room">VIP საუბრები</div>
+<div class="room">შიფრებული</div>
+<div class="room">გაცნობები</div>
+<div class="room">იუმორი</div>
+<div class="room">მუსიკა</div>
+<div class="room">გალერეა</div>
+</div>
+
+<script>
+const { createClient } = supabase;
+
+const supabaseClient = createClient(
+  "https://ftfciebnywbondaiarnc.supabase.co",
+  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+);
+
+async function checkUser(){
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if(!user){
+    window.location.href = "index.html";
+    return;
+  }
+
+  const nickname = user.user_metadata?.nickname;
+  document.getElementById("username").innerText = nickname || user.email;
+}
+
+checkUser();
+</script>
+
+</body>
+</html>
