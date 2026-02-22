@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - ჩატი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --neon-red: #ff0000; --wine-red: #8b0000; --bg-black: #050505; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg-black); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ჰედერი */
+        .header { height: 60px; background: #111; border-bottom: 2px solid var(--neon-red); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; }
+        .menu-btn { font-size: 30px; color: var(--neon-red); cursor: pointer; }
+        .room-indicator { font-weight: bold; color: var(--neon-red); font-size: 13px; text-transform: uppercase; }
+
+        .top-meta { display: flex; align-items: center; gap: 15px; }
+        .mail-icon { font-size: 22px; cursor: pointer; position: relative; transition: 0.3s; color: white; }
+        .badge { position: absolute; top: -5px; right: -8px; background: red; font-size: 10px; padding: 2px 6px; border-radius: 50%; border: 1px solid white; display: none; }
+
+        /* მენიუ */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0d0d0d; border-right: 2px solid var(--neon-red); transition: 0.3s; z-index: 2000; padding: 20px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .nav-link { display: flex; align-items: center; padding: 12px; color: white; text-decoration: none; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; }
+        .nav-link.active { background: var(--wine-red); border-color: var(--neon-red); }
+
+        /* ჩატი */
+        .chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-box { background: #111; padding: 10px; border-radius: 12px; max-width: 85%; border-left: 4px solid var(--neon-red); align-self: flex-start; cursor: pointer; position: relative; }
+        .msg-box.me { align-self: flex-end; border-left: none; border-right: 4px solid #555; background: #1a0a0a; }
+        .del-btn { color: #ff0000; font-weight: bold; margin-left: 10px; cursor: pointer; font-size: 18px; }
+
+        /* პირადი ჩატის ფანჯარა (Modal) */
+        #pm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; }
+        .pm-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--neon-red); }
+        #pm-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+
+        /* ინპუტები */
+        .footer { padding: 12px; background: #0a0a0a; display: flex; align-items: center; gap: 10px; border-top: 1px solid #222; }
+        input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 20px; outline: none; }
+        .send-btn { background: var(--neon-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; }
+        .overlay.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <header class="header">
+        <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+        <div class="room-indicator" id="currentRoom">ზოგადი ჩატი</div>
+        <div class="top-meta">
+            <div class="mail-icon" onclick="openInbox()" id="mail-btn">
+                ✉️ <span class="badge" id="pm-badge">0</span>
+            </div>
+            <span id="display-nick" style="font-weight: bold; color: white;">...</span>
+        </div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+        <div style="color:red; font-weight:bold; text-align:center; margin-bottom:15px; font-size: 20px;">MAFIA ROOMS</div>
+        <a href="#" class="nav-link active" onclick="changeRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('ვიპ საუბრები', this)">💎 ვიპ საუბრები</a>
+        <a href="#" class="nav-link" onclick="changeRoom('შიფროგრამა', this)">🔐 შიფროგრამა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('ვიქტორინა', this)">🎯 ვიქტორინა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('იარაღის ოთახი', this)">⚔️ იარაღის ოთახი</a>
+        <a href="#" class="nav-link" onclick="changeRoom('გალერეა', this)">🖼️ გალერეა</a>
+        <a href="#" class="nav-link" onclick="changeRoom('მუსიკა', this)">🎵 მუსიკა</a>
+        <a href="index.html" class="nav-link" style="margin-top:auto; color:gray;">🚪 გასვლა</a>
+    </nav>
+
+    <div class="chat-container">
+        <div id="chat-window"></div>
+        <div class="footer">
+            <input type="text" id="message-input" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <div id="pm-modal">
+        <div class="pm-header">
+            <h3 id="pm-target-name" style="color: var(--neon-red);">ჩატი</h3>
+            <span onclick="closePM()" style="cursor:pointer; color:white; font-size:30px;">&times;</span>
+        </div>
+        <div id="pm-messages"></div>
+        <div class="footer">
+            <input type="text" id="pm-input" placeholder="მიწერე პირადში..." onkeypress="if(event.key==='Enter')sendPrivateMessage()">
+            <button class="send-btn" onclick="sendPrivateMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const supabaseClient = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        let myNick = localStorage.getItem('username');
+        if (!myNick) window.location.href = "index.html";
+        document.getElementById('display-nick').innerText = myNick;
+
+        let currentRoom = 'ზოგადი ჩატი';
+        let activePMTarget = null;
+
+        function toggleSidebar() { 
+            document.getElementById('sidebar').classList.toggle('open'); 
+            document.getElementById('overlay').classList.toggle('active'); 
+        }
+
+        function changeRoom(name, el) {
+            currentRoom = name;
+            document.getElementById('currentRoom').innerText = name;
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+            toggleSidebar();
+            loadMessages();
+        }
+
+        async function loadMessages() {
+            let query = supabaseClient.from('messages').select('*');
+            
+            // ვაჩვენებთ ძველ მესიჯებსაც (null) და ახალ ოთახის მესიჯებსაც
+            if (currentRoom === 'ზოგადი ჩატი') {
+                query = query.or(`room_id.eq."${currentRoom}",room_id.is.null`);
+            } else {
+                query = query.eq('room_id', currentRoom);
+            }
+
+            const { data } = await query.order('created_at', { ascending: false }).limit(40);
+            const win = document.getElementById('chat-window');
+            
+            if (data) {
+                win.innerHTML = data.reverse().map(m => `
+                    <div class="msg-box ${m.nickname === myNick ? 'me' : ''}" onclick="openPM('${m.nickname}')">
+                        <b style="color:red; font-size:12px;">${m.nickname}:</b>
+                        ${myNick === 'abu007' ? `<span class="del-btn" onclick="event.stopPropagation(); deleteMsg('${m.id}')">&times;</span>` : ''}
+                        <div style="margin-top:4px;">${m.content}</div>
+                    </div>
+                `).join('');
+                win.scrollTop = win.scrollHeight;
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            if(!input.value.trim()) return;
+            await supabaseClient.from('messages').insert([{ nickname: myNick, content: input.value, room_id: currentRoom }]);
+            input.value = "";
+        }
+
+        async function deleteMsg(id) {
+            if(confirm("წავშალოთ მესიჯი?")) {
+                await supabaseClient.from('messages').delete().eq('id', id);
+                loadMessages();
+            }
+        }
+
+        // --- PRIVATE MESSAGES (PM) ---
+        async function checkNewPMs() {
+            const { count } = await supabaseClient.from('private_messages')
+                .select('*', { count: 'exact', head: true })
+                .eq('receiver', myNick)
+                .eq('is_read', false);
+
+            const badge = document.getElementById('pm-badge');
+            const icon = document.getElementById('mail-btn');
+
+            if (count > 0) {
+                badge.innerText = count;
+                badge.style.display = "block";
+                icon.style.color = "red";
+            } else {
+                badge.style.display = "none";
+                icon.style.color = "white";
+            }
+        }
+
+        function openPM(target) {
+            if (target === myNick) return; // საკუთარ თავს ვერ მიწერ
+            activePMTarget = target;
+            document.getElementById('pm-target-name').innerText = "ჩატი: " + target;
+            document.getElementById('pm-modal').style.display = "flex";
+            loadPrivateMessages();
+        }
+
+        async function loadPrivateMessages() {
+            if (!activePMTarget) return;
+            const { data } = await supabaseClient.from('private_messages').select('*')
+                .or(`and(sender.eq."${myNick}",receiver.eq."${activePMTarget}"),and(sender.eq."${activePMTarget}",receiver.eq."${myNick}")`)
+                .order('created_at', { ascending: true });
+            
+            const pmWin = document.getElementById('pm-messages');
+            pmWin.innerHTML = data.map(m => `
+                <div style="align-self: ${m.sender === myNick ? 'flex-end' : 'flex-start'}; background: ${m.sender === myNick ? '#222' : '#8b0000'}; padding: 10px; border-radius: 10px; max-width: 80%;">
+                    <small style="opacity: 0.6; display: block; font-size: 10px;">${m.sender}</small>
+                    ${m.message}
+                </div>
+            `).join('');
+            pmWin.scrollTop = pmWin.scrollHeight;
+
+            // წაკითხულად მონიშვნა
+            await supabaseClient.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', activePMTarget);
+            checkNewPMs();
+        }
+
+        async function sendPrivateMessage() {
+            const input = document.getElementById('pm-input');
+            if(!input.value.trim()) return;
+            await supabaseClient.from('private_messages').insert([{ sender: myNick, receiver: activePMTarget, message: input.value }]);
+            input.value = "";
+            loadPrivateMessages();
+        }
+
+        function closePM() {
+            document.getElementById('pm-modal').style.display = "none";
+            activePMTarget = null;
+        }
+
+        function openInbox() {
+            // ვამოწმებთ ვინმემ თუ მოგვწერა
+            supabaseClient.from('private_messages').select('sender').eq('receiver', myNick).eq('is_read', false).limit(1)
+                .then(({data}) => {
+                    if (data && data.length > 0) openPM(data[0].sender);
+                    else alert("ახალი პირადი შეტყობინება არ არის.");
+                });
+        }
+
+        // REALTIME
+        supabaseClient.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
+        supabaseClient.channel('pm').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => {
+            loadMessages();
+            loadPrivateMessages();
+            checkNewPMs();
+        }).subscribe();
+
+        loadMessages();
+        setInterval(checkNewPMs, 5000);
+    </script>
+</body>
+</html>
