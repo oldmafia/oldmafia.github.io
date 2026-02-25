@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA v10</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff0000; --bg: #050505; --dark: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        header { height: 60px; border-bottom: 1px solid var(--red); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #000; }
+        .room-title { color: var(--red); font-weight: bold; font-size: 13px; text-transform: uppercase; }
+
+        /* Sidebar */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #000; border-right: 2px solid var(--red); transition: 0.3s; z-index: 9999; padding: 15px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .nav-link { padding: 12px; color: #ccc; cursor: pointer; background: #111; margin-bottom: 8px; border-radius: 10px; border: 1px solid #222; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .nav-link.active { background: #300; border-color: var(--red); color: white; }
+
+        /* ჩატი */
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg-container { display: flex; gap: 10px; align-self: flex-start; max-width: 90%; }
+        .chat-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--red); background-size: cover; background-position: center; flex-shrink: 0; }
+        .msg-bubble { background: var(--dark); padding: 10px 14px; border-radius: 15px; border: 1px solid #222; flex: 1; }
+        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .nick-tag { color: var(--red); font-size: 13px; font-weight: bold; cursor: pointer; }
+        .del-btn { color: #555; cursor: pointer; font-size: 18px; }
+
+        /* პროფილი & Inbox მოდალი */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 340px; background: #0a0a0a; border: 2px solid var(--red); border-radius: 20px; z-index: 10000; padding: 25px; text-align: center; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9000; }
+        .p-input { width: 100%; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; margin-top: 10px; outline: none; font-size: 14px; }
+        .p-btn { width: 100%; background: var(--red); color: white; border: none; padding: 12px; border-radius: 10px; margin-top: 15px; font-weight: bold; cursor: pointer; }
+
+        /* პრივატი */
+        #pm-window { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20000; flex-direction: column; }
+        #pm-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { padding: 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .sent { align-self: flex-end; background: var(--red); }
+        .received { align-self: flex-start; background: #222; }
+
+        /* Footer */
+        .footer { padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 25px; outline: none; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="main-overlay" onclick="ultimateClose()"></div>
+
+    <nav class="sidebar" id="main-sidebar">
+        <h3 style="color:red; text-align:center; margin-bottom:20px;">ROOMS</h3>
+        <div class="nav-link active" onclick="switchRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+        <div class="nav-link" onclick="switchRoom('ვიპ საუბრები', this)">💎 ვიპ საუბრები</div>
+        <div class="nav-link" onclick="switchRoom('შიფროგრამა', this)">🔐 შიფროგრამა</div>
+        <div class="nav-link" onclick="switchRoom('ვიქტორინა', this)">🎯 ვიქტორინა</div>
+        <div class="nav-link" onclick="switchRoom('ჩამოხრჩობანა', this)">😵 ჩამოხრჩობანა</div>
+        <div class="nav-link" onclick="switchRoom('ფორუმი', this)">🏛️ ფორუმი</div>
+        <div class="nav-link" onclick="switchRoom('იარაღის საწყობი', this)">🔫 იარაღის საწყობი</div>
+        <div class="nav-link" onclick="switchRoom('მუსიკა', this)">🎵 მუსიკა</div>
+        <div class="nav-link" onclick="switchRoom('გალერეა', this)">🖼️ გალერეა</div>
+        <div class="nav-link" onclick="switchRoom('დახმარება', this)">🆘 დახმარება</div>
+        <div class="nav-link" onclick="localStorage.clear(); location.reload();" style="color:red; margin-top:20px;">🚪 გასვლა</div>
+    </nav>
+
+    <header>
+        <div onclick="document.getElementById('main-sidebar').classList.add('open'); document.getElementById('main-overlay').style.display='block'" style="font-size:24px; color:red; cursor:pointer;">☰</div>
+        <div id="room-display" class="room-title">ზოგადი ჩატი</div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <div id="inbox-btn" onclick="openInbox()" style="font-size:22px; cursor:pointer;">✉</div>
+            <div id="me-avatar" onclick="showProfile(myUsername)" style="width:38px; height:38px; border-radius:50%; border:2px solid red; background-size: cover; background-position: center; cursor:pointer;"></div>
+        </div>
+    </header>
+
+    <div id="chat-window"></div>
+
+    <div class="footer">
+        <input type="text" id="chat-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter')sendMessage()">
+        <button onclick="sendMessage()" style="background:red; color:white; border:none; width:45px; height:45px; border-radius:50%;">➤</button>
+    </div>
+
+    <div class="modal" id="profile-modal">
+        <div id="profile-img" style="width:90px; height:90px; border-radius:50%; border:2px solid red; margin:0 auto 10px; background-size:cover; background-position: center;"></div>
+        <h3 id="profile-nick"></h3>
+        <p id="profile-role" style="color:red; font-size:11px; margin-bottom:10px;"></p>
+        <div id="profile-status" style="background:#111; padding:10px; border-radius:10px; margin-bottom:15px; font-size:14px;"></div>
+        
+        <div id="edit-section" style="display:none;">
+            <input type="text" id="inp-new-ava" class="p-input" placeholder="ფოტოს ლინკი (URL)...">
+            <input type="text" id="inp-new-stat" class="p-input" placeholder="ახალი სტატუსი...">
+            <button class="p-btn" onclick="updateMyProfile()">შენახვა</button>
+        </div>
+        
+        <button id="start-pm-btn" style="width:100%; background:#007bff; color:white; border:none; padding:12px; border-radius:10px; display:none;" onclick="startPrivateChat()">✉ მისწერე</button>
+        <p onclick="ultimateClose()" style="color:gray; margin-top:15px; cursor:pointer; font-size:13px;">დახურვა</p>
+    </div>
+
+    <div class="modal" id="inbox-modal">
+        <h3 style="margin-bottom:15px; color:red;">შემოსული მესიჯები</h3>
+        <div id="inbox-list" style="text-align:left; max-height:200px; overflow-y:auto;"></div>
+        <p onclick="ultimateClose()" style="color:gray; margin-top:15px; cursor:pointer;">დახურვა</p>
+    </div>
+
+    <div id="pm-window">
+        <header style="justify-content: flex-start; gap: 20px;">
+            <div onclick="closePM()" style="font-size:24px; color:red; cursor:pointer;">⬅</div>
+            <div id="pm-target-nick" style="color:red; font-weight:bold;"></div>
+        </header>
+        <div id="pm-messages"></div>
+        <div class="footer">
+            <input type="text" id="pm-input" placeholder="პირადი მესიჯი...">
+            <button onclick="sendPrivateMessage()" style="background:red; color:white; border:none; width:45px; height:45px; border-radius:50%;">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const _client = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        const myUsername = localStorage.getItem('username') || "Anon";
+        let activeRoom = "ზოგადი ჩატი", currentTarget = "", cachedUsers = {};
+
+        async function startApp() {
+            const { data } = await _client.from('user_profiles').select('*');
+            if(data) data.forEach(u => cachedUsers[u.nickname] = u);
+            
+            if(cachedUsers[myUsername]) {
+                document.getElementById('me-avatar').style.backgroundImage = `url('${cachedUsers[myUsername].avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')`;
+            }
+            refreshMessages();
+        }
+
+        async function refreshMessages() {
+            const { data } = await _client.from('messages_v3').select('*').eq('room_name', activeRoom).order('created_at', { ascending: false }).limit(50);
+            if(!data) return;
+
+            document.getElementById('chat-window').innerHTML = data.reverse().map(m => {
+                const u = cachedUsers[m.nickname] || {};
+                const canDelete = (m.nickname === myUsername || myUsername === 'abu007');
+                return `
+                <div class="msg-container">
+                    <div class="chat-avatar" style="background-image: url('${u.avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')" onclick="showProfile('${m.nickname}')"></div>
+                    <div class="msg-bubble">
+                        <div class="msg-header">
+                            <span class="nick-tag" onclick="showProfile('${m.nickname}')">${m.nickname}</span>
+                            ${canDelete ? `<span class="del-btn" onclick="eraseMsg(${m.id})">×</span>` : ''}
+                        </div>
+                        <div style="font-size:14px;">${m.message}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+        }
+
+        async function showProfile(nick) {
+            currentTarget = nick;
+            const u = cachedUsers[nick] || { nickname: nick, status: '...' };
+            document.getElementById('profile-nick').innerText = nick;
+            document.getElementById('profile-status').innerText = u.status || 'სტატუსი ცარიელია';
+            document.getElementById('profile-img').style.backgroundImage = `url('${u.avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')`;
+            
+            document.getElementById('edit-section').style.display = (nick === myUsername) ? 'block' : 'none';
+            document.getElementById('start-pm-btn').style.display = (nick === myUsername) ? 'none' : 'block';
+            
+            document.getElementById('profile-modal').style.display = 'block';
+            document.getElementById('main-overlay').style.display = 'block';
+        }
+
+        async function updateMyProfile() {
+            const a = document.getElementById('inp-new-ava').value;
+            const s = document.getElementById('inp-new-stat').value;
+            const obj = { nickname: myUsername };
+            if(a) obj.avatar_url = a;
+            if(s) obj.status = s;
+            await _client.from('user_profiles').upsert(obj, { onConflict: 'nickname' });
+            location.reload();
+        }
+
+        async function openInbox() {
+            const { data } = await _client.from('private_messages').select('sender').eq('receiver', myUsername).order('created_at', { ascending: false });
+            const uniqueSenders = [...new Set(data?.map(m => m.sender))];
+            
+            document.getElementById('inbox-list').innerHTML = uniqueSenders.length ? uniqueSenders.map(s => `
+                <div onclick="startFromInbox('${s}')" style="padding:10px; border-bottom:1px solid #222; cursor:pointer;">📩 მესიჯი ${s}-სგან</div>
+            `).join('') : "Inbox ცარიელია";
+            
+            document.getElementById('inbox-modal').style.display = 'block';
+            document.getElementById('main-overlay').style.display = 'block';
+        }
+
+        function startFromInbox(s) { currentTarget = s; startPrivateChat(); }
+
+        async function startPrivateChat() {
+            ultimateClose();
+            document.getElementById('pm-target-nick').innerText = currentTarget;
+            document.getElementById('pm-window').style.display = 'flex';
+            loadPrivateMsgs();
+        }
+
+        async function loadPrivateMsgs() {
+            const { data } = await _client.from('private_messages')
+                .select('*')
+                .or(`and(sender.eq.${myUsername},receiver.eq.${currentTarget}),and(sender.eq.${currentTarget},receiver.eq.${myUsername})`)
+                .order('created_at', { ascending: true });
+            
+            document.getElementById('pm-messages').innerHTML = data ? data.map(m => `
+                <div class="bubble ${m.sender === myUsername ? 'sent' : 'received'}">${m.content || m.message}</div>
+            `).join('') : "";
+            document.getElementById('pm-messages').scrollTop = document.getElementById('pm-messages').scrollHeight;
+        }
+
+        async function sendPrivateMessage() {
+            const i = document.getElementById('pm-input');
+            if(!i.value.trim()) return;
+            await _client.from('private_messages').insert([{ sender: myUsername, receiver: currentTarget, content: i.value, message: i.value }]);
+            i.value = ""; loadPrivateMsgs();
+        }
+
+        async function sendMessage() {
+            const i = document.getElementById('chat-input');
+            if(!i.value.trim()) return;
+            await _client.from('messages_v3').insert([{ nickname: myUsername, message: i.value, room_name: activeRoom }]);
+            i.value = ""; startApp();
+        }
+
+        async function eraseMsg(id) {
+            if(confirm("წავშალოთ?")) { await _client.from('messages_v3').delete().eq('id', id); startApp(); }
+        }
+
+        function switchRoom(r, el) {
+            activeRoom = r;
+            document.getElementById('room-display').innerText = r;
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active'); ultimateClose(); startApp();
+        }
+
+        function closePM() { document.getElementById('pm-window').style.display = 'none'; }
+        function ultimateClose() {
+            document.getElementById('main-sidebar').classList.remove('open');
+            document.getElementById('profile-modal').style.display = 'none';
+            document.getElementById('inbox-modal').style.display = 'none';
+            document.getElementById('main-overlay').style.display = 'none';
+        }
+
+        window.onload = startApp;
+        _client.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => startApp()).subscribe();
+    </script>
+</body>
+</html>
