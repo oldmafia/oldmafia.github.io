@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA v15</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff0000; --bg: #050505; --dark: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        header { height: 60px; border-bottom: 1px solid var(--red); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #000; z-index: 1000; }
+        .room-title { color: var(--red); font-weight: bold; font-size: 14px; text-transform: uppercase; }
+
+        /* კონვერტის ციმციმი */
+        #inbox-btn { font-size: 24px; cursor: pointer; color: white; transition: 0.3s; }
+        #inbox-btn.has-new { color: var(--red); animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* გვერდითა მენიუ (ოთახები) */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #000; border-right: 2px solid var(--red); transition: 0.3s; z-index: 9999; padding: 15px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .nav-link { padding: 12px; color: #ccc; cursor: pointer; background: #111; margin-bottom: 8px; border-radius: 10px; border: 1px solid #222; display: flex; align-items: center; gap: 10px; }
+        .nav-link.active { background: #300; border-color: var(--red); color: white; }
+
+        /* ჩატი - ყველა ერთ მხარეს */
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .msg-container { display: flex; gap: 10px; align-items: flex-start; width: 100%; }
+        .chat-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--red); background-size: cover; background-position: center; flex-shrink: 0; cursor: pointer; }
+        .msg-bubble { background: var(--dark); padding: 8px 12px; border-radius: 12px; border: 1px solid #222; max-width: 85%; }
+        .my-text { border-left: 3px solid var(--red); } /* შენს მესიჯებს ექნება წითელი ხაზი გვერდზე */
+
+        .nick-tag { color: var(--red); font-weight: bold; font-size: 13px; cursor: pointer; display: block; margin-bottom: 2px; }
+        .del-btn { color: #444; cursor: pointer; float: right; margin-left: 10px; font-size: 18px; }
+
+        /* მოდალები */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 340px; background: #0a0a0a; border: 2px solid var(--red); border-radius: 20px; z-index: 10000; padding: 25px; text-align: center; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9000; }
+        .p-btn { width: 100%; background: var(--red); color: white; border: none; padding: 12px; border-radius: 10px; margin-top: 10px; cursor: pointer; font-weight: bold; }
+
+        .footer { padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
+        #main-input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 25px; outline: none; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="main-overlay" onclick="closeAll()"></div>
+
+    <nav class="sidebar" id="side-menu">
+        <h3 style="color:red; text-align:center; margin-bottom:20px;">OLD MAFIA</h3>
+        <div class="nav-link active" onclick="switchRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+        <div class="nav-link" onclick="switchRoom('ვიპ საუბრები', this)">💎 ვიპ საუბრები</div>
+        <div class="nav-link" onclick="switchRoom('შიფროგრამა', this)">🔐 შიფროგრამა</div>
+        <div class="nav-link" onclick="switchRoom('ვიქტორინა', this)">🎯 ვიქტორინა</div>
+        <div class="nav-link" onclick="switchRoom('ჩამოხრჩობანა', this)">😵 ჩამოხრჩობანა</div>
+        <div class="nav-link" onclick="switchRoom('ფორუმი', this)">🏛️ ფორუმი</div>
+        <div class="nav-link" onclick="switchRoom('იარაღის საწყობი', this)">🔫 იარაღის საწყობი</div>
+        <div class="nav-link" onclick="switchRoom('მუსიკა', this)">🎵 მუსიკა</div>
+        <div class="nav-link" onclick="switchRoom('გალერეა', this)">🖼️ გალერეა</div>
+        <div class="nav-link" onclick="switchRoom('დახმარება', this)">🆘 დახმარება</div>
+        <div class="nav-link" onclick="localStorage.clear(); location.reload();" style="color:red; margin-top:20px;">🚪 გასვლა</div>
+    </nav>
+
+    <header>
+        <div onclick="document.getElementById('side-menu').classList.add('open'); document.getElementById('main-overlay').style.display='block'" style="font-size:24px; color:red; cursor:pointer;">☰</div>
+        <div id="room-title" class="room-title">ზოგადი ჩატი</div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <div id="inbox-btn" onclick="openInbox()">✉</div>
+            <div id="my-ava" onclick="openProfile(myNick)" style="width:38px; height:38px; border-radius:50%; border:2px solid red; background-size: cover; background-position: center; cursor:pointer;"></div>
+        </div>
+    </header>
+
+    <div id="chat-window"></div>
+
+    <div class="footer">
+        <input type="text" id="main-input" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()" style="background:red; color:white; border:none; width:45px; height:45px; border-radius:50%;">➤</button>
+    </div>
+
+    <div class="modal" id="p-modal">
+        <div id="p-img" style="width:90px; height:90px; border-radius:50%; border:2px solid red; margin:0 auto 10px; background-size:cover; background-position: center;"></div>
+        <h3 id="p-nick"></h3>
+        <p id="p-status" style="background:#111; padding:10px; border-radius:10px; margin:10px 0; font-size:14px;"></p>
+        <div id="edit-box" style="display:none;">
+            <input type="file" id="ava-file" accept="image/*" style="display:none;" onchange="uploadAva(this)">
+            <button class="p-btn" style="background:#333;" onclick="document.getElementById('ava-file').click()">📷 გალერეიდან</button>
+            <input type="text" id="stat-inp" style="width:100%; padding:10px; margin-top:10px; background:#111; border:1px solid #333; color:white;" placeholder="ახალი სტატუსი...">
+            <button class="p-btn" onclick="updateStat()">შენახვა</button>
+        </div>
+        <button id="pm-btn" class="p-btn" style="background:#007bff; display:none;" onclick="startPM()">✉ მისწერე</button>
+        <p onclick="closeAll()" style="color:gray; margin-top:15px; cursor:pointer;">დახურვა</p>
+    </div>
+
+    <div class="modal" id="inbox-modal">
+        <h3 style="color:red; margin-bottom:10px;">შემოსულები</h3>
+        <div id="inbox-list" style="text-align:left; max-height:200px; overflow-y:auto;"></div>
+        <p onclick="closeAll()" style="color:gray; margin-top:15px; cursor:pointer;">დახურვა</p>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const _sb = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        const myNick = localStorage.getItem('username') || "Anon";
+        let room = "ზოგადი ჩატი", target = "", users = {};
+
+        async function init() {
+            const { data } = await _sb.from('user_profiles').select('*');
+            if(data) data.forEach(u => users[u.nickname] = u);
+            if(users[myNick]) {
+                document.getElementById('my-ava').style.backgroundImage = `url('${users[myNick].avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')`;
+            }
+            refresh();
+            checkPMs();
+        }
+
+        async function refresh() {
+            const { data } = await _sb.from('messages_v3').select('*').eq('room_name', room).order('created_at', { ascending: false }).limit(40);
+            if(!data) return;
+
+            document.getElementById('chat-window').innerHTML = data.reverse().map(m => {
+                const u = users[m.nickname] || {};
+                const isMe = m.nickname === myNick;
+                return `
+                <div class="msg-container">
+                    <div class="chat-avatar" style="background-image: url('${u.avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')" onclick="openProfile('${m.nickname}')"></div>
+                    <div class="msg-bubble ${isMe ? 'my-text' : ''}">
+                        <span class="nick-tag" onclick="openProfile('${m.nickname}')">${m.nickname}</span>
+                        ${(isMe || myNick === 'abu007') ? `<span class="del-btn" onclick="delMsg(${m.id})">×</span>` : ''}
+                        <div>${m.message}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+        }
+
+        async function checkPMs() {
+            const { data } = await _sb.from('private_messages').select('id').eq('receiver', myNick).eq('read', false);
+            const btn = document.getElementById('inbox-btn');
+            if(data && data.length > 0) btn.classList.add('has-new');
+            else btn.classList.remove('has-new');
+        }
+
+        async function openProfile(nick) {
+            target = nick;
+            const u = users[nick] || { nickname: nick, status: '...' };
+            document.getElementById('p-nick').innerText = nick;
+            document.getElementById('p-status').innerText = u.status || "სტატუსი ცარიელია";
+            document.getElementById('p-img').style.backgroundImage = `url('${u.avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')`;
+            document.getElementById('edit-box').style.display = (nick === myNick) ? 'block' : 'none';
+            document.getElementById('pm-btn').style.display = (nick === myNick) ? 'none' : 'block';
+            document.getElementById('p-modal').style.display = 'block';
+            document.getElementById('main-overlay').style.display = 'block';
+        }
+
+        async function uploadAva(input) {
+            if (!input.files[0]) return;
+            const file = input.files[0];
+            const path = `${myNick}-${Date.now()}`;
+            await _sb.storage.from('avatars').upload(path, file);
+            const { data } = _sb.storage.from('avatars').getPublicUrl(path);
+            await _sb.from('user_profiles').upsert({ nickname: myNick, avatar_url: data.publicUrl }, { onConflict: 'nickname' });
+            location.reload();
+        }
+
+        async function updateStat() {
+            const val = document.getElementById('stat-inp').value;
+            await _sb.from('user_profiles').upsert({ nickname: myNick, status: val }, { onConflict: 'nickname' });
+            location.reload();
+        }
+
+        async function openInbox() {
+            await _sb.from('private_messages').update({ read: true }).eq('receiver', myNick);
+            checkPMs();
+            const { data } = await _sb.from('private_messages').select('sender').eq('receiver', myNick);
+            const senders = [...new Set(data?.map(m => m.sender))];
+            document.getElementById('inbox-list').innerHTML = senders.length ? senders.map(s => `<div style="padding:10px; border-bottom:1px solid #222;" onclick="target='${s}'; startPM()">📩 ${s}</div>`).join('') : "ცარიელია";
+            document.getElementById('inbox-modal').style.display = 'block';
+            document.getElementById('main-overlay').style.display = 'block';
+        }
+
+        async function sendChat() {
+            const v = document.getElementById('main-input').value;
+            if(!v.trim()) return;
+            await _sb.from('messages_v3').insert([{ nickname: myNick, message: v, room_name: room }]);
+            document.getElementById('main-input').value = ""; init();
+        }
+
+        async function delMsg(id) {
+            if(confirm("წავშალოთ?")) { await _sb.from('messages_v3').delete().eq('id', id); init(); }
+        }
+
+        function switchRoom(n, el) {
+            room = n; document.getElementById('room-title').innerText = n;
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active'); closeAll(); init();
+        }
+
+        function closeAll() {
+            document.getElementById('side-menu').classList.remove('open');
+            document.getElementById('p-modal').style.display = 'none';
+            document.getElementById('inbox-modal').style.display = 'none';
+            document.getElementById('main-overlay').style.display = 'none';
+        }
+
+        window.onload = init;
+        _sb.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => init()).subscribe();
+    </script>
+</body>
+</html>
