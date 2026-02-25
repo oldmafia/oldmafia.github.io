@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - FULL SYSTEM</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff0000; --bg: #050505; --dark: #121212; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        header { height: 60px; border-bottom: 1px solid var(--red); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #000; z-index: 1000; }
+        
+        /* მენიუ (ოთახები) */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #000; border-right: 2px solid var(--red); transition: 0.3s; z-index: 9999; padding: 20px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .nav-link { padding: 12px; color: #ccc; cursor: pointer; background: #111; margin-bottom: 8px; border-radius: 10px; display: block; border: 1px solid #222; font-size: 14px; }
+        .nav-link.active { background: #300; border-color: var(--red); color: white; }
+
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { align-self: flex-start; min-width: 140px; max-width: 85%; padding: 12px; border-radius: 15px; background: var(--dark); border: 1px solid #222; position: relative; }
+        .nick-tag { color: var(--red); font-size: 13px; font-weight: bold; cursor: pointer; display: block; margin-bottom: 5px; }
+
+        /* პროფილის მოდალი */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: #0a0a0a; border: 2px solid var(--red); border-radius: 20px; z-index: 10000; padding: 25px; text-align: center; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9000; }
+        
+        .profile-pic { width: 110px; height: 110px; border-radius: 50%; border: 2px solid var(--red); margin: 0 auto 15px; background-size: cover; background-position: center; position: relative; }
+        .upload-icon { position: absolute; bottom: 0; right: 0; background: red; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; border: 2px solid #000; }
+
+        .btn-action { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-blue { background: #0055ff; color: white; }
+        .btn-red { background: red; color: white; }
+        .btn-orange { background: orange; color: black; flex: 1; border-radius: 5px; padding: 8px; font-weight: bold; }
+        .btn-gray { background: gray; color: white; flex: 1; border-radius: 5px; padding: 8px; }
+
+        .footer { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 25px; outline: none; }
+        .send-btn { background: red; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <h2 style="color:red; text-align:center; margin-bottom:20px;">MAFIA ROOMS</h2>
+        <div class="nav-link active" onclick="changeRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+        <div class="nav-link" onclick="changeRoom('ვიპ საუბრები', this)">💎 ვიპ საუბრები</div>
+        <div class="nav-link" onclick="changeRoom('შიფროგრამა', this)">🔐 შიფროგრამა</div>
+        <div class="nav-link" onclick="changeRoom('ვიქტორინა', this)">🎯 ვიქტორინა</div>
+        <div class="nav-link" onclick="changeRoom('ჩამოხრჩობანა', this)">😵 ჩამოხრჩობანა</div>
+        <div class="nav-link" onclick="changeRoom('ფორუმი', this)">🏛️ ფორუმი</div>
+        <div class="nav-link" onclick="changeRoom('იარაღის საწყობი', this)">🔫 იარაღის საწყობი</div>
+        <div class="nav-link" onclick="changeRoom('მუსიკა', this)">🎵 მუსიკა</div>
+        <div class="nav-link" onclick="changeRoom('გალერეა', this)">🖼️ გალერეა</div>
+        <div class="nav-link" onclick="changeRoom('დახმარება', this)">🆘 დახმარება</div>
+        <div class="nav-link" onclick="localStorage.clear(); location.reload();" style="color:red; margin-top:15px;">🚪 გასვლა</div>
+    </nav>
+
+    <header>
+        <div onclick="document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').style.display='block'" style="font-size:28px; color:red; cursor:pointer;">☰</div>
+        <div id="room-title" style="color:red; font-weight:bold;">ზოგადი ჩატი</div>
+        <div onclick="openProfile(myNick)" id="my-avatar" style="width:38px; height:38px; border-radius:50%; border:2px solid red; background: url('https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png') center/cover; cursor:pointer;"></div>
+    </header>
+
+    <div id="chat-window"></div>
+
+    <div class="footer">
+        <input type="text" id="msg-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter')send()">
+        <button class="send-btn" onclick="send()">➤</button>
+    </div>
+
+    <div class="modal" id="p-modal">
+        <div class="profile-pic" id="p-img">
+            <label for="file-upload" class="upload-icon" id="upload-label">+</label>
+            <input type="file" id="file-upload" style="display:none;" accept="image/*" onchange="handleFileUpload(event)">
+        </div>
+        <h3 id="p-nick" style="color:white; font-size:22px;"></h3>
+        <p id="p-role-tag" style="color:red; font-size:12px; font-weight:bold; margin-bottom:15px;"></p>
+        
+        <input type="text" id="bio-display" style="background:#1a1a1a; padding:12px; border-radius:10px; border:1px solid #333; color:white; width:100%; text-align:center;" readonly>
+
+        <button id="dm-btn" class="btn-action btn-blue" style="display:none;" onclick="alert('მალე!')">✉ მიწერა</button>
+
+        <div id="self-tools" style="display:none; margin-top:10px;">
+            <input type="text" id="new-status" placeholder="შეცვალე სტატუსი..." style="width:100%; background:#111; color:white; border:1px solid #444; padding:8px; border-radius:5px; margin-bottom:5px;">
+            <button class="btn-action btn-red" onclick="updateStatus()">განახლება</button>
+        </div>
+
+        <div id="admin-panel" style="display:none; gap:10px; margin-top:10px;">
+            <button class="btn-orange" onclick="setRank('ადმინი')">Admin</button>
+            <button class="btn-gray" onclick="setRank('მომხმარებელი')">User</button>
+        </div>
+
+        <button onclick="closeAll()" style="background:none; color:gray; margin-top:15px; border:none; cursor:pointer;">დახურვა</button>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const client = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        const myNick = localStorage.getItem('username') || "Anon";
+        let currentRoom = "ზოგადი ჩატი", myRole = "მომხმარებელი", selectedNick = "";
+
+        function closeAll() { 
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('p-modal').style.display='none'; 
+            document.getElementById('overlay').style.display='none'; 
+        }
+
+        async function load() {
+            const { data: me } = await client.from('user_profiles').select('*').eq('nickname', myNick).maybeSingle();
+            if(me) {
+                myRole = me.role;
+                if(me.avatar_url) document.getElementById('my-avatar').style.backgroundImage = `url('${me.avatar_url}')`;
+            }
+            if(myNick === "abu007") myRole = "დამფუძნებელი";
+
+            const { data } = await client.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(60);
+            if(data) {
+                document.getElementById('chat-window').innerHTML = data.reverse().map(m => `
+                    <div class="msg">
+                        <span class="nick-tag" onclick="openProfile('${m.nickname}')">${m.nickname}</span>
+                        <div>${m.message}</div>
+                    </div>
+                `).join('');
+                const win = document.getElementById('chat-window'); win.scrollTop = win.scrollHeight;
+            }
+        }
+
+        async function openProfile(nick) {
+            selectedNick = nick;
+            document.getElementById('p-nick').innerText = nick;
+            const { data } = await client.from('user_profiles').select('*').eq('nickname', nick).maybeSingle();
+            
+            document.getElementById('bio-display').value = data?.status || "აქ ჩვენი წესებია!!!!";
+            document.getElementById('p-role-tag').innerText = (nick === "abu007") ? "დამფუძნებელი" : (data?.role || "მომხმარებელი");
+            document.getElementById('p-img').style.backgroundImage = `url('${data?.avatar_url || 'https://i.pinimg.com/originals/f1/0f/f7/f10ff70a715515ab166ae319da3f2743.png'}')`;
+
+            const isMe = (nick === myNick);
+            document.getElementById('self-tools').style.display = isMe ? 'block' : 'none';
+            document.getElementById('upload-label').style.display = isMe ? 'flex' : 'none';
+            document.getElementById('dm-btn').style.display = isMe ? 'none' : 'block';
+            document.getElementById('admin-panel').style.display = (myRole === 'დამფუძნებელი' && !isMe) ? 'flex' : 'none';
+
+            document.getElementById('p-modal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const { error } = await client.from('user_profiles').upsert({ nickname: myNick, avatar_url: e.target.result }, { onConflict: 'nickname' });
+                if(!error) location.reload(); else alert("ფაილი დიდია!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function updateStatus() {
+            const val = document.getElementById('new-status').value;
+            await client.from('user_profiles').upsert({ nickname: myNick, status: val }, { onConflict: 'nickname' });
+            openProfile(myNick);
+        }
+
+        async function setRank(r) {
+            await client.from('user_profiles').upsert({ nickname: selectedNick, role: r }, { onConflict: 'nickname' });
+            alert("როლი განახლდა!"); openProfile(selectedNick);
+        }
+
+        async function send() {
+            const inp = document.getElementById('msg-input'); if(!inp.value.trim()) return;
+            await client.from('messages_v3').insert([{ nickname: myNick, message: inp.value, room_name: currentRoom }]);
+            inp.value = ""; load();
+        }
+
+        function changeRoom(name, el) {
+            currentRoom = name;
+            document.getElementById('room-title').innerText = name;
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+            closeAll();
+            load();
+        }
+
+        window.onload = load;
+        client.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => load()).subscribe();
+    </script>
+</body>
+</html>
