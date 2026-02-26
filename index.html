@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, #330000 0%, #000 70%);
+            font-family: Arial;
+        }
+        .card-wrapper {
+            position: relative;
+            width: 350px;
+        }
+        .card-wrapper::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: red;
+            border-radius: 30px;
+            transform: rotate(-4deg);
+            box-shadow: 0 0 80px red;
+            z-index: 0;
+        }
+        .card {
+            position: relative;
+            background: #0d0d0d;
+            padding: 40px 25px;
+            border-radius: 30px;
+            transform: rotate(-2deg);
+            z-index: 1;
+            text-align: center;
+        }
+        h1 {
+            color: white;
+            text-shadow: 0 0 20px red;
+            margin-bottom: 25px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border: none;
+            background: #1a1a1a;
+            color: white;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 20px;
+            background: red;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: darkred; }
+        .hidden { display: none; }
+        #message {
+            color: white;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-wrapper">
+        <div class="card">
+            <h1>კაიფმანია 😎🔥</h1>
+            <div id="mainButtons">
+                <button id="regBtn">რეგისტრაცია</button>
+                <button id="logBtn">შესვლა</button>
+            </div>
+            <div id="formSection" class="hidden">
+                <input type="text" id="nickname" placeholder="ნიკნეიმი">
+                <input type="email" id="email" placeholder="ელფოსტა">
+                <input type="password" id="password" placeholder="პაროლი">
+                <button id="submitBtn"></button>
+            </div>
+            <p id="message"></p>
+        </div>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const supabaseClient = createClient(
+            "https://ftfciebnywbondaiarnc.supabase.co",
+            "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+        );
+
+        const mainButtons = document.getElementById("mainButtons");
+        const formSection = document.getElementById("formSection");
+        const nicknameInput = document.getElementById("nickname");
+        const submitBtn = document.getElementById("submitBtn");
+        const message = document.getElementById("message");
+
+        document.getElementById("regBtn").addEventListener("click", () => {
+            mainButtons.classList.add("hidden");
+            formSection.classList.remove("hidden");
+            nicknameInput.style.display = "block";
+            submitBtn.innerText = "რეგისტრაცია";
+            submitBtn.onclick = register;
+        });
+
+        document.getElementById("logBtn").addEventListener("click", () => {
+            mainButtons.classList.add("hidden");
+            formSection.classList.remove("hidden");
+            nicknameInput.style.display = "none";
+            submitBtn.innerText = "შესვლა";
+            submitBtn.onclick = login;
+        });
+
+        async function register() {
+            const nickname = nicknameInput.value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            if (!nickname || !email || !password) {
+                message.innerText = "შეავსე ყველა ველი";
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: email,
+                password: password,
+                options: { data: { nickname: nickname } }
+            });
+
+            if (error) {
+                message.innerText = error.message;
+                return;
+            }
+
+            // ნიკის შენახვა ჩატისთვის
+            localStorage.setItem('username', nickname);
+            window.location.href = "home.html";
+        }
+
+        async function login() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            if (!email || !password) {
+                message.innerText = "შეავსე ყველა ველი";
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                message.innerText = error.message;
+                return;
+            }
+
+            // ნიკის ამოღება Supabase-დან და შენახვა
+            const userNick = data.user.user_metadata.nickname;
+            localStorage.setItem('username', userNick);
+            window.location.href = "home.html";
+        }
+    </script>
+</body>
+</html>
