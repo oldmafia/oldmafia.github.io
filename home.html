@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLD MAFIA</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  color:white;
+  font-family:sans-serif;
+  display:flex;
+  height:100vh;
+}
+
+.sidebar{
+  width:240px;
+  background:#111;
+  padding:10px;
+  overflow-y:auto;
+}
+
+.room-btn{
+  width:100%;
+  margin-bottom:6px;
+  padding:8px;
+  background:#222;
+  color:white;
+  border:none;
+  border-radius:6px;
+}
+
+.room-btn.active{
+  background:#ff4500;
+}
+
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+header{
+  background:#111;
+  padding:10px;
+  text-align:center;
+}
+
+#messages{
+  flex:1;
+  overflow-y:auto;
+  padding:10px;
+}
+
+.msg{
+  background:#1a1a1a;
+  padding:8px;
+  margin-bottom:6px;
+  border-radius:6px;
+}
+
+.input-area{
+  display:flex;
+  padding:10px;
+  background:#111;
+}
+
+input{
+  flex:1;
+  padding:8px;
+  background:#222;
+  color:white;
+  border:none;
+  border-radius:6px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<div id="roomList"></div>
+</div>
+
+<div class="main">
+<header>
+<h3 id="roomTitle">💬 ზოგადი ჩატი</h3>
+</header>
+
+<div id="messages"></div>
+
+<div class="input-area">
+<input id="msgInput" placeholder="დაწერე მესიჯი">
+<button id="sendBtn">➤</button>
+<input type="file" id="imgInput" accept="image/*">
+</div>
+
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://ftfciebnywbondaiarnc.supabase.co",
+  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+);
+
+let nickname = localStorage.getItem("nickname");
+if(!nickname){
+  nickname = prompt("შეიყვანე სახელი");
+  localStorage.setItem("nickname", nickname);
+}
+
+let currentRoom = "💬 ზოგადი ჩატი";
+
+const rooms = [
+  "💬 ზოგადი ჩატი",
+  "💎 VIP საუბრები",
+  "🔒 შიფროგრამა",
+  "🎯 ვიქტორინა",
+  "🪢 ჩამოხრჩობანა",
+  "😂 იუმორი",
+  "🎵 მუსიკა",
+  "🖼️ გალერეა",
+  "❓ დახმარება",
+  "🛡️ ადმინისტრაცია"
+];
+
+const roomList = document.getElementById("roomList");
+const messagesBox = document.getElementById("messages");
+const input = document.getElementById("msgInput");
+const sendBtn = document.getElementById("sendBtn");
+const imgInput = document.getElementById("imgInput");
+
+rooms.forEach((room,index)=>{
+  const btn=document.createElement("button");
+  btn.innerText=room;
+  btn.className="room-btn";
+  if(index===0) btn.classList.add("active");
+
+  btn.onclick=()=>{
+    currentRoom=room;
+    document.getElementById("roomTitle").innerText=room;
+    document.querySelectorAll(".room-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    loadMessages();
+  };
+
+  roomList.appendChild(btn);
+});
+
+async function loadMessages(){
+  const { data } = await supabase
+    .from("messages_v3")
+    .select("*")
+    .eq("room_name", currentRoom)
+    .order("created_at",{ascending:true});
+
+  messagesBox.innerHTML="";
+
+  data?.forEach(msg=>{
+    const div=document.createElement("div");
+    div.className="msg";
+
+    if(msg.message.startsWith("http")){
+      div.innerHTML=`<b>${msg.nickname}</b><br>
+      <img src="${msg.message}" style="max-width:200px">`;
+    }else{
+      div.innerHTML=`<b>${msg.nickname}</b>: ${msg.message}`;
+    }
+
+    messagesBox.appendChild(div);
+  });
+
+  messagesBox.scrollTop=messagesBox.scrollHeight;
+}
+
+sendBtn.onclick=async ()=>{
+  const text=input.value.trim();
+  if(!text) return;
+
+  await supabase.from("messages_v3").insert([{
+    nickname:nickname,
+    message:text,
+    room_name:currentRoom
+  }]);
+
+  input.value="";
+  loadMessages();
+};
+
+imgInput.onchange=async ()=>{
+  const file=imgInput.files[0];
+  if(!file) return;
+
+  const fileName=Date.now()+"_"+file.name;
+  await supabase.storage.from("chat-images").upload(fileName,file);
+  const { data } = supabase.storage.from("chat-images").getPublicUrl(fileName);
+
+  await supabase.from("messages_v3").insert([{
+    nickname:nickname,
+    message:data.publicUrl,
+    room_name:currentRoom
+  }]);
+
+  loadMessages();
+};
+
+supabase
+.channel("realtime")
+.on("postgres_changes",
+  {event:"INSERT",schema:"public",table:"messages_v3"},
+  ()=>loadMessages()
+)
+.subscribe();
+
+loadMessages();
+</script>
+
+</body>
+</html>
