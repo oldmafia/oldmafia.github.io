@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>OLD MAFIA - FINAL TEST</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="background: #000; color: #ff4500; text-align: center; padding-top: 100px; font-family: sans-serif;">
+
+    <div style="border: 2px solid #ff4500; display: inline-block; padding: 30px; border-radius: 20px;">
+        <h1>🛡️ OLD MAFIA 🛡️</h1>
+        <p id="loader">მიმდინარეობს ბაზასთან დაკავშირება...</p>
+        <div id="chat-box" style="display:none;">
+            <p style="color: green;">✅ კავშირი წარმატებულია!</p>
+            <input type="text" id="msg-inp" placeholder="დაწერე რამე..." style="padding: 10px; border-radius: 5px;">
+            <button onclick="send()" style="padding: 10px; background: #ff4500; color: white; border: none; cursor: pointer;">გაგზავნა</button>
+        </div>
+    </div>
+
+    <script>
+        // შენი მონაცემები (გადამოწმებული)
+        const URL = "https://ftfciebnywbondaiarnc.supabase.co";
+        const KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        
+        try {
+            const _sb = supabase.createClient(URL, KEY);
+            
+            async function check() {
+                const { data, error } = await _sb.from('messages_v3').select('*').limit(1);
+                if (error) {
+                    document.getElementById('loader').innerText = "❌ შეცდომა: " + error.message;
+                } else {
+                    document.getElementById('loader').style.display = "none";
+                    document.getElementById('chat-box').style.display = "block";
+                }
+            }
+            check();
+
+            async function send() {
+                const text = document.getElementById('msg-inp').value;
+                await _sb.from('messages_v3').insert([{ 
+                    nickname: 'abu007', 
+                    message: text, 
+                    room_name: '💬 ზოგადი ჩატი' 
+                }]);
+                alert("გაიგზავნა!");
+            }
+        } catch (e) {
+            document.getElementById('loader').innerText = "❌ კრიტიკული შეცდომა: ბიბლიოთეკა ვერ ჩაიტვირთა.";
+        }
+    </script>
+</body>
+</html>
