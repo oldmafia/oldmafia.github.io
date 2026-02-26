@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff4500; --bg: #050505; --gold: #ffd700; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* რეგისტრაციის ეკრანი - პირველი რაც გამოჩნდება */
+        #auth-screen { position: fixed; inset: 0; background: #000; z-index: 20000; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: #0a0a0a; padding: 40px 30px; border-radius: 20px; border: 1px solid #222; width: 90%; max-width: 320px; text-align: center; }
+        
+        /* ჩატის სტრუქტურა */
+        #main-chat { display: none; height: 100%; flex-direction: column; }
+        header { height: 60px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #000; }
+        
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #000; border-right: 1px solid #222; transition: 0.3s; z-index: 9999; padding: 20px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .nav-item { padding: 14px; margin-bottom: 8px; border-radius: 12px; color: #fff; cursor: pointer; background: rgba(255,255,255,0.05); }
+        .nav-item.active { background: linear-gradient(90deg, #ff4500, #ff8c00); font-weight: bold; }
+
+        #chat-window { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg-bubble { background: #1e1e1e; padding: 10px 15px; border-radius: 15px; max-width: 80%; align-self: flex-start; }
+        .msg-sender { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: var(--red); }
+
+        .input-area { padding: 15px; display: flex; gap: 10px; background: #000; border-top: 1px solid #222; }
+        input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        button { padding: 10px 20px; border-radius: 10px; border: none; background: var(--red); color: white; font-weight: bold; cursor: pointer; }
+
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9000; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1 style="color:var(--red); margin-bottom: 20px; letter-spacing: 2px;">OLD MAFIA</h1>
+            <input type="text" id="login-nick" placeholder="შეიყვანე ნიკი...">
+            <button onclick="login()" style="width:100%; margin-top:15px;">შესვლა</button>
+        </div>
+    </div>
+
+    <div id="main-chat">
+        <div class="overlay" id="overlay" onclick="closeAll()"></div>
+        
+        <nav id="side-menu" class="sidebar">
+            <h2 style="color:var(--red); margin-bottom:20px; text-align:center;">ოთახები</h2>
+            <div class="nav-item active" onclick="switchRoom('💬 ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+            <div class="nav-item" onclick="switchRoom('💎 VIP საუბრები', this)">💎 VIP საუბრები</div>
+            <div class="nav-item" onclick="switchRoom('🔒 შიფროგრამა', this)">🔒 შიფროგრამა</div>
+            <div class="nav-item" onclick="switchRoom('🎯 ვიქტორინა', this)">🎯 ვიქტორინა</div>
+            <div class="nav-item" onclick="switchRoom('🪢 ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+            <div class="nav-item" onclick="switchRoom('😂 იუმორი', this)">😂 იუმორი</div>
+            <div class="nav-item" onclick="switchRoom('🎵 მუსიკა', this)">🎵 მუსიკა</div>
+            <div class="nav-item" onclick="switchRoom('🖼️ გალერეა', this)">🖼️ გალერეა</div>
+            <button onclick="logout()" style="background:#222; width:100%; margin-top:30px; color: white; padding: 10px; border-radius: 10px;">გასვლა</button>
+        </nav>
+
+        <header>
+            <div onclick="openMenu()" style="font-size:24px; color:var(--red); cursor:pointer;">☰</div>
+            <div id="room-title">💬 ზოგადი ჩატი</div>
+            <div id="top-avatar" style="width:38px; height:38px; border-radius:50%; border:1px solid var(--red); background-color:#111;"></div>
+        </header>
+
+        <div id="chat-window"></div>
+
+        <div class="input-area">
+            <input type="text" id="m-input" placeholder="დაწერე შეტყობინება...">
+            <button onclick="send()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const _sb = createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        let myNick = localStorage.getItem('username');
+        let currentRoom = "💬 ზოგადი ჩატი";
+
+        function login() {
+            const n = document.getElementById('login-nick').value.trim();
+            if(n) { 
+                localStorage.setItem('username', n); 
+                window.location.reload(); 
+            }
+        }
+
+        async function init() {
+            if(!myNick) return;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-chat').style.display = 'flex';
+            loadMsgs();
+        }
+
+        async function loadMsgs() {
+            const { data } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
+            const win = document.getElementById('chat-window');
+            win.innerHTML = data ? data.reverse().map(m => `
+                <div class="msg-bubble">
+                    <div class="msg-sender">${m.nickname}</div>
+                    <div>${m.message}</div>
+                </div>
+            `).join('') : '';
+            win.scrollTop = win.scrollHeight;
+        }
+
+        async function send() {
+            const v = document.getElementById('m-input').value; if(!v.trim()) return;
+            document.getElementById('m-input').value = "";
+            await _sb.from('messages_v3').insert([{ nickname: myNick, message: v, room_name: currentRoom }]);
+            loadMsgs();
+        }
+
+        function openMenu() { document.getElementById('side-menu').classList.add('open'); document.getElementById('overlay').style.display='block'; }
+        function closeAll() { document.getElementById('side-menu').classList.remove('open'); document.getElementById('overlay').style.display='none'; }
+        function switchRoom(name, el) { 
+            currentRoom = name; document.getElementById('room-title').innerText = name; 
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active'); closeAll(); loadMsgs(); 
+        }
+        function logout() { localStorage.removeItem('username'); location.reload(); }
+
+        if(myNick) window.onload = init;
+        _sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public' }, loadMsgs).subscribe();
+    </script>
+</body>
+</html>
