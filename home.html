@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLD MAFIA - 10 ROOMS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff4500; --bg: #050505; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: white; display: flex; height: 100vh; overflow: hidden; }
+
+        /* მარცხენა მენიუ - 10 ოთახი */
+        .sidebar { width: 260px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #222; color: var(--red); font-weight: bold; }
+        .rooms-list { flex: 1; overflow-y: auto; padding: 10px; }
+        
+        .room-btn { 
+            padding: 12px 15px; margin-bottom: 5px; cursor: pointer; border-radius: 8px; 
+            background: #111; color: #888; font-size: 14px; transition: 0.2s;
+        }
+        .room-btn:hover { background: #1a1a1a; }
+        .room-btn.active { background: var(--red); color: white; font-weight: bold; }
+
+        /* ჩატის ზონა */
+        .chat-main { flex: 1; display: flex; flex-direction: column; }
+        .chat-header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 20px; font-size: 18px; }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #080808; }
+        
+        /* მესიჯის ბუშტი */
+        .bubble { background: #1a1a1a; padding: 10px 15px; border-radius: 12px; align-self: flex-start; border-left: 3px solid var(--red); max-width: 80%; }
+        .nick { color: var(--red); font-size: 11px; font-weight: bold; margin-bottom: 3px; display: block; }
+
+        /* ინპუტი */
+        .input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        button { background: var(--red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">OLD MAFIA</div>
+        <div class="rooms-list" id="rooms-container">
+            <div class="room-btn active" onclick="changeRoom('💬 ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+            <div class="room-btn" onclick="changeRoom('📩 პირადი კონვერტი', this)">📩 პირადი კონვერტი</div>
+            <div class="room-btn" onclick="changeRoom('💎 VIP საუბრები', this)">💎 VIP საუბრები</div>
+            <div class="room-btn" onclick="changeRoom('🔒 შიფროგრამა', this)">🔒 შიფროგრამა</div>
+            <div class="room-btn" onclick="changeRoom('🎯 ვიქტორინა', this)">🎯 ვიქტორინა</div>
+            <div class="room-btn" onclick="changeRoom('🪢 ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+            <div class="room-btn" onclick="changeRoom('😂 იუმორი', this)">😂 იუმორი</div>
+            <div class="room-btn" onclick="changeRoom('🎵 მუსიკა', this)">🎵 მუსიკა</div>
+            <div class="room-btn" onclick="changeRoom('🖼️ გალერეა', this)">🖼️ გალერეა</div>
+            <div class="room-btn" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+        </div>
+    </div>
+
+    <div class="chat-main">
+        <div class="chat-header" id="current-room-title">💬 ზოგადი ჩატი</div>
+        <div id="messages"></div>
+        <div class="input-area">
+            <input type="text" id="msg-input" placeholder="დაწერე შეტყობინება...">
+            <button onclick="send()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+        let currentRoom = '💬 ზოგადი ჩატი';
+        let myNick = localStorage.getItem('username') || 'სტუმარი';
+
+        // 1. ოთახის შეცვლა
+        function changeRoom(name, el) {
+            currentRoom = name;
+            document.getElementById('current-room-title').innerText = name;
+            
+            // ფერების შეცვლა მენიუში
+            document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            
+            loadMsgs();
+        }
+
+        // 2. მესიჯების წამოღება
+        async function loadMsgs() {
+            const { data } = await _sb.from('messages_v3')
+                .select('*')
+                .eq('room_name', currentRoom)
+                .order('created_at', { ascending: false })
+                .limit(40);
+
+            const box = document.getElementById('messages');
+            if (data) {
+                box.innerHTML = data.reverse().map(m => `
+                    <div class="bubble">
+                        <span class="nick">${m.nickname}</span>
+                        <div>${m.message}</div>
+                    </div>
+                `).join('');
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        // 3. გაგზავნა
+        async function send() {
+            const inp = document.getElementById('msg-input');
+            if(!inp.value.trim()) return;
+
+            const text = inp.value;
+            inp.value = "";
+
+            await _sb.from('messages_v3').insert([{ 
+                nickname: myNick, 
+                message: text, 
+                room_name: currentRoom 
+            }]);
+
+            loadMsgs();
+        }
+
+        // განახლება ყოველ 3 წამში
+        setInterval(loadMsgs, 3000);
+        window.onload = loadMsgs;
+    </script>
+</body>
+</html>
