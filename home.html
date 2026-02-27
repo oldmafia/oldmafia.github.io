@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLD MAFIA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root { --red:#ff4500; --bg:#050505; --gold:#ffd700; --gray:#111; }
+*{ margin:0; padding:0; box-sizing:border-box; font-family:sans-serif; }
+body{ background:var(--bg); color:white; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+header{
+height:60px;
+background:#000;
+border-bottom:1px solid #222;
+display:flex;
+align-items:center;
+padding:0 15px;
+position:relative;
+}
+
+.burger{ font-size:28px; color:var(--red); cursor:pointer; }
+.room-name{ flex:1; text-align:center; font-weight:bold; }
+
+.floating-inbox{
+position:absolute;
+right:15px;
+font-size:22px;
+cursor:pointer;
+}
+
+.badge{
+position:absolute;
+top:-5px;
+right:-8px;
+background:red;
+color:white;
+border-radius:50%;
+min-width:18px;
+height:18px;
+font-size:11px;
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.sidebar{
+position:fixed;
+left:-100%;
+top:0;
+width:85%;
+max-width:300px;
+height:100%;
+background:#000;
+border-right:1px solid #222;
+transition:0.3s;
+padding:20px;
+overflow-y:auto;
+z-index:1000;
+}
+.sidebar.open{ left:0; }
+
+.overlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.8);
+z-index:900;
+}
+
+.room-btn{
+padding:14px;
+margin-bottom:8px;
+cursor:pointer;
+border-radius:12px;
+background:var(--gray);
+color:#aaa;
+}
+.room-btn.active{ background:var(--red); color:white; }
+
+#messages{
+flex:1;
+padding:15px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.bubble{
+background:#161616;
+padding:10px;
+border-radius:15px;
+border-left:4px solid var(--red);
+}
+.pm-bubble{
+border-left-color:var(--gold);
+background:#1a1500;
+}
+
+.input-area{
+padding:10px;
+background:#000;
+border-top:1px solid #222;
+display:flex;
+gap:10px;
+}
+
+input{
+flex:1;
+padding:10px;
+border-radius:10px;
+border:1px solid #333;
+background:#111;
+color:white;
+}
+
+.send-btn{
+background:var(--red);
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:10px;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<nav class="sidebar" id="sidebar">
+<h2 style="color:var(--red); margin-bottom:20px;">OLD MAFIA</h2>
+
+<div class="room-btn" onclick="location.href='profile.html'">👤 ჩემი პროფილი</div>
+
+<hr style="margin:15px 0; border:0.5px solid #222;">
+
+<div class="room-btn active" onclick="changeRoom('💬 ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+<div class="room-btn" onclick="changeRoom('💎 VIP საუბრები', this)">💎 VIP საუბრები</div>
+<div class="room-btn" onclick="changeRoom('🔒 შიფროგრამა', this)">🔒 შიფროგრამა</div>
+<div class="room-btn" onclick="changeRoom('🎯 ვიქტორინა', this)">🎯 ვიქტორინა</div>
+<div class="room-btn" onclick="changeRoom('🪢 ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+<div class="room-btn" onclick="changeRoom('😂 იუმორი', this)">😂 იუმორი</div>
+<div class="room-btn" onclick="changeRoom('🎵 მუსიკა', this)">🎵 მუსიკა</div>
+<div class="room-btn" onclick="changeRoom('🖼️ გალერეა', this)">🖼️ გალერეა</div>
+<div class="room-btn" onclick="changeRoom('🤝 გაცნობა', this)">🤝 გაცნობა</div>
+<div class="room-btn" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+
+<button onclick="logout()" style="margin-top:20px; padding:10px; width:100%; background:#222; color:#ff4500; border:none; border-radius:10px;">
+🚪 გასვლა
+</button>
+</nav>
+
+<header>
+<div class="burger" onclick="toggleMenu()">☰</div>
+<div class="room-name" id="room-title">💬 ზოგადი ჩატი</div>
+
+<div class="floating-inbox" onclick="openInbox()" style="position:relative;">
+📩
+<span id="pm-badge" class="badge"></span>
+</div>
+</header>
+
+<div id="messages"></div>
+
+<div class="input-area">
+<input type="text" id="msg-input" placeholder="დაწერე შეტყობინება...">
+<button class="send-btn" onclick="send()">➤</button>
+</div>
+
+<script>
+const _sb = supabase.createClient(
+"https://ftfciebnywbondaiarnc.supabase.co",
+"sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+);
+
+const myNick = localStorage.getItem('username');
+let currentRoom = '💬 ზოგადი ჩატი';
+
+function toggleMenu(){
+document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('overlay').style.display =
+document.getElementById('sidebar').classList.contains('open')?'block':'none';
+}
+
+function logout(){
+localStorage.clear();
+location.href='index.html';
+}
+
+function openInbox(){
+markPMSeen();
+location.href='inbox.html';
+}
+
+function changeRoom(name, el){
+localStorage.removeItem('open_pm_with');
+currentRoom=name;
+document.getElementById('room-title').innerText=name;
+document.querySelectorAll('.room-btn').forEach(b=>b.classList.remove('active'));
+el.classList.add('active');
+toggleMenu();
+loadMsgs();
+}
+
+async function loadMsgs(){
+let savedPM=localStorage.getItem('open_pm_with');
+let activeRoom=currentRoom;
+
+if(savedPM){
+activeRoom=`PM_${[myNick,savedPM].sort().join('_')}`;
+document.getElementById('room-title').innerText=`📩 მიმოწერა: ${savedPM}`;
+}
+
+const { data }=await _sb.from('messages_v3')
+.select('*')
+.eq('room_name',activeRoom)
+.order('created_at',{ascending:true});
+
+const box=document.getElementById('messages');
+if(data){
+box.innerHTML=data.map(m=>`
+<div class="bubble ${activeRoom.startsWith('PM_')?'pm-bubble':''}">
+<b>${m.nickname}</b><br>${m.message}
+</div>
+`).join('');
+box.scrollTop=box.scrollHeight;
+}
+}
+
+async function send(){
+const input=document.getElementById('msg-input');
+const text=input.value.trim();
+if(!text) return;
+
+let target=localStorage.getItem('open_pm_with');
+let sendTo=target?`PM_${[myNick,target].sort().join('_')}`:currentRoom;
+
+await _sb.from('messages_v3')
+.insert([{nickname:myNick,message:text,room_name:sendTo}]);
+
+input.value="";
+loadMsgs();
+}
+
+async function checkUnreadPM(){
+const { data }=await _sb.from('messages_v3')
+.select('*')
+.like('room_name',`%PM%${myNick}%`);
+
+if(!data) return;
+
+let incoming=data.filter(m=>m.nickname!==myNick);
+let seen=parseInt(localStorage.getItem('seen_pm_count'))||0;
+let unread=incoming.length-seen;
+
+const badge=document.getElementById('pm-badge');
+
+if(unread>0){
+badge.style.display="flex";
+badge.innerText=unread;
+}else{
+badge.style.display="none";
+}
+}
+
+async function markPMSeen(){
+const { data }=await _sb.from('messages_v3')
+.select('*')
+.like('room_name',`%PM%${myNick}%`);
+
+if(!data) return;
+
+let incoming=data.filter(m=>m.nickname!==myNick);
+localStorage.setItem('seen_pm_count',incoming.length);
+}
+
+window.onload=()=>{
+loadMsgs();
+checkUnreadPM();
+setInterval(()=>{
+loadMsgs();
+checkUnreadPM();
+},3000);
+};
+</script>
+
+</body>
+</html>
