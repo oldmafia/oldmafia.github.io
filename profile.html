@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>პროფილი - OLD MAFIA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #050505; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        .avatar { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff4500; object-fit: cover; margin: 20px auto; display: block; background: #111; }
+        .nick-title { color: #ffd700; font-size: 24px; margin-bottom: 10px; }
+        .status-box { background: #111; padding: 15px; border-radius: 12px; margin: 20px 0; border: 1px solid #222; min-height: 50px; color: #ccc; }
+        .btn { background: #ff4500; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
+        .back { display: block; margin-top: 30px; color: #ff4500; text-decoration: none; font-weight: bold; }
+        input[type="file"] { background: #111; padding: 10px; border-radius: 8px; margin-bottom: 10px; width: 80%; }
+        #edit-area { display: none; background: #0a0a0a; padding: 20px; border-radius: 15px; border: 1px solid #222; }
+    </style>
+</head>
+<body>
+    <div id="profile-view">
+        <h2 id="user-nick" class="nick-title">იტვირთება...</h2>
+        <img id="view-avatar" class="avatar" src="https://via.placeholder.com/130">
+        <div id="user-status" class="status-box">იტვირთება სტატუსი...</div>
+        
+        <div id="own-controls" style="display:none;">
+            <button class="btn" onclick="showEdit()">🛠️ პროფილის შეცვლა</button>
+        </div>
+    </div>
+
+    <div id="edit-area">
+        <h3 style="color: #ff4500;">რედაქტირება</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">აირჩიე ახალი ფოტო:</p>
+        <input type="file" id="file-input" accept="image/*"><br>
+        <textarea id="status-input" style="width:90%; height:80px; background:#111; color:white; border:1px solid #333; padding:10px; border-radius:8px;" placeholder="დაწერე რამე შენს შესახებ..."></textarea><br><br>
+        <button class="btn" onclick="saveProfile()">💾 შენახვა</button>
+        <button class="btn" style="background:#444;" onclick="location.reload()">🔙 გაუქმება</button>
+    </div>
+
+    <a href="home.html" class="back" onclick="localStorage.removeItem('view_profile_of')">🔙 უკან ჩატში</a>
+
+    <script>
+        const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        const myNick = localStorage.getItem('username');
+        // ვამოწმებთ სხვის პროფილს ვუყურებთ თუ ჩვენსას
+        let targetNick = localStorage.getItem('view_profile_of') || myNick;
+
+        async function loadProfile() {
+            document.getElementById('user-nick').innerText = `👤 ${targetNick}`;
+            
+            // თუ ჩემს პროფილზე ვარ, გამოაჩინე "შეცვლის" ღილაკი
+            if(targetNick === myNick) {
+                document.getElementById('own-controls').style.display = 'block';
+            }
+
+            const { data, error } = await _sb.from('profiles').select('*').eq('nickname', targetNick).single();
+            
+            if(data) {
+                if(data.avatar_url) document.getElementById('view-avatar').src = data.avatar_url;
+                document.getElementById('user-status').innerText = data.status || "სტატუსი არ არის მითითებული";
+                document.getElementById('status-input').value = data.status || "";
+            } else {
+                document.getElementById('user-status').innerText = "მომხმარებელს ჯერ არ აქვს პროფილი შევსებული.";
+            }
+        }
+
+        function showEdit() {
+            document.getElementById('profile-view').style.display = 'none';
+            document.getElementById('edit-area').style.display = 'block';
+        }
+
+        async function saveProfile() {
+            const file = document.getElementById('file-input').files[0];
+            const status = document.getElementById('status-input').value;
+            let url = document.getElementById('view-avatar').src;
+
+            if(file) {
+                const name = `${myNick}_avatar.png`;
+                const { data, error } = await _sb.storage.from('avatars').upload(name, file, { upsert: true });
+                url = `https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/avatars/${name}?t=${Date.now()}`;
+            }
+
+            const { error: upsertError } = await _sb.from('profiles').upsert({ 
+                nickname: myNick, 
+                avatar_url: url, 
+                status: status 
+            });
+
+            if(!upsertError) {
+                alert("პროფილი წარმატებით განახლდა! 🚀");
+                location.reload();
+            } else {
+                alert("შეცდომა შენახვისას!");
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
