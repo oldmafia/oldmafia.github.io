@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox - OLD MAFIA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #050505; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
+        .user-card { background: #111; padding: 20px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid #ff4500; display: flex; justify-content: space-between; cursor: pointer; }
+        .back-btn { display: inline-block; margin-top: 20px; color: #ff4500; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2 style="color:#ffd700; margin-bottom:20px;">📩 შემოსულები</h2>
+    <div id="list">იტვირთება...</div>
+    <a href="home.html" class="back-btn">⬅ უკან ჩატში</a>
+
+    <script>
+        const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        const myNick = localStorage.getItem('username');
+
+        async function loadInbox() {
+            const { data } = await _sb.from('messages_v3').select('room_name').like('room_name', `%PM%${myNick}%`);
+            let senders = new Set();
+            if (data) {
+                data.forEach(m => {
+                    m.room_name.replace('PM_', '').split('_').forEach(p => { if(p !== myNick) senders.add(p); });
+                });
+            }
+            const box = document.getElementById('list');
+            if (senders.size === 0) { box.innerHTML = "მესიჯები არ არის."; }
+            else {
+                box.innerHTML = Array.from(senders).map(n => `
+                    <div class="user-card" onclick="goToChat('${n}')">
+                        <span>👤 ${n}</span> <span>➔</span>
+                    </div>`).join('');
+            }
+        }
+        function goToChat(nick) {
+            localStorage.setItem('pm_with', nick); // ვიმახსოვრებთ ვისთან გვინდა ჩატი
+            location.href = 'home.html'; // ვბრუნდებით ჰოუმზე
+        }
+        loadInbox();
+    </script>
+</body>
+</html>
