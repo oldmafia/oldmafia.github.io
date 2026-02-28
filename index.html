@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLD MAFIA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body { background:black; color:white; font-family:sans-serif; }
+#chat { margin-bottom:80px; }
+.msg { margin:8px 0; }
+.nickname { color:gold; font-weight:bold; text-decoration:none; }
+input { padding:10px; margin:5px; }
+button { padding:10px; background:orange; border:none; }
+</style>
+</head>
+<body>
+
+<h2>💬 OLD MAFIA ჩატი</h2>
+
+<a href="https://oldmafia.github.io/inbox.html" style="color:white;">📩 Inbox</a>
+
+<div id="chat"></div>
+
+<input type="text" id="nicknameInput" placeholder="ნიკი">
+<input type="text" id="messageInput" placeholder="მესიჯი">
+<button onclick="sendMessage()">გაგზავნა</button>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ftfciebnywbondaiarnc.supabase.co",
+  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+);
+
+const chat = document.getElementById("chat");
+
+async function loadMessages(){
+  const { data } = await supabase
+    .from("messages_v3")
+    .select("*")
+    .order("created_at", { ascending:true });
+
+  chat.innerHTML = "";
+
+  if(!data) return;
+
+  data.forEach(msg=>{
+    chat.innerHTML += `
+      <div class="msg">
+        <a class="nickname" 
+           href="https://oldmafia.github.io/profile.html?user=${msg.nickname}">
+           ${msg.nickname}
+        </a>: ${msg.message}
+      </div>
+    `;
+  });
+}
+
+async function sendMessage(){
+  const nickname = document.getElementById("nicknameInput").value;
+  const message = document.getElementById("messageInput").value;
+
+  if(!nickname || !message) return;
+
+  await supabase.from("messages_v3").insert([
+    { nickname, message }
+  ]);
+
+  document.getElementById("messageInput").value="";
+  loadMessages();
+}
+
+loadMessages();
+</script>
+
+</body>
+</html>
