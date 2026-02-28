@@ -10,7 +10,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* ჰედერი */
         header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; }
         .burger { font-size: 24px; color: var(--red); cursor: pointer; }
         .room-title { font-weight: bold; color: var(--red); font-size: 16px; }
@@ -18,21 +17,20 @@
         .header-icons { display: flex; gap: 20px; align-items: center; }
         .badge { position: absolute; top: -8px; right: -10px; background: var(--red); color: white; font-size: 11px; padding: 2px 6px; border-radius: 50%; display: none; }
 
-        /* გვერდითა მენიუ (ოთახები) */
         .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-right: 1px solid #222; }
         .sidebar.open { left: 0; }
         .room-btn { padding: 15px; margin-bottom: 5px; cursor: pointer; border-radius: 10px; transition: 0.2s; color: #ccc; }
         .room-btn:hover, .room-btn.active { background: #1a1a1a; color: var(--red); font-weight: bold; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; }
 
-        /* ჩატის ზონა */
         #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg-row { display: flex; gap: 10px; align-items: flex-start; }
+        .msg-row { display: flex; gap: 10px; align-items: flex-start; position: relative; }
         .u-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor: pointer; }
         .bubble { background: #161616; padding: 12px; border-radius: 15px; flex: 1; border-left: 3px solid var(--red); }
-        .nick { color: var(--red); font-weight: bold; font-size: 13px; margin-bottom: 3px; cursor: pointer; display: block; }
+        .nick { color: var(--red); font-weight: bold; font-size: 13px; margin-bottom: 3px; cursor: pointer; display: flex; justify-content: space-between; }
+        .del-btn { color: #555; cursor: pointer; font-size: 12px; }
+        .del-btn:hover { color: white; }
 
-        /* ინპუტი */
         .input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
         input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; outline: none; }
         .send-btn { background: var(--red); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; }
@@ -68,7 +66,7 @@
     <div id="messages"></div>
 
     <div class="input-area">
-        <input type="text" id="msg-in" placeholder="დაწერე შეტყობინება...">
+        <input type="text" id="msg-in" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
         <button class="send-btn" onclick="send()">➤</button>
     </div>
 
@@ -76,6 +74,9 @@
     const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('username') || "სტუმარი";
     let currentRoom = '💬 ზოგადი ჩატი';
+
+    // ადმინების სია (აქ ჩაწერე შენი ნიკი)
+    const admins = ['Admin', 'Founder', 'შენი_ნიკი']; 
 
     function toggleMenu() {
         document.getElementById('sidebar').classList.toggle('open');
@@ -99,15 +100,25 @@
         if(avs) avs.forEach(a => avMap[a.nickname] = a.avatar_url);
 
         const box = document.getElementById('messages');
-        box.innerHTML = msgs?.reverse().map(m => `
+        box.innerHTML = msgs?.reverse().map(m => {
+            // თუ მომხმარებელი ადმინია, ვუჩენთ წაშლის ღილაკს
+            const canDelete = admins.includes(myNick);
+            const delHtml = canDelete ? `<span class="del-btn" onclick="deleteMsg(${m.id})">✖</span>` : "";
+
+            return `
             <div class="msg-row">
                 <img src="${avMap[m.nickname] || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="goProfile(false, '${m.nickname}')">
                 <div class="bubble">
-                    <span class="nick" onclick="goProfile(false, '${m.nickname}')">${m.nickname}</span>
+                    <span class="nick" onclick="goProfile(false, '${m.nickname}')">
+                        ${m.nickname}
+                        ${delHtml}
+                    </span>
                     <div>${m.message}</div>
                 </div>
             </div>
-        `).join('') || "";
+        `}).join('') || "";
+        
+        // სქროლი ბოლოში მხოლოდ მაშინ, თუ მომხმარებელი უკვე ბოლოშია (ან პირველი ჩატვირთვისას)
         box.scrollTop = box.scrollHeight;
     }
 
@@ -115,7 +126,16 @@
         const inp = document.getElementById('msg-in');
         if(!inp.value.trim()) return;
         await _sb.from('messages_v3').insert([{ nickname: myNick, message: inp.value, room_name: currentRoom }]);
-        inp.value = ""; loadMsgs();
+        inp.value = ""; 
+        loadMsgs();
+    }
+
+    // მესიჯის წაშლა
+    async function deleteMsg(id) {
+        if(!confirm("ნამდვილად გსურთ წაშლა?")) return;
+        const { error } = await _sb.from('messages_v3').delete().eq('id', id);
+        if(!error) loadMsgs();
+        else alert("შეცდომა წაშლისას");
     }
 
     async function checkInbox() {
@@ -129,7 +149,12 @@
         location.href = 'profile.html';
     }
 
-    window.onload = () => { loadMsgs(); checkInbox(); setInterval(loadMsgs, 3000); setInterval(checkInbox, 5000); };
+    window.onload = () => { 
+        loadMsgs(); 
+        checkInbox(); 
+        setInterval(loadMsgs, 3000); 
+        setInterval(checkInbox, 5000); 
+    };
 </script>
 </body>
 </html>
