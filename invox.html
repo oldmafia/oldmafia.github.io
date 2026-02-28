@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Inbox - OLD MAFIA</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #111;
+    color: white;
+}
+
+/* TOP BAR */
+.topbar {
+    background: black;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid orange;
+}
+
+.logo {
+    color: orange;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.menu a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 16px;
+}
+
+.menu a:hover {
+    color: orange;
+}
+
+/* MAIN LAYOUT */
+.container {
+    display: flex;
+    height: 90vh;
+}
+
+/* LEFT SIDE (chat list) */
+.sidebar {
+    width: 30%;
+    background: #1a1a1a;
+    border-right: 1px solid #333;
+    padding: 15px;
+}
+
+.chat-user {
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #222;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.chat-user:hover {
+    background: #333;
+}
+
+/* RIGHT SIDE (messages) */
+.chat-box {
+    width: 70%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.message {
+    margin-bottom: 15px;
+}
+
+.me {
+    text-align: right;
+    color: orange;
+}
+
+.other {
+    text-align: left;
+}
+
+/* input */
+.input-area {
+    display: flex;
+    margin-top: 10px;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+}
+
+.input-area button {
+    padding: 10px 15px;
+    border: none;
+    margin-left: 10px;
+    background: orange;
+    border-radius: 6px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <div class="logo">OLD MAFIA</div>
+    <div class="menu">
+        <a href="index.html">Home</a>
+        <a href="profile.html">Profile</a>
+        <a href="inbox.html">Inbox</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h3>Messages</h3>
+        <div class="chat-user">Don Vito</div>
+        <div class="chat-user">Tony</div>
+        <div class="chat-user">Michael</div>
+    </div>
+
+    <div class="chat-box">
+        <div class="messages">
+            <div class="message other">Welcome to OLD MAFIA.</div>
+            <div class="message me">Thanks boss.</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" placeholder="Type a message...">
+            <button>Send</button>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
