@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - HOME</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff4500; --bg: #000; --gold: #ffd700; --gray: #1a1a1a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* ზედა პანელი - შენი დიზაინის მიხედვით */
+        header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; position: relative; }
+        .burger { font-size: 24px; color: var(--red); cursor: pointer; }
+        .room-info { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .room-info span { font-size: 18px; font-weight: bold; }
+        
+        /* მარჯვენა მხარეს ნიშნები: პროფილი და კონვერტი */
+        .header-icons { display: flex; gap: 15px; align-items: center; }
+        .head-icon { font-size: 22px; cursor: pointer; text-decoration: none; color: white; }
+
+        /* გვერდითა მენიუ */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 85%; max-width: 300px; height: 100%; background: #000; border-right: 1px solid #222; transition: 0.3s; z-index: 3000; padding: 20px; overflow-y: auto; }
+        .sidebar.open { left: 0; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2500; }
+        .room-btn { padding: 14px; margin-bottom: 8px; cursor: pointer; border-radius: 12px; background: #111; color: #aaa; text-align: left; }
+        .room-btn.active { background: var(--red); color: white; }
+
+        /* ჩატის ბუშტები - ზუსტად შენი ფოტოდან */
+        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #000; }
+        .msg-row { display: flex; gap: 10px; align-items: flex-start; max-width: 95%; }
+        .user-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #333; background: #222; cursor: pointer; }
+        .bubble { background: #161616; padding: 15px; border-radius: 20px; border-left: 4px solid var(--red); flex: 1; position: relative; }
+        .nick { color: var(--red); font-size: 14px; font-weight: bold; margin-bottom: 5px; display: block; cursor: pointer; }
+        .chat-img { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; }
+
+        /* ქვედა პანელი */
+        .input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; }
+        .cam-btn { font-size: 26px; cursor: pointer; }
+        input { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        .send-btn { background: var(--red); border: none; width: 50px; height: 45px; border-radius: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <h2 style="color:var(--red); text-align:center; margin-bottom:25px;">OLD MAFIA</h2>
+        <div class="room-btn active" onclick="changeRoom('💬 ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+        <div class="room-btn" onclick="changeRoom('💎 VIP საუბრები', this)">💎 VIP საუბრები</div>
+        <div class="room-btn" onclick="changeRoom('🔒 შიფროგრამა', this)">🔒 შიფროგრამა</div>
+        <div class="room-btn" onclick="changeRoom('🎯 ვიქტორინა', this)">🎯 ვიქტორინა</div>
+        <div class="room-btn" onclick="changeRoom('🪢 ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+        <div class="room-btn" onclick="changeRoom('😂 იუმორი', this)">😂 იუმორი</div>
+        <div class="room-btn" onclick="changeRoom('🎵 მუსიკა', this)">🎵 მუსიკა</div>
+        <div class="room-btn" onclick="changeRoom('🖼️ გალერეა', this)">🖼️ გალერეა</div>
+        <div class="room-btn" onclick="changeRoom('🤝 გაცნობა', this)">🤝 გაცნობა</div>
+        <div class="room-btn" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+        <hr style="border:0.5px solid #222; margin:15px 0;">
+        <button onclick="localStorage.clear(); location.href='index.html'" style="width:100%; padding:10px; background:none; color:gray; border:none;">🚪 გასვლა</button>
+    </nav>
+
+    <header>
+        <div class="burger" onclick="toggleMenu()">☰</div>
+        <div class="room-info">
+            <span id="room-icon">💬</span>
+            <span id="room-title">ზოგადი ჩატი</span>
+        </div>
+        <div class="header-icons">
+            <a href="inbox.html" class="head-icon">📩</a>
+            <div onclick="location.href='profile.html'" class="head-icon">👤</div>
+        </div>
+    </header>
+
+    <div id="messages"></div>
+
+    <div class="input-area">
+        <label class="cam-btn" for="img-up">📷</label>
+        <input type="file" id="img-up" hidden accept="image/*" onchange="uploadPhoto(this)">
+        <input type="text" id="msg-input" placeholder="დაწერე შეტყობინება...">
+        <button class="send-btn" onclick="send()">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+        </button>
+    </div>
+
+    <script>
+        const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        let currentRoom = '💬 ზოგადი ჩატი';
+        const myNick = localStorage.getItem('username') || "სტუმარი";
+        const defAvat = "https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png";
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('open') ? 'block' : 'none';
+        }
+
+        function changeRoom(name, el) {
+            currentRoom = name;
+            const parts = name.split(' ');
+            document.getElementById('room-icon').innerText = parts[0];
+            document.getElementById('room-title').innerText = parts.slice(1).join(' ');
+            document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active');
+            toggleMenu(); loadMsgs();
+        }
+
+        async function loadMsgs() {
+            const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
+            const { data: avats } = await _sb.from('avatars_v3').select('nickname, avatar_url');
+            
+            let avatMap = {};
+            if(avats) avats.forEach(a => { if(a.avatar_url && !a.avatar_url.includes('imgbb')) avatMap[a.nickname] = a.avatar_url; });
+
+            const box = document.getElementById('messages');
+            if(msgs) {
+                box.innerHTML = msgs.reverse().map(m => {
+                    const isImg = m.message.includes('supabase.co/storage');
+                    const img = avatMap[m.nickname] || defAvat;
+                    return `
+                        <div class="msg-row">
+                            <img src="${img}" class="user-avatar" onclick="openProfile('${m.nickname}')" onerror="this.src='${defAvat}'">
+                            <div class="bubble">
+                                <span class="nick" onclick="openProfile('${m.nickname}')">${m.nickname}</span>
+                                <div>${isImg ? `<img src="${m.message}" class="chat-img">` : m.message}</div>
+                            </div>
+                        </div>`;
+                }).join('');
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        // ნიკზე ან ავატარზე დაჭერით პროფილზე გადასვლა
+        function openProfile(nick) {
+            localStorage.setItem('view_profile_of', nick);
+            location.href = 'profile.html';
+        }
+
+        async function send() {
+            const inp = document.getElementById('msg-input');
+            const val = inp.value.trim();
+            if(!val) return;
+            await _sb.from('messages_v3').insert([{ nickname: myNick, message: val, room_name: currentRoom }]);
+            inp.value = ""; loadMsgs();
+        }
+
+        async function uploadPhoto(input) {
+            const file = input.files[0]; if(!file) return;
+            const path = `chat/${Date.now()}_img.png`;
+            await _sb.storage.from('avatars').upload(path, file);
+            const url = `https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/avatars/${path}`;
+            await _sb.from('messages_v3').insert([{ nickname: myNick, message: url, room_name: currentRoom }]);
+            loadMsgs();
+        }
+
+        window.onload = () => { loadMsgs(); setInterval(loadMsgs, 3000); };
+    </script>
+</body>
+</html>
