@@ -2,94 +2,107 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>პროფილის რედაქტირება</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>პროფილი - OLD MAFIA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff4500; --bg: #000; }
+        body { background: var(--bg); color: white; font-family: sans-serif; text-align: center; padding: 40px 20px; }
+        .profile-card { background: #0a0a0a; padding: 30px; border-radius: 20px; border: 1px solid #222; max-width: 400px; margin: auto; }
+        .p-avatar { width: 150px; height: 150px; border-radius: 50%; border: 3px solid var(--red); object-fit: cover; margin-bottom: 20px; }
+        .p-nick { font-size: 24px; color: var(--red); font-weight: bold; margin-bottom: 10px; }
+        .p-status { color: #888; font-style: italic; margin-bottom: 25px; }
+        
+        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #333; background: #111; color: white; }
+        .file-label { display: block; background: #1a1a1a; padding: 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; border: 1px dashed #444; }
+        button { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--red); color: white; font-weight: bold; cursor: pointer; }
+        .back-link { display: block; margin-top: 20px; color: #555; text-decoration: none; font-size: 14px; }
+    </style>
 </head>
-<body style="background: #111; color: white; font-family: sans-serif; text-align: center; padding: 50px;">
+<body>
 
-    <h2>ჩემი პროფილი</h2>
-    
-    <div id="profile-info">
-        <img id="avatar-preview" src="default-avatar.png" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 2px solid orange;">
-        <p>როლი: <span id="user-role" style="color: orange;">მომხმარებელი</span></p>
+    <div class="profile-card">
+        <img id="p-img" class="p-avatar" src="https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png">
+        <div id="p-nick" class="p-nick">იტვირთება...</div>
+        <div id="p-status" class="p-status">...</div>
+
+        <div id="edit-zone" style="display:none;">
+            <label class="file-label">📸 აირჩიე ფოტო <input type="file" id="file-in" accept="image/*" style="display:none;"></label>
+            <input type="text" id="status-in" placeholder="შეიყვანე ახალი სტატუსი">
+            <button onclick="saveProfile()">მონაცემების შენახვა</button>
+        </div>
+        <a href="home.html" class="back-link">← უკან დაბრუნება</a>
     </div>
 
-    <br>
-    <label>შეცვალე ფოტო:</label><br>
-    <input type="file" id="avatarInput" accept="image/*"><br><br>
-
-    <label>ჩემი სტატუსი:</label><br>
-    <input type="text" id="statusInput" placeholder="როგორ ხარ?" style="padding: 10px; border-radius: 5px;"><br><br>
-
-    <button onclick="saveProfile()" style="padding: 10px 20px; background: orange; border: none; cursor: pointer; font-weight: bold;">შენახვა</button>
-
     <script>
-        // ჩაწერე შენი მონაცემები აქ:
-        const SUPABASE_URL = 'შენი_პროექტის_url';
-        const SUPABASE_KEY = 'შენი_anon_key';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        
+        // ვიგებთ ვის პროფილს ვუყურებთ
+        const viewNick = localStorage.getItem('view_profile_of') || "სტუმარი";
+        const myNick = localStorage.getItem('username');
 
-        // 1. ინფორმაციის ჩატვირთვა გვერდის გახსნისას
         async function loadProfile() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                alert("გთხოვთ გაიაროთ ავტორიზაცია");
-                return;
-            }
-
-            let { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (profile) {
-                if (profile.avatar_url) document.getElementById('avatar-preview').src = profile.avatar_url;
-                if (profile.status) document.getElementById('statusInput').value = profile.status;
-                if (profile.role) document.getElementById('user-role').innerText = profile.role;
-            }
-        }
-
-        // 2. მონაცემების შენახვა
-        async function saveProfile() {
-            const { data: { user } } = await supabase.auth.getUser();
-            const file = document.getElementById('avatarInput').files[0];
-            const status = document.getElementById('statusInput').value;
+            document.getElementById('p-nick').innerText = viewNick;
             
-            let avatarUrl = document.getElementById('avatar-preview').src;
+            // თუ ეს ჩემი პროფილია, გამოვაჩინოთ რედაქტირების ღილაკები
+            if(viewNick === myNick) {
+                document.getElementById('edit-zone').style.display = 'block';
+            }
 
-            // თუ მომხმარებელმა აირჩია ახალი ფოტო
-            if (file) {
-                const filePath = `avatars/${user.id}`;
-                const { error: uploadError } = await supabase.storage
-                    .from('avatars')
-                    .upload(filePath, file, { upsert: true });
-
-                if (uploadError) {
-                    alert("ფოტოს ატვირთვა ვერ მოხერხდა");
-                    return;
+            // წამოვიღოთ მონაცემები ბაზიდან
+            const { data, error } = await _sb.from('avatars_v3').select('*').eq('nickname', viewNick).single();
+            
+            if(data) {
+                if(data.avatar_url) document.getElementById('p-img').src = data.avatar_url;
+                if(data.status) {
+                    document.getElementById('p-status').innerText = data.status;
+                    document.getElementById('status-in').value = data.status;
                 }
-
-                const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-                avatarUrl = data.publicUrl;
+            } else {
+                document.getElementById('p-status').innerText = "სტატუსი არ არის მითითებული";
             }
-
-            // მონაცემების განახლება ბაზაში
-            const { error } = await supabase
-                .from('profiles')
-                .update({ 
-                    status: status, 
-                    avatar_url: avatarUrl 
-                })
-                .eq('id', user.id);
-
-            if (error) alert("შეცდომა შენახვისას: " + error.message);
-            else alert("წარმატებით განახლდა!");
-            
-            location.reload();
         }
 
-        loadProfile();
+        async function saveProfile() {
+            const btn = document.querySelector('button');
+            btn.innerText = "ინახება...";
+            btn.disabled = true;
+
+            const status = document.getElementById('status-in').value;
+            const file = document.getElementById('file-in').files[0];
+            let url = document.getElementById('p-img').src;
+
+            // 1. თუ მომხმარებელმა აირჩია ფოტო, ავტვირთოთ Storage-ში
+            if(file) {
+                const fileName = `avatar_${Date.now()}_${myNick}`;
+                const { data: upData, error: upErr } = await _sb.storage.from('avatars').upload(fileName, file);
+                
+                if(!upErr) {
+                    const { data } = _sb.storage.from('avatars').getPublicUrl(fileName);
+                    url = data.publicUrl;
+                } else {
+                    alert("ფოტოს ატვირთვა ვერ მოხერხდა!");
+                }
+            }
+
+            // 2. განვაახლოთ ინფორმაცია avatars_v3 ცხრილში
+            const { error } = await _sb.from('avatars_v3').upsert({ 
+                nickname: myNick, 
+                avatar_url: url, 
+                status: status 
+            });
+
+            if(!error) {
+                alert("პროფილი წარმატებით განახლდა!");
+                location.reload();
+            } else {
+                alert("შეცდომა შენახვისას!");
+                btn.innerText = "მონაცემების შენახვა";
+                btn.disabled = false;
+            }
+        }
+
+        window.onload = loadProfile;
     </script>
 </body>
 </html>
