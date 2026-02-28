@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - OFFICIAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #ff4500; --bg: #000; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* ჰედერი */
+        header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; }
+        .burger { font-size: 24px; color: var(--red); cursor: pointer; }
+        .room-title { font-weight: bold; color: var(--red); font-size: 16px; }
+        
+        .header-icons { display: flex; gap: 20px; align-items: center; }
+        .badge { position: absolute; top: -8px; right: -10px; background: var(--red); color: white; font-size: 11px; padding: 2px 6px; border-radius: 50%; display: none; }
+
+        /* გვერდითა მენიუ (ოთახები) */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-right: 1px solid #222; }
+        .sidebar.open { left: 0; }
+        .room-btn { padding: 15px; margin-bottom: 5px; cursor: pointer; border-radius: 10px; transition: 0.2s; color: #ccc; }
+        .room-btn:hover, .room-btn.active { background: #1a1a1a; color: var(--red); font-weight: bold; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; }
+
+        /* ჩატის ზონა */
+        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg-row { display: flex; gap: 10px; align-items: flex-start; }
+        .u-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor: pointer; }
+        .bubble { background: #161616; padding: 12px; border-radius: 15px; flex: 1; border-left: 3px solid var(--red); }
+        .nick { color: var(--red); font-weight: bold; font-size: 13px; margin-bottom: 3px; cursor: pointer; display: block; }
+
+        /* ინპუტი */
+        .input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        .send-btn { background: var(--red); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <h2 style="color:var(--red); margin-bottom:20px; text-align:center;">OLD MAFIA</h2>
+        <div class="room-btn active" onclick="changeRoom('💬 ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+        <div class="room-btn" onclick="changeRoom('💎 VIP საუბრები', this)">💎 VIP საუბრები</div>
+        <div class="room-btn" onclick="changeRoom('🔒 შიფროგრამა', this)">🔒 შიფროგრამა</div>
+        <div class="room-btn" onclick="changeRoom('🎯 ვიქტორინა', this)">🎯 ვიქტორინა</div>
+        <div class="room-btn" onclick="changeRoom('🪢 ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+        <div class="room-btn" onclick="changeRoom('😂 იუმორი', this)">😂 იუმორი</div>
+        <div class="room-btn" onclick="changeRoom('🎵 მუსიკა', this)">🎵 მუსიკა</div>
+        <div class="room-btn" onclick="changeRoom('🖼️ გალერეა', this)">🖼️ გალერეა</div>
+        <div class="room-btn" onclick="changeRoom('🤝 გაცნობა', this)">🤝 გაცნობა</div>
+        <div class="room-btn" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+    </nav>
+
+    <header>
+        <div class="burger" onclick="toggleMenu()">☰</div>
+        <div class="room-title" id="rt">💬 ზოგადი ჩატი</div>
+        <div class="header-icons">
+            <a href="inbox.html" style="position:relative; text-decoration:none;">📩<span id="badge" class="badge">0</span></a>
+            <div onclick="goProfile(true)" style="cursor:pointer; font-size:22px;">👤</div>
+        </div>
+    </header>
+
+    <div id="messages"></div>
+
+    <div class="input-area">
+        <input type="text" id="msg-in" placeholder="დაწერე შეტყობინება...">
+        <button class="send-btn" onclick="send()">➤</button>
+    </div>
+
+<script>
+    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('username') || "სტუმარი";
+    let currentRoom = '💬 ზოგადი ჩატი';
+
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('open') ? 'block' : 'none';
+    }
+
+    function changeRoom(name, el) {
+        currentRoom = name;
+        document.getElementById('rt').innerText = name;
+        document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        toggleMenu();
+        loadMsgs();
+    }
+
+    async function loadMsgs() {
+        const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
+        const { data: avs } = await _sb.from('avatars_v3').select('nickname, avatar_url');
+        
+        let avMap = {};
+        if(avs) avs.forEach(a => avMap[a.nickname] = a.avatar_url);
+
+        const box = document.getElementById('messages');
+        box.innerHTML = msgs?.reverse().map(m => `
+            <div class="msg-row">
+                <img src="${avMap[m.nickname] || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="goProfile(false, '${m.nickname}')">
+                <div class="bubble">
+                    <span class="nick" onclick="goProfile(false, '${m.nickname}')">${m.nickname}</span>
+                    <div>${m.message}</div>
+                </div>
+            </div>
+        `).join('') || "";
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function send() {
+        const inp = document.getElementById('msg-in');
+        if(!inp.value.trim()) return;
+        await _sb.from('messages_v3').insert([{ nickname: myNick, message: inp.value, room_name: currentRoom }]);
+        inp.value = ""; loadMsgs();
+    }
+
+    async function checkInbox() {
+        const { count } = await _sb.from('messages_v3').select('*', { count: 'exact', head: true }).ilike('room_name', `%PM%${myNick}%`).neq('nickname', myNick);
+        const b = document.getElementById('badge');
+        if(count > 0) { b.innerText = count; b.style.display = 'block'; }
+    }
+
+    function goProfile(isMe, nick) {
+        localStorage.setItem('view_profile_of', isMe ? myNick : nick);
+        location.href = 'profile.html';
+    }
+
+    window.onload = () => { loadMsgs(); checkInbox(); setInterval(loadMsgs, 3000); setInterval(checkInbox, 5000); };
+</script>
+</body>
+</html>
