@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>შემოსულები - OLD MAFIA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; padding: 20px; }
+        header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .back-btn { color: #ff4500; text-decoration: none; font-size: 24px; }
+        h1 { font-size: 22px; color: #ff4500; }
+        
+        .chat-list { display: flex; flex-direction: column; gap: 10px; }
+        .chat-item { 
+            background: #111; padding: 15px; border-radius: 12px; 
+            display: flex; align-items: center; gap: 15px; 
+            cursor: pointer; border: 1px solid #222; transition: 0.2s;
+        }
+        .chat-item:hover { border-color: #ff4500; background: #1a1a1a; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 1px solid #333; }
+        .info { flex: 1; }
+        .name { font-weight: bold; color: #fff; margin-bottom: 4px; }
+        .last-msg { color: #888; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="home.html" class="back-btn">⬅</a>
+        <h1>შემოსულები</h1>
+    </header>
+
+    <div id="chat-list" class="chat-list">
+        <p id="loading" style="text-align:center; color:gray;">იტვირთება...</p>
+    </div>
+
+<script>
+    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('username');
+
+    async function loadInbox() {
+        // 1. ვეძებთ ყველა PM მესიჯს, სადაც მე ვფიგურირებ
+        const { data: msgs, error } = await _sb
+            .from('messages_v3')
+            .select('*')
+            .ilike('room_name', `%PM%${myNick}%`)
+            .order('created_at', { ascending: false });
+
+        const list = document.getElementById('chat-list');
+        if (error || !msgs || msgs.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:gray; margin-top:50px;">მიმოწერები არ მოიძებნა</p>';
+            return;
+        }
+
+        // 2. ვახარისხებთ ნიკების მიხედვით (რომ თითო კაცი ერთხელ გამოჩნდეს)
+        let uniqueChats = {};
+        msgs.forEach(m => {
+            let partner = m.room_name.replace('PM_', '').replace(myNick, '').replace('_', '');
+            if (!uniqueChats[partner]) {
+                uniqueChats[partner] = m;
+            }
+        });
+
+        // 3. გამოგვაქვს სია
+        list.innerHTML = Object.keys(uniqueChats).map(partner => {
+            const m = uniqueChats[partner];
+            return `
+                <div class="chat-item" onclick="openChat('${partner}')">
+                    <img src="https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png" class="avatar">
+                    <div class="info">
+                        <div class="name">${partner}</div>
+                        <div class="last-msg">${m.message}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openChat(nick) {
+        localStorage.setItem('open_pm_with', nick);
+        location.href = 'home.html';
+    }
+
+    loadInbox();
+</script>
+</body>
+</html>
