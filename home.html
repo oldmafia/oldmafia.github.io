@@ -6,65 +6,72 @@
     <title>OLD MAFIA - OFFICIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff4500; --bg: #000; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* ჰედერი - გასწორებული */
-        header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; z-index: 100; }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-icons { display: flex; gap: 12px; align-items: center; }
-        .icon-btn { cursor: pointer; font-size: 22px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
-        .badge { position: absolute; top: 0; right: 0; background: var(--red); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; border: 1px solid black; }
+        :root { --main-red: #ff4500; --dark-bg: #000; --panel-bg: #0a0a0a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--dark-bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* მენიუები */
-        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-right: 1px solid #222; display: flex; flex-direction: column; }
+        header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; }
+        .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
+        
+        .icon-box { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; flex-shrink: 0; }
+        .badge { position: absolute; top: 2px; right: 2px; background: var(--main-red); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; display: none; border: 1px solid black; }
+
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: linear-gradient(to bottom, #050505, #000); }
+        .msg-item { display: flex; gap: 12px; align-items: flex-start; }
+        .msg-avatar { width: 45px; height: 45px; border-radius: 50%; border: 1px solid #333; object-fit: cover; cursor: pointer; flex-shrink: 0; }
+        .msg-nick { color: var(--main-red); font-weight: bold; font-size: 14px; cursor: pointer; }
+        .msg-text { color: #ccc; font-size: 14px; background: #111; padding: 10px; border-radius: 0 15px 15px 15px; border-left: 3px solid var(--main-red); margin-top: 4px; }
+        .role-tag { font-size: 9px; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
+
+        .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: var(--panel-bg); transition: 0.3s; z-index: 2000; padding: 20px; border-right: 1px solid #222; display: flex; flex-direction: column; }
         .sidebar.open { left: 0; }
-        .right-panel { position: fixed; right: -100%; top: 0; width: 320px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-left: 1px solid #222; display: flex; flex-direction: column; }
+        .room-list { flex: 1; overflow-y: auto; margin-top: 20px; }
+        .room-item { padding: 12px; cursor: pointer; color: #aaa; border-radius: 8px; margin-bottom: 5px; transition: 0.2s; }
+        .room-item:hover, .room-item.active { background: #111; color: var(--main-red); }
+
+        .right-panel { position: fixed; right: -100%; top: 0; width: 320px; height: 100%; background: var(--panel-bg); transition: 0.3s; z-index: 2000; padding: 20px; border-left: 1px solid #222; overflow-y: auto; }
         .right-panel.open { right: 0; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; }
 
-        /* ჩატი */
-        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg-row { display: flex; gap: 10px; align-items: flex-start; }
-        .u-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor: pointer; flex-shrink: 0; }
-        .bubble { background: #111; padding: 10px 14px; border-radius: 15px; flex: 1; border-left: 3px solid var(--red); position: relative; }
-        .nick { color: var(--red); font-weight: bold; font-size: 13px; cursor: pointer; }
-        .role-tag { font-size: 9px; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; vertical-align: middle; }
-        .tag-founder { background: #8b0000; }
-        .tag-admin { background: #00008b; }
+        .input-bar { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input#msg-in { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px 18px; border-radius: 25px; outline: none; }
+        .btn-send { background: var(--main-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; }
 
-        /* ინპუტის არე */
-        .input-area { padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; }
-        #msg-in { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #111; color: white; outline: none; font-size: 14px; }
-        .send-btn { background: var(--red); border: none; width: 45px; height: 40px; border-radius: 15px; color: white; cursor: pointer; font-size: 18px; flex-shrink: 0; }
-
-        /* პროფილის ღილაკები - გასწორებული */
-        .prof-card { text-align: center; padding: 10px; }
-        .admin-panel { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .admin-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 12px; }
+        .prof-card { text-align: center; }
+        .admin-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <div class="overlay" id="overlay" onclick="closeAllMenus()"></div>
+    <div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <h2 style="color:var(--main-red); text-align:center;">OLD MAFIA</h2>
+        <div class="room-list" id="rooms-container"></div>
+        <button onclick="logout()" style="width:100%; padding:12px; background:#1a0000; border:1px solid #400; color:#ff4444; border-radius:8px; cursor:pointer; font-weight:bold;">🚪 გასვლა</button>
+    </nav>
+
+    <aside class="right-panel" id="right-panel">
+        <div style="text-align: right; cursor: pointer; color: var(--main-red); font-size: 24px;" onclick="closeAll()">✕</div>
+        <div id="panel-content"></div>
+    </aside>
 
     <header>
         <div class="header-left">
-            <div onclick="toggleSidebar()" style="cursor:pointer; font-size:24px;">☰</div>
-            <div id="rt" style="font-weight:bold; color:var(--red);">💬 ზოგადი ჩატი</div>
+            <div style="cursor:pointer; font-size:24px;" onclick="openSidebar()">☰</div>
+            <div id="room-title" style="color:var(--main-red); font-weight:bold;">💬 ზოგადი ჩატი</div>
         </div>
-        <div class="header-icons">
-            <div class="icon-btn" onclick="openInbox()">✉️ <span id="pm-badge" class="badge" style="display:none;">0</span></div>
-            <div class="icon-btn" onclick="openMyProfile()">👤</div>
+        <div class="header-right">
+            <div class="icon-box" onclick="showInbox()">✉️<span id="pm-badge" class="badge">0</span></div>
+            <div class="icon-box" onclick="showMyProfile()">👤</div>
         </div>
     </header>
 
     <div id="messages"></div>
 
-    <div class="input-area">
-        <input type="text" id="msg-in" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
-        <button class="send-btn" onclick="send()">➤</button>
+    <div class="input-bar">
+        <input type="text" id="msg-in" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="btn-send" onclick="sendMessage()">➤</button>
     </div>
 
 <script>
@@ -73,43 +80,54 @@
     let currentRoom = '💬 ზოგადი ჩატი';
     let myRole = "მომხმარებელი";
 
-    function toggleSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').style.display = 'block'; }
-    function closeAllMenus() { document.querySelectorAll('.sidebar, .right-panel').forEach(el => el.classList.remove('open')); document.getElementById('overlay').style.display = 'none'; }
+    const allRooms = ['💬 ზოგადი ჩატი', '🛡️ ადმინისტრაცია', '💎 VIP საუბრები', '🔒 შიფროგრამა', '🎯 ვიქტორინა', '🪢 ჩამოხრჩობანა', '😂 იუმორი', '🎵 მუსიკა', '🖼️ გალერეა', '🤝 გაცნობა'];
 
-    async function loadMsgs() {
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').style.display='block'; }
+    function closeAll() { document.querySelectorAll('.sidebar, .right-panel').forEach(p => p.classList.remove('open')); document.getElementById('overlay').style.display='none'; }
+
+    function initRooms() {
+        document.getElementById('rooms-container').innerHTML = allRooms.map(r => `
+            <div class="room-item ${r === currentRoom ? 'active' : ''}" onclick="selectRoom('${r}')">${r}</div>
+        `).join('');
+    }
+
+    function selectRoom(r) {
+        currentRoom = r;
+        document.getElementById('room-title').innerText = r;
+        initRooms();
+        closeAll();
+        loadMessages();
+    }
+
+    async function loadMessages() {
         const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(50);
         const { data: avs } = await _sb.from('avatars_v3').select('*');
         let avMap = {}; if(avs) avs.forEach(a => { avMap[a.nickname] = a; if(a.nickname === myNick) myRole = a.role || "მომხმარებელი"; });
 
-        const box = document.getElementById('messages');
-        box.innerHTML = msgs?.reverse().map(m => {
+        document.getElementById('messages').innerHTML = msgs?.reverse().map(m => {
             const u = avMap[m.nickname] || {};
-            let tag = "";
-            if(u.role === 'დამფუძნებელი') tag = '<span class="role-tag tag-founder">დამფუძნებელი</span>';
-            else if(u.role === 'ადმინი') tag = '<span class="role-tag tag-admin">ადმინი</span>';
-
-            return `<div class="msg-row">
-                <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="openUserProfile('${m.nickname}')">
-                <div class="bubble">
-                    <div style="margin-bottom:4px;"><span class="nick" onclick="openUserProfile('${m.nickname}')">${m.nickname}</span>${tag}</div>
-                    <div style="font-size:14px; line-height:1.4;">${m.message}</div>
-                </div>
-            </div>`;
+            let tag = u.role === 'დამფუძნებელი' ? '<span class="role-tag" style="background:#8b0000;">FOUNDER</span>' : 
+                      u.role === 'ადმინი' ? '<span class="role-tag" style="background:#00008b;">ADMIN</span>' : '';
+            return `
+                <div class="msg-item">
+                    <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="msg-avatar" onclick="showProfile('${m.nickname}')">
+                    <div class="msg-content">
+                        <span class="msg-nick" onclick="showProfile('${m.nickname}')">${m.nickname}</span>${tag}
+                        <div class="msg-text">${m.message}</div>
+                    </div>
+                </div>`;
         }).join('') || "";
-        box.scrollTop = box.scrollHeight;
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
     }
 
-    async function openUserProfile(nick) {
-        if(nick === myNick) return openMyProfile();
+    async function showProfile(nick) {
+        if(nick === myNick) return showMyProfile();
         document.getElementById('right-panel').classList.add('open');
         document.getElementById('overlay').style.display = 'block';
         const { data: u } = await _sb.from('avatars_v3').select('*').eq('nickname', nick).single();
         
-        let adminHtml = "";
-        // მხოლოდ დამფუძნებელს (ან abu007-ს) აქვს სრული მართვის უფლება
+        let adminPanel = "";
         if(myRole === 'დამფუძნებელი' || myNick === 'abu007') {
-            adminHtml = `
-                <div class="admin-panel">
-                    <button class="admin-btn" style="background:#8b0000;" onclick="setRole('${nick}', 'დამფუძნებელი')">დამფუძნებლად დანიშვნა</button>
-                    <button class="admin-btn" style="background:#00008b;" onclick="setRole('${nick}', 'ადმინი')">ადმინად დანიშვნა</button>
-                    <button class="admin-btn" style="background:#333;" onclick="setRole('${nick}', 'მომხმარებელი')">უფლებების წაშლა</button>
+            adminPanel = `
+                <div style="margin-top:20px; border-top:1px solid #222; padding-top:15px;">
+                    <p style="font-size:11px; color:gray; margin-bottom:1
