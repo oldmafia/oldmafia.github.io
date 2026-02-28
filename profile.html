@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>პროფილი</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body { background:black; color:white; text-align:center; font-family:sans-serif; }
+.avatar {
+  width:150px; height:150px;
+  border-radius:50%;
+  object-fit:cover;
+  border:3px solid orange;
+  margin-top:40px;
+}
+.nickname { font-size:28px; color:gold; margin-top:15px; }
+.status { margin-top:10px; opacity:0.8; }
+</style>
+</head>
+<body>
+
+<a href="https://oldmafia.github.io/index.html" style="color:white;">⬅ უკან</a>
+
+<img id="avatar" class="avatar" src="https://via.placeholder.com/150">
+<div id="nickname" class="nickname"></div>
+<div id="status" class="status"></div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ftfciebnywbondaiarnc.supabase.co",
+  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+);
+
+const params = new URLSearchParams(window.location.search);
+const nickname = params.get("user");
+
+async function loadProfile(){
+  if(!nickname) return;
+
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("nickname", nickname)
+    .single();
+
+  if(!data){
+    document.getElementById("nickname").textContent="პროფილი ვერ მოიძებნა";
+    return;
+  }
+
+  document.getElementById("nickname").textContent = data.nickname;
+  document.getElementById("status").textContent = data.status || "";
+
+  if(data.avatar_url){
+    document.getElementById("avatar").src = data.avatar_url;
+  }
+}
+
+loadProfile();
+</script>
+
+</body>
+</html>
