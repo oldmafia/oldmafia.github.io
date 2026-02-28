@@ -11,42 +11,39 @@
         body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
         header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; z-index: 100; }
-        .burger { cursor: pointer; font-size: 24px; color: var(--red); }
-        .header-icons { display: flex; gap: 20px; align-items: center; }
-        .icon-btn { position: relative; cursor: pointer; font-size: 24px; }
-        .badge { position: absolute; top: -5px; right: -8px; background: var(--red); color: white; font-size: 10px; padding: 2px 6px; border-radius: 50%; display: none; border: 1px solid black; }
+        .header-icons { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { position: relative; cursor: pointer; font-size: 20px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .badge { position: absolute; top: -2px; right: -5px; background: var(--red); color: white; font-size: 10px; padding: 1px 5px; border-radius: 10px; border: 1px solid black; }
 
-        /* მარცხენა მენიუ */
         .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-right: 1px solid #222; display: flex; flex-direction: column; }
         .sidebar.open { left: 0; }
         .rooms-container { flex: 1; overflow-y: auto; }
-        .room-btn { padding: 15px; margin-bottom: 5px; cursor: pointer; border-radius: 10px; color: #ccc; }
+        .room-btn { padding: 12px; margin-bottom: 5px; cursor: pointer; border-radius: 8px; color: #ccc; }
         .room-btn.active { background: #1a1a1a; color: var(--red); font-weight: bold; }
-        .logout-btn { padding: 15px; margin-top: 10px; cursor: pointer; border-radius: 10px; color: #ff4444; border: 1px solid #330000; background: #1a0000; text-align: center; font-weight: bold; }
+        .logout-btn { padding: 12px; margin-top: 10px; cursor: pointer; border-radius: 8px; color: #ff4444; background: #1a0000; text-align: center; font-weight: bold; }
 
-        /* მარჯვენა პანელი */
         .right-panel { position: fixed; right: -100%; top: 0; width: 320px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-left: 1px solid #222; display: flex; flex-direction: column; }
         .right-panel.open { right: 0; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; }
 
-        /* ჩატის სტილი */
-        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg-row { display: flex; gap: 10px; align-items: flex-start; }
-        .u-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #222; cursor: pointer; background: #111; }
-        .bubble { background: #111; padding: 12px; border-radius: 15px; flex: 1; border-left: 3px solid var(--red); }
+        #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-row { display: flex; gap: 10px; align-items: flex-start; position: relative; }
+        .u-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor: pointer; }
+        .bubble { background: #111; padding: 10px; border-radius: 12px; flex: 1; border-left: 3px solid var(--red); position: relative; }
         .nick-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
         .nick { color: var(--red); font-weight: bold; font-size: 13px; cursor: pointer; }
-        
-        /* თეგები */
-        .role-tag { font-size: 9px; color: #fff; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
+        .del-msg { color: #444; cursor: pointer; font-size: 12px; padding: 0 5px; }
+        .del-msg:hover { color: #ff4444; }
+
+        .role-tag { font-size: 9px; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
         .tag-founder { background: #8b0000; border: 1px solid var(--red); }
         .tag-admin { background: #00008b; border: 1px solid #0000ff; }
 
         .input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; outline: none; }
-        .send-btn { background: var(--red); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; font-size: 20px; }
+        input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        .send-btn { background: var(--red); border: none; width: 45px; border-radius: 10px; color: white; cursor: pointer; }
 
-        .admin-panel { margin-top: 15px; padding: 10px; border: 1px solid #330000; background: #1a0000; border-radius: 10px; }
+        .admin-panel { margin-top: 15px; padding: 10px; border: 1px solid #330000; background: #1a0000; border-radius: 8px; }
         .admin-btn { width: 100%; padding: 8px; margin-top: 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; color: white; }
     </style>
 </head>
@@ -80,7 +77,7 @@
         <div class="burger" onclick="toggleSidebar()">☰</div>
         <div id="rt" style="font-weight:bold; color:var(--red);">💬 ზოგადი ჩატი</div>
         <div class="header-icons">
-            <div class="icon-btn" onclick="openInbox()">✉️ <span id="pm-badge" class="badge">0</span></div>
+            <div class="icon-btn" onclick="openInbox()">✉️ <span id="pm-badge" class="badge" style="display:none;">0</span></div>
             <div class="icon-btn" onclick="openMyProfile()">👤</div>
         </div>
     </header>
@@ -104,33 +101,38 @@
     function logout() { localStorage.removeItem('username'); location.href = 'index.html'; }
 
     async function loadMsgs() {
-        try {
-            const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
-            const { data: avs } = await _sb.from('avatars_v3').select('*');
-            let avMap = {}; 
-            if(avs) avs.forEach(a => { 
-                avMap[a.nickname] = a; 
-                if(a.nickname === myNick) myRole = a.role || "მომხმარებელი"; 
-            });
+        const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(50);
+        const { data: avs } = await _sb.from('avatars_v3').select('*');
+        let avMap = {}; if(avs) avs.forEach(a => { avMap[a.nickname] = a; if(a.nickname === myNick) myRole = a.role || "მომხმარებელი"; });
 
-            const box = document.getElementById('messages');
-            if(!box) return;
-            box.innerHTML = msgs?.reverse().map(m => {
-                const u = avMap[m.nickname] || {};
-                let tag = "";
-                if(u.role === 'დამფუძნებელი') tag = '<span class="role-tag tag-founder">დამფუძნებელი</span>';
-                else if(u.role === 'ადმინი') tag = '<span class="role-tag tag-admin">ადმინი</span>';
+        const box = document.getElementById('messages');
+        box.innerHTML = msgs?.reverse().map(m => {
+            const u = avMap[m.nickname] || {};
+            let tag = "";
+            if(u.role === 'დამფუძნებელი') tag = '<span class="role-tag tag-founder">დამფუძნებელი</span>';
+            else if(u.role === 'ადმინი') tag = '<span class="role-tag tag-admin">ადმინი</span>';
 
-                return `<div class="msg-row">
-                    <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="openUserProfile('${m.nickname}')">
-                    <div class="bubble">
-                        <div class="nick-box"><span class="nick" onclick="openUserProfile('${m.nickname}')">${m.nickname}</span>${tag}</div>
-                        <div>${m.message}</div>
+            const canDelete = (m.nickname === myNick || myRole === 'დამფუძნებელი' || myRole === 'ადმინი');
+
+            return `<div class="msg-row">
+                <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="openUserProfile('${m.nickname}')">
+                <div class="bubble">
+                    <div class="nick-box">
+                        <span class="nick" onclick="openUserProfile('${m.nickname}')">${m.nickname} ${tag}</span>
+                        ${canDelete ? `<span class="del-msg" onclick="deleteMsg(${m.id})">✕</span>` : ''}
                     </div>
-                </div>`;
-            }).join('') || "";
-            box.scrollTop = box.scrollHeight;
-        } catch(e) { console.error("Load Error:", e); }
+                    <div>${m.message}</div>
+                </div>
+            </div>`;
+        }).join('') || "";
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function deleteMsg(id) {
+        if(confirm("წავშალოთ მესიჯი?")) {
+            await _sb.from('messages_v3').delete().eq('id', id);
+            loadMsgs();
+        }
     }
 
     async function openUserProfile(nick) {
@@ -143,38 +145,36 @@
         if(myRole === 'დამფუძნებელი' || myNick === 'abu007') {
             adminHtml = `
                 <div class="admin-panel">
-                    <button class="admin-btn" style="background:#8b0000;" onclick="updateUserRole('${nick}', 'დამფუძნებელი')">დამფუძნებლად დანიშვნა</button>
-                    <button class="admin-btn" style="background:#00008b;" onclick="updateUserRole('${nick}', 'ადმინი')">ადმინად დანიშვნა</button>
-                    <button class="admin-btn" style="background:#333;" onclick="updateUserRole('${nick}', 'მომხმარებელი')">უფლებების წაშლა</button>
+                    <button class="admin-btn" style="background:#8b0000;" onclick="setRole('${nick}', 'დამფუძნებელი')">დამფუძნებლად დანიშვნა</button>
+                    <button class="admin-btn" style="background:#00008b;" onclick="setRole('${nick}', 'ადმინი')">ადმინად დანიშვნა</button>
+                    <button class="admin-btn" style="background:#333;" onclick="setRole('${nick}', 'მომხმარებელი')">უფლებების წაშლა</button>
                 </div>`;
         }
 
         document.getElementById('content-area').innerHTML = `
             <div style="text-align:center;">
-                <img style="width:80px; height:80px; border-radius:50%; border:2px solid var(--red);" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
-                <h4>${nick}</h4>
-                <p style="color:var(--red); font-size:11px;">${u?.role || 'მომხმარებელი'}</p>
+                <img style="width:100px; height:100px; border-radius:50%; border:2px solid var(--red);" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
+                <h4 style="margin-top:10px;">${nick}</h4>
+                <p style="color:var(--red); font-size:12px; font-weight:bold; margin-bottom:10px;">${u?.role || 'მომხმარებელი'}</p>
+                <p style="font-size:11px; color:#777; font-style:italic;">${u?.status || ''}</p>
             </div>
             ${adminHtml}
+            <div style="margin-top:20px; border-top:1px solid #222; padding-top:10px;">
+                 <p style="font-size:12px; margin-bottom:5px;">პირადი შეტყობინება:</p>
+                 <div style="display:flex; gap:5px;">
+                    <input type="text" id="pm-in" style="flex:1; padding:8px; border-radius:5px; background:#111; border:1px solid #333; color:white;">
+                    <button onclick="sendPM('${nick}')" style="background:var(--red); border:none; padding:0 10px; border-radius:5px; color:white;">➤</button>
+                 </div>
+            </div>
         `;
     }
 
-    async function updateUserRole(nick, newRole) {
-        await _sb.from('avatars_v3').update({ role: newRole }).eq('nickname', nick);
-        alert("სტატუსი განახლდა!"); openUserProfile(nick); loadMsgs();
-    }
-
-    async function openMyProfile() {
-        const { data: u } = await _sb.from('avatars_v3').select('*').eq('nickname', myNick).single();
-        document.getElementById('right-panel').classList.add('open');
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('content-area').innerHTML = `
-            <img style="width:100px; height:100px; border-radius:50%; margin:0 auto; display:block; border:2px solid var(--red);" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
-            <h3 style="text-align:center;">${myNick}</h3>
-            <p style="text-align:center; color:var(--red);">${u?.role || 'მომხმარებელი'}</p>
-            <input type="text" id="st-up" style="width:100%; padding:10px; margin:10px 0; background:#111; color:white; border:1px solid #333;" value="${u?.status || ''}">
-            <button onclick="saveProfile()" style="width:100%; background:var(--red); color:white; padding:10px; border:none; border-radius:5px;">შენახვა</button>
-        `;
+    async function setRole(nick, role) {
+        const { error } = await _sb.from('avatars_v3').update({ role: role }).eq('nickname', nick);
+        if(!error) { 
+            alert("სტატუსი შეიცვალა!"); 
+            location.reload(); // გვერდი ახლდება, რომ ცვლილება ყველგან გამოჩნდეს
+        }
     }
 
     async function send() {
@@ -183,13 +183,33 @@
         i.value = ""; loadMsgs();
     }
 
+    async function openMyProfile() {
+        const { data: u } = await _sb.from('avatars_v3').select('*').eq('nickname', myNick).single();
+        document.getElementById('right-panel').classList.add('open');
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('content-area').innerHTML = `
+            <img style="width:100px; height:100px; border-radius:50%; margin:0 auto; display:block; border:2px solid var(--red);" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
+            <h3 style="text-align:center; margin:10px 0;">${myNick}</h3>
+            <p style="text-align:center; color:var(--red); font-weight:bold; margin-bottom:15px;">${u?.role || 'მომხმარებელი'}</p>
+            <input type="text" id="st-up" placeholder="სტატუსი" style="width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #333; color:white;" value="${u?.status || ''}">
+            <button onclick="saveProfile()" style="width:100%; background:var(--red); color:white; padding:10px; border:none; border-radius:5px; font-weight:bold;">შენახვა</button>
+        `;
+    }
+
     async function saveProfile() {
         const s = document.getElementById('st-up').value;
         await _sb.from('avatars_v3').upsert({ nickname: myNick, status: s });
         location.reload();
     }
 
-    window.onload = () => { loadMsgs(); setInterval(loadMsgs, 4000); };
+    async function checkNewPMs() {
+        const { data } = await _sb.from('messages_v3').select('id').ilike('room_name', `%_PM_%${myNick}%`).neq('nickname', myNick);
+        const b = document.getElementById('pm-badge');
+        if(b && data && data.length > 0) { b.innerText = data.length; b.style.display = 'block'; }
+        else if(b) { b.style.display = 'none'; }
+    }
+
+    window.onload = () => { loadMsgs(); checkNewPMs(); setInterval(loadMsgs, 4000); setInterval(checkNewPMs, 5000); };
 </script>
 </body>
 </html>
