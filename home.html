@@ -11,10 +11,12 @@
         body { background: var(--bg); color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
         header { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; z-index: 100; }
+        .burger { cursor: pointer; font-size: 24px; color: var(--red); }
         .header-icons { display: flex; gap: 20px; align-items: center; }
         .icon-btn { position: relative; cursor: pointer; font-size: 24px; }
-        .badge { position: absolute; top: -5px; right: -8px; background: var(--red); color: white; font-size: 10px; padding: 2px 6px; border-radius: 50%; display: none; border: 1px solid black; font-weight: bold; }
+        .badge { position: absolute; top: -5px; right: -8px; background: var(--red); color: white; font-size: 10px; padding: 2px 6px; border-radius: 50%; display: none; border: 1px solid black; }
 
+        /* მარცხენა მენიუ */
         .sidebar { position: fixed; left: -100%; top: 0; width: 280px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-right: 1px solid #222; display: flex; flex-direction: column; }
         .sidebar.open { left: 0; }
         .rooms-container { flex: 1; overflow-y: auto; }
@@ -22,27 +24,30 @@
         .room-btn.active { background: #1a1a1a; color: var(--red); font-weight: bold; }
         .logout-btn { padding: 15px; margin-top: 10px; cursor: pointer; border-radius: 10px; color: #ff4444; border: 1px solid #330000; background: #1a0000; text-align: center; font-weight: bold; }
 
+        /* მარჯვენა პანელი */
         .right-panel { position: fixed; right: -100%; top: 0; width: 320px; height: 100%; background: #0a0a0a; transition: 0.3s; z-index: 2000; padding: 20px; border-left: 1px solid #222; display: flex; flex-direction: column; }
         .right-panel.open { right: 0; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; }
 
+        /* ჩატის სტილი */
         #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         .msg-row { display: flex; gap: 10px; align-items: flex-start; }
         .u-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #222; cursor: pointer; background: #111; }
         .bubble { background: #111; padding: 12px; border-radius: 15px; flex: 1; border-left: 3px solid var(--red); }
         .nick-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
         .nick { color: var(--red); font-weight: bold; font-size: 13px; cursor: pointer; }
+        
+        /* თეგები */
         .role-tag { font-size: 9px; color: #fff; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
         .tag-founder { background: #8b0000; border: 1px solid var(--red); }
         .tag-admin { background: #00008b; border: 1px solid #0000ff; }
 
-        .admin-panel { margin-top: 15px; padding: 10px; border: 1px solid #330000; background: #1a0000; border-radius: 10px; }
-        .admin-btn { width: 100%; padding: 8px; margin-top: 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; color: white; }
-
         .input-area { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; }
         input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; outline: none; }
-        .send-btn { background: var(--red); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; }
-        .pm-box { flex: 1; background: #050505; border-radius: 10px; padding: 10px; overflow-y: auto; font-size: 13px; border: 1px solid #1a1a1a; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .send-btn { background: var(--red); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; font-size: 20px; }
+
+        .admin-panel { margin-top: 15px; padding: 10px; border: 1px solid #330000; background: #1a0000; border-radius: 10px; }
+        .admin-btn { width: 100%; padding: 8px; margin-top: 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; color: white; }
     </style>
 </head>
 <body>
@@ -72,7 +77,7 @@
     </aside>
 
     <header>
-        <div class="burger" onclick="toggleSidebar()" style="cursor:pointer; font-size:24px;">☰</div>
+        <div class="burger" onclick="toggleSidebar()">☰</div>
         <div id="rt" style="font-weight:bold; color:var(--red);">💬 ზოგადი ჩატი</div>
         <div class="header-icons">
             <div class="icon-btn" onclick="openInbox()">✉️ <span id="pm-badge" class="badge">0</span></div>
@@ -91,8 +96,7 @@
     const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('username') || "სტუმარი";
     let currentRoom = '💬 ზოგადი ჩატი';
-    let viewingNick = "";
-    let myPower = ""; // ჩემი სტატუსი
+    let myRole = "მომხმარებელი";
 
     function toggleSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').style.display = 'block'; }
     function closeAllMenus() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('right-panel').classList.remove('open'); document.getElementById('overlay').style.display = 'none'; }
@@ -100,67 +104,64 @@
     function logout() { localStorage.removeItem('username'); location.href = 'index.html'; }
 
     async function loadMsgs() {
-        const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
-        const { data: avs } = await _sb.from('avatars_v3').select('*');
-        let avMap = {}; if(avs) avs.forEach(a => { avMap[a.nickname] = a; if(a.nickname === myNick) myPower = a.role; });
+        try {
+            const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
+            const { data: avs } = await _sb.from('avatars_v3').select('*');
+            let avMap = {}; 
+            if(avs) avs.forEach(a => { 
+                avMap[a.nickname] = a; 
+                if(a.nickname === myNick) myRole = a.role || "მომხმარებელი"; 
+            });
 
-        const box = document.getElementById('messages');
-        if(!box) return;
-        box.innerHTML = msgs?.reverse().map(m => {
-            const u = avMap[m.nickname] || {};
-            let tag = "";
-            if(u.role === 'დამფუძნებელი') tag = '<span class="role-tag tag-founder">დამფუძნებელი</span>';
-            else if(u.role === 'ადმინი') tag = '<span class="role-tag tag-admin">ადმინი</span>';
+            const box = document.getElementById('messages');
+            if(!box) return;
+            box.innerHTML = msgs?.reverse().map(m => {
+                const u = avMap[m.nickname] || {};
+                let tag = "";
+                if(u.role === 'დამფუძნებელი') tag = '<span class="role-tag tag-founder">დამფუძნებელი</span>';
+                else if(u.role === 'ადმინი') tag = '<span class="role-tag tag-admin">ადმინი</span>';
 
-            return `<div class="msg-row">
-                <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="openUserProfile('${m.nickname}')">
-                <div class="bubble">
-                    <div class="nick-box"><span class="nick" onclick="openUserProfile('${m.nickname}')">${m.nickname}</span>${tag}</div>
-                    <div>${m.message}</div>
-                </div>
-            </div>`;
-        }).join('') || "";
-        box.scrollTop = box.scrollHeight;
+                return `<div class="msg-row">
+                    <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="u-avatar" onclick="openUserProfile('${m.nickname}')">
+                    <div class="bubble">
+                        <div class="nick-box"><span class="nick" onclick="openUserProfile('${m.nickname}')">${m.nickname}</span>${tag}</div>
+                        <div>${m.message}</div>
+                    </div>
+                </div>`;
+            }).join('') || "";
+            box.scrollTop = box.scrollHeight;
+        } catch(e) { console.error("Load Error:", e); }
     }
 
     async function openUserProfile(nick) {
         if(nick === myNick) return openMyProfile();
-        viewingNick = nick;
         document.getElementById('right-panel').classList.add('open');
         document.getElementById('overlay').style.display = 'block';
         const { data: u } = await _sb.from('avatars_v3').select('*').eq('nickname', nick).single();
         
-        let adminButtons = "";
-        // მხოლოდ დამფუძნებელს შეუძლია სხვისთვის სტატუსის მიცემა
-        if(myPower === 'დამფუძნებელი' || myNick === 'abu007') {
-            adminButtons = `
+        let adminHtml = "";
+        if(myRole === 'დამფუძნებელი' || myNick === 'abu007') {
+            adminHtml = `
                 <div class="admin-panel">
-                    <p style="font-size:10px; text-align:center; margin-bottom:5px;">მართვის პანელი</p>
-                    <button class="admin-btn" style="background:darkred;" onclick="setRole('${nick}', 'დამფუძნებელი')">დამფუძნებლად დანიშვნა</button>
-                    <button class="admin-btn" style="background:darkblue;" onclick="setRole('${nick}', 'ადმინი')">ადმინად დანიშვნა</button>
-                    <button class="admin-btn" style="background:#333;" onclick="setRole('${nick}', 'მომხმარებელი')">უფლებების ჩამორთმევა</button>
+                    <button class="admin-btn" style="background:#8b0000;" onclick="updateUserRole('${nick}', 'დამფუძნებელი')">დამფუძნებლად დანიშვნა</button>
+                    <button class="admin-btn" style="background:#00008b;" onclick="updateUserRole('${nick}', 'ადმინი')">ადმინად დანიშვნა</button>
+                    <button class="admin-btn" style="background:#333;" onclick="updateUserRole('${nick}', 'მომხმარებელი')">უფლებების წაშლა</button>
                 </div>`;
         }
 
         document.getElementById('content-area').innerHTML = `
-            <div style="text-align:center; margin-bottom:10px;">
-                <img style="width:80px; height:80px; border-radius:50%; border:2px solid var(--red); object-fit:cover;" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
-                <h4 style="margin-top:5px;">${nick}</h4>
-                <p style="font-size:11px; color:var(--red); font-weight:bold;">${u?.role || 'მომხმარებელი'}</p>
+            <div style="text-align:center;">
+                <img style="width:80px; height:80px; border-radius:50%; border:2px solid var(--red);" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
+                <h4>${nick}</h4>
+                <p style="color:var(--red); font-size:11px;">${u?.role || 'მომხმარებელი'}</p>
             </div>
-            <div class="pm-box" id="pm-box"></div>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="pm-in" placeholder="მიწერე..." style="padding:10px; border-radius:8px; flex:1; background:#111; border:1px solid #333; color:white;">
-                <button onclick="sendPM()" style="background:var(--red); border:none; padding:10px; border-radius:8px; color:white;">➤</button>
-            </div>
-            ${adminButtons}
+            ${adminHtml}
         `;
-        loadPMs();
     }
 
-    async function setRole(targetNick, roleName) {
-        const { error } = await _sb.from('avatars_v3').update({ role: roleName }).eq('nickname', targetNick);
-        if(!error) { alert(targetNick + " უკვე " + roleName + "-ია!"); openUserProfile(targetNick); loadMsgs(); }
+    async function updateUserRole(nick, newRole) {
+        await _sb.from('avatars_v3').update({ role: newRole }).eq('nickname', nick);
+        alert("სტატუსი განახლდა!"); openUserProfile(nick); loadMsgs();
     }
 
     async function openMyProfile() {
@@ -168,35 +169,27 @@
         document.getElementById('right-panel').classList.add('open');
         document.getElementById('overlay').style.display = 'block';
         document.getElementById('content-area').innerHTML = `
-            <img style="width:100px; height:100px; border-radius:50%; margin:0 auto; display:block; border:2px solid var(--red); object-fit:cover;" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
-            <h3 style="text-align:center; margin-top:10px;">${myNick}</h3>
-            <p style="text-align:center; color:var(--red); font-size:12px; font-weight:bold; margin-bottom:15px;">${u?.role || 'მომხმარებელი'}</p>
-            <input type="text" id="st-up" placeholder="სტატუსი" style="width:100%; padding:10px; margin-bottom:10px; background:#111; color:white; border:1px solid #333; border-radius:8px;" value="${u?.status || ''}">
-            <button onclick="saveProfile()" style="width:100%; background:var(--red); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold;">შენახვა</button>
+            <img style="width:100px; height:100px; border-radius:50%; margin:0 auto; display:block; border:2px solid var(--red);" src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}">
+            <h3 style="text-align:center;">${myNick}</h3>
+            <p style="text-align:center; color:var(--red);">${u?.role || 'მომხმარებელი'}</p>
+            <input type="text" id="st-up" style="width:100%; padding:10px; margin:10px 0; background:#111; color:white; border:1px solid #333;" value="${u?.status || ''}">
+            <button onclick="saveProfile()" style="width:100%; background:var(--red); color:white; padding:10px; border:none; border-radius:5px;">შენახვა</button>
         `;
     }
 
-    async function openInbox() {
-        document.getElementById('right-panel').classList.add('open');
-        document.getElementById('overlay').style.display = 'block';
-        const { data } = await _sb.from('messages_v3').select('nickname').ilike('room_name', `%_PM_%${myNick}%`).neq('nickname', myNick);
-        let counts = {};
-        if(data) data.forEach(m => counts[m.nickname] = (counts[m.nickname] || 0) + 1);
-        const users = Object.keys(counts);
-        document.getElementById('content-area').innerHTML = `
-            <h3 style="color:var(--red); margin-bottom:15px;">✉️ წერილები</h3>
-            <div id="inbox-list">${users.length ? users.map(u => `<div style="background:#111; padding:12px; border-radius:10px; margin-bottom:8px; cursor:pointer; border-left:3px solid var(--red); display:flex; justify-content:space-between;" onclick="openUserProfile('${u}')"><span>📩 <b>${u}</b></span><span style="background:var(--red); padding:2px 6px; border-radius:10px; font-size:10px;">${counts[u]}</span></div>`).join('') : "ცარიელია"}</div>
-        `;
+    async function send() {
+        const i = document.getElementById('msg-in'); if(!i.value.trim()) return;
+        await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_name: currentRoom }]);
+        i.value = ""; loadMsgs();
     }
 
-    async function loadPMs() {
-        let room = [myNick, viewingNick].sort().join('_PM_');
-        const { data } = await _sb.from('messages_v3').select('*').eq('room_name', room).order('created_at', { ascending: true });
-        const box = document.getElementById('pm-box');
-        if(box) { box.innerHTML = data?.map(m => `<div><b style="color:${m.nickname===myNick?'#777':'var(--red)'}">${m.nickname}:</b> ${m.message}</div>`).join('') || ""; box.scrollTop = box.scrollHeight; }
+    async function saveProfile() {
+        const s = document.getElementById('st-up').value;
+        await _sb.from('avatars_v3').upsert({ nickname: myNick, status: s });
+        location.reload();
     }
 
-    async function sendPM() {
-        const i = document.getElementById('pm-in'); if(!i || !i.value.trim()) return;
-        let room = [myNick, viewingNick].sort().join('_PM_');
-        await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_
+    window.onload = () => { loadMsgs(); setInterval(loadMsgs, 4000); };
+</script>
+</body>
+</html>
