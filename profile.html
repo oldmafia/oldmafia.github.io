@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>პროფილი - OLD MAFIA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .back-btn { align-self: flex-start; color: #ff4500; text-decoration: none; font-size: 18px; margin-bottom: 20px; }
+        .profile-card { background: #0a0a0a; width: 100%; max-width: 380px; padding: 30px; border-radius: 25px; border: 1px solid #222; text-align: center; }
+        .avatar-main { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #ff4500; margin-bottom: 15px; background: #111; }
+        
+        h2 { color: #ff4500; margin-bottom: 5px; font-size: 26px; }
+        #user-status { color: #888; font-style: italic; margin-bottom: 20px; display: block; }
+        
+        .action-btn { background: #ff4500; color: white; padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 15px; }
+        .pm-btn { background: #222; border: 1px solid #ff4500; }
+        .admin-btn { background: #ffd700; color: black; margin-top: 20px; }
+        
+        input[type="text"] { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: white; }
+        .stats { display: flex; justify-content: space-around; margin-top: 25px; border-top: 1px solid #222; padding-top: 20px; }
+        .stat-val { display: block; font-size: 20px; font-weight: bold; color: #ff8c00; }
+    </style>
+</head>
+<body>
+
+    <a href="home.html" class="back-btn">⬅ უკან</a>
+
+    <div class="profile-card">
+        <img id="u-img" src="https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png" class="avatar-main">
+        <h2 id="u-name">...</h2>
+        <span id="u-status">OLD MAFIA-ს წევრი</span>
+
+        <button id="msg-btn" class="action-btn pm-btn" style="display:none;" onclick="startPM()">✉ მიწერა პირადში</button>
+
+        <div id="my-controls" style="display:none;">
+            <label class="action-btn" for="f-up">📷 ფოტოს შეცვლა</label>
+            <input type="file" id="f-up" hidden accept="image/*" onchange="uploadAvatar(this)">
+            
+            <input type="text" id="status-inp" placeholder="ახალი სტატუსი...">
+            <button class="action-btn" style="background:#444;" onclick="updateStatus()">📝 სტატუსის განახლება</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box"><span id="msg-count" class="stat-val">0</span><span>მესიჯი</span></div>
+            <div class="stat-box"><span id="u-lvl" class="stat-val">LVL 1</span><span>დონე</span></div>
+        </div>
+
+        <button id="admin-panel" class="action-btn admin-btn" style="display:none;" onclick="location.href='admin.html'">🛡️ ადმინ პანელი</button>
+    </div>
+
+<script>
+    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('username');
+    const targetNick = localStorage.getItem('view_profile_of') || myNick;
+    const adminNick = "Buba"; // აქ ჩაწერე შენი ზუსტი ნიკი ადმინისთვის
+
+    async function init() {
+        document.getElementById('u-name').innerText = targetNick;
+        
+        // 1. ვინ არის პროფილის პატრონი?
+        if (targetNick === myNick) {
+            document.getElementById('my-controls').style.display = 'block';
+            if (targetNick === adminNick) document.getElementById('admin-panel').style.display = 'block';
+        } else {
+            document.getElementById('msg-btn').style.display = 'block';
+        }
+
+        // 2. მონაცემების წამოღება
+        const { data } = await _sb.from('avatars_v3').select('*').eq('nickname', targetNick).single();
+        if (data) {
+            if (data.avatar_url) document.getElementById('u-img').src = data.avatar_url;
+            if (data.status) document.getElementById('u-status').innerText = data.status;
+            // მესიჯების რაოდენობის წამოღება (თუ გაქვს message_count სვეტი)
+            document.getElementById('msg-count').innerText = data.message_count || 0;
+        }
+    }
+
+    async function uploadAvatar(input) {
+        const file = input.files[0]; if (!file) return;
+        const path = `avatars/${targetNick}_${Date.now()}.png`;
+        await _sb.storage.from('avatars').upload(path, file);
+        const url = `https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/avatars/${path}`;
+        await _sb.from('avatars_v3').update({ avatar_url: url }).eq('nickname', targetNick);
+        location.reload();
+    }
+
+    async function updateStatus() {
+        const val = document.getElementById('status-inp').value;
+        await _sb.from('avatars_v3').update({ status: val }).eq('nickname', targetNick);
+        location.reload();
+    }
+
+    function startPM() {
+        localStorage.setItem('open_pm_with', targetNick);
+        location.href = 'home.html';
+    }
+
+    init();
+</script>
+</body>
+</html>
