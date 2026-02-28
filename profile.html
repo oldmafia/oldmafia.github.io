@@ -1,123 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="ka">
 <head>
-<meta charset="UTF-8">
-<title>Profile</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body{
-  background:#0f0f0f;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-  padding:30px;
-}
-
-.avatar{
-  width:150px;
-  height:150px;
-  border-radius:50%;
-  border:3px solid orange;
-  object-fit:cover;
-}
-
-input{
-  margin:8px;
-  padding:8px;
-  width:220px;
-}
-
-button{
-  padding:8px 15px;
-  background:orange;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  margin-top:10px;
-}
-
-.role{
-  font-weight:bold;
-  margin-top:10px;
-}
-
-.founder{ color:orange; }
-.admin{ color:#00c3ff; }
-.user{ color:gray; }
-</style>
+    <meta charset="UTF-8">
+    <title>პროფილის რედაქტირება</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+<body style="background: #111; color: white; font-family: sans-serif; text-align: center; padding: 50px;">
 
-<body>
+    <h2>ჩემი პროფილი</h2>
+    
+    <div id="profile-info">
+        <img id="avatar-preview" src="default-avatar.png" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 2px solid orange;">
+        <p>როლი: <span id="user-role" style="color: orange;">მომხმარებელი</span></p>
+    </div>
 
-<h2 id="nickname"></h2>
+    <br>
+    <label>შეცვალე ფოტო:</label><br>
+    <input type="file" id="avatarInput" accept="image/*"><br><br>
 
-<img id="avatar" class="avatar" src="https://via.placeholder.com/150">
+    <label>ჩემი სტატუსი:</label><br>
+    <input type="text" id="statusInput" placeholder="როგორ ხარ?" style="padding: 10px; border-radius: 5px;"><br><br>
 
-<div class="role" id="role"></div>
-<p id="statusText"></p>
+    <button onclick="saveProfile()" style="padding: 10px 20px; background: orange; border: none; cursor: pointer; font-weight: bold;">შენახვა</button>
 
-<hr>
+    <script>
+        // ჩაწერე შენი მონაცემები აქ:
+        const SUPABASE_URL = 'შენი_პროექტის_url';
+        const SUPABASE_KEY = 'შენი_anon_key';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<h3>პროფილის რედაქტირება</h3>
+        // 1. ინფორმაციის ჩატვირთვა გვერდის გახსნისას
+        async function loadProfile() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                alert("გთხოვთ გაიაროთ ავტორიზაცია");
+                return;
+            }
 
-<input type="text" id="statusInput" placeholder="ახალი სტატუსი">
-<br>
-<input type="text" id="avatarInput" placeholder="ფოტოს URL">
-<br>
-<button onclick="updateProfile()">შენახვა</button>
+            let { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
 
-<br><br>
-<a href="home.html" style="color:orange;">⬅ უკან ჩატში</a>
+            if (profile) {
+                if (profile.avatar_url) document.getElementById('avatar-preview').src = profile.avatar_url;
+                if (profile.status) document.getElementById('statusInput').value = profile.status;
+                if (profile.role) document.getElementById('user-role').innerText = profile.role;
+            }
+        }
 
-<script>
-const supabase = window.supabase.createClient(
-  "https://ftfciebnywbondaiarnc.supabase.co",
-  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-);
+        // 2. მონაცემების შენახვა
+        async function saveProfile() {
+            const { data: { user } } = await supabase.auth.getUser();
+            const file = document.getElementById('avatarInput').files[0];
+            const status = document.getElementById('statusInput').value;
+            
+            let avatarUrl = document.getElementById('avatar-preview').src;
 
-const params = new URLSearchParams(window.location.search);
-const nickname = params.get("user");
+            // თუ მომხმარებელმა აირჩია ახალი ფოტო
+            if (file) {
+                const filePath = `avatars/${user.id}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file, { upsert: true });
 
-async function loadProfile(){
-  const { data } = await supabase
-    .from("user_profiles")
-    .select("*")
-    .eq("nickname", nickname)
-    .single();
+                if (uploadError) {
+                    alert("ფოტოს ატვირთვა ვერ მოხერხდა");
+                    return;
+                }
 
-  if(!data) return;
+                const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                avatarUrl = data.publicUrl;
+            }
 
-  document.getElementById("nickname").textContent = data.nickname;
-  document.getElementById("statusText").textContent = data.status || "";
-  document.getElementById("avatar").src = data.avatar_url || "https://via.placeholder.com/150";
+            // მონაცემების განახლება ბაზაში
+            const { error } = await supabase
+                .from('profiles')
+                .update({ 
+                    status: status, 
+                    avatar_url: avatarUrl 
+                })
+                .eq('id', user.id);
 
-  const roleDiv = document.getElementById("role");
-  roleDiv.textContent = data.role?.toUpperCase() || "USER";
+            if (error) alert("შეცდომა შენახვისას: " + error.message);
+            else alert("წარმატებით განახლდა!");
+            
+            location.reload();
+        }
 
-  if(data.role === "founder") roleDiv.className="role founder";
-  else if(data.role === "admin") roleDiv.className="role admin";
-  else roleDiv.className="role user";
-}
-
-async function updateProfile(){
-  const newStatus = document.getElementById("statusInput").value;
-  const newAvatar = document.getElementById("avatarInput").value;
-
-  await supabase
-    .from("user_profiles")
-    .update({
-      status:newStatus,
-      avatar_url:newAvatar
-    })
-    .eq("nickname", nickname);
-
-  alert("განახლდა!");
-  loadProfile();
-}
-
-loadProfile();
-</script>
-
+        loadProfile();
+    </script>
 </body>
 </html>
