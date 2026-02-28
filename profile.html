@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROFILE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        .card { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #333; max-width: 350px; margin: auto; }
+        img { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #ff4500; object-fit: cover; }
+        .btn { background: #ff4500; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <a href="home.html" style="color:gray; text-decoration:none;">⬅ უკან</a>
+    <div class="card">
+        <img id="u-img" src="https://via.placeholder.com/120">
+        <h2 id="u-nick">...</h2>
+        <p id="u-stat" style="color:gray;">სტატუსი...</p>
+        
+        <div id="owner" style="display:none;">
+            <input type="file" id="f" hidden onchange="up(this)">
+            <button class="btn" onclick="document.getElementById('f').click()">📸 შეცვალე ფოტო</button>
+            <input type="text" id="s-in" placeholder="ახალი სტატუსი" style="width:90%; padding:10px; margin-top:10px; border-radius:5px;">
+            <button class="btn" style="background:#333;" onclick="setS()">შენახვა</button>
+        </div>
+        <button id="pm" class="btn" style="display:none;" onclick="startPM()">✉ მიწერა პირადში</button>
+    </div>
+
+    <script>
+        const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        const my = localStorage.getItem('username'), target = localStorage.getItem('view_profile_of') || my;
+
+        async function load() {
+            document.getElementById('u-nick').innerText = target;
+            if(my === target) document.getElementById('owner').style.display = 'block';
+            else document.getElementById('pm').style.display = 'block';
+
+            const { data } = await _sb.from('avatars_v3').select('*').eq('nickname', target).single();
+            if(data) {
+                if(data.avatar_url) document.getElementById('u-img').src = data.avatar_url;
+                if(data.status) document.getElementById('u-stat').innerText = data.status;
+            }
+        }
+
+        async function up(input) {
+            const file = input.files[0]; const path = `avatars/${target}.png`;
+            await _sb.storage.from('avatars').upload(path, file, {upsert:true});
+            const url = `https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
+            await _sb.from('avatars_v3').update({ avatar_url: url }).eq('nickname', target);
+            location.reload();
+        }
+
+        async function setS() {
+            const s = document.getElementById('s-in').value;
+            await _sb.from('avatars_v3').update({ status: s }).eq('nickname', target);
+            location.reload();
+        }
+
+        function startPM() { localStorage.setItem('open_pm_with', target); location.href='home.html'; }
+        load();
+    </script>
+</body>
+</html>
