@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Profile</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  padding:30px;
+}
+
+.avatar{
+  width:150px;
+  height:150px;
+  border-radius:50%;
+  border:3px solid orange;
+  object-fit:cover;
+}
+
+input{
+  margin:8px;
+  padding:8px;
+  width:220px;
+}
+
+button{
+  padding:8px 15px;
+  background:orange;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.role{
+  font-weight:bold;
+  margin-top:10px;
+}
+
+.founder{ color:orange; }
+.admin{ color:#00c3ff; }
+.user{ color:gray; }
+</style>
+</head>
+
+<body>
+
+<h2 id="nickname"></h2>
+
+<img id="avatar" class="avatar" src="https://via.placeholder.com/150">
+
+<div class="role" id="role"></div>
+<p id="statusText"></p>
+
+<hr>
+
+<h3>პროფილის რედაქტირება</h3>
+
+<input type="text" id="statusInput" placeholder="ახალი სტატუსი">
+<br>
+<input type="text" id="avatarInput" placeholder="ფოტოს URL">
+<br>
+<button onclick="updateProfile()">შენახვა</button>
+
+<br><br>
+<a href="home.html" style="color:orange;">⬅ უკან ჩატში</a>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ftfciebnywbondaiarnc.supabase.co",
+  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+);
+
+const params = new URLSearchParams(window.location.search);
+const nickname = params.get("user");
+
+async function loadProfile(){
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("nickname", nickname)
+    .single();
+
+  if(!data) return;
+
+  document.getElementById("nickname").textContent = data.nickname;
+  document.getElementById("statusText").textContent = data.status || "";
+  document.getElementById("avatar").src = data.avatar_url || "https://via.placeholder.com/150";
+
+  const roleDiv = document.getElementById("role");
+  roleDiv.textContent = data.role?.toUpperCase() || "USER";
+
+  if(data.role === "founder") roleDiv.className="role founder";
+  else if(data.role === "admin") roleDiv.className="role admin";
+  else roleDiv.className="role user";
+}
+
+async function updateProfile(){
+  const newStatus = document.getElementById("statusInput").value;
+  const newAvatar = document.getElementById("avatarInput").value;
+
+  await supabase
+    .from("user_profiles")
+    .update({
+      status:newStatus,
+      avatar_url:newAvatar
+    })
+    .eq("nickname", nickname);
+
+  alert("განახლდა!");
+  loadProfile();
+}
+
+loadProfile();
+</script>
+
+</body>
+</html>
