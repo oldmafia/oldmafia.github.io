@@ -3,140 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OLD MAFIA - CLEAN DESIGN</title>
+    <title>OLD MAFIA - THE KINGDOM</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff0000; --bg: #050505; --border: #1a1a1a; }
+        :root { --red: #ff0000; --bg: #050505; --panel: #0a0a0a; --border: #1a1a1a; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: var(--bg); color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Header - აქ იქნება პროფილი */
-        header { height: 65px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #000; }
-        .head-left { display: flex; align-items: center; gap: 15px; }
-        .logo { color: var(--red); font-weight: bold; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
+        /* ზედა ზოლი */
+        header { 
+            height: 60px; background: #000; border-bottom: 2px solid var(--red);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            box-shadow: 0 2px 15px rgba(255,0,0,0.2); z-index: 100;
+        }
+        .logo { color: var(--red); font-weight: 900; font-size: 20px; letter-spacing: 3px; text-shadow: 2px 2px #000; }
         
-        .profile-box { display: flex; align-items: center; gap: 10px; background: #111; padding: 5px 15px; border-radius: 30px; border: 1px solid #222; cursor: pointer; }
-        .profile-box img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--red); }
-        .profile-box span { font-size: 13px; font-weight: bold; color: #eee; }
+        .user-top { display: flex; align-items: center; gap: 12px; background: #111; padding: 6px 15px; border-radius: 5px; border: 1px solid #222; }
+        .user-top img { width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--red); }
+        .user-top span { font-size: 14px; font-weight: bold; color: var(--red); }
 
-        .main-wrapper { flex: 1; display: flex; position: relative; }
+        .wrapper { flex: 1; display: flex; overflow: hidden; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); }
 
-        /* ჩატის არეალი */
-        #chat-flow { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 15px; background: radial-gradient(circle at center, #0a0a0a 0%, #050505 100%); }
+        /* მარცხენა მენიუ - ოთახები */
+        .side-rooms { width: 240px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; }
+        .side-h { padding: 20px; font-size: 11px; color: #444; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #111; }
+        .room-btn { 
+            padding: 15px 20px; cursor: pointer; color: #888; transition: 0.3s; 
+            border-bottom: 1px solid #0d0d0d; display: flex; align-items: center; gap: 10px;
+        }
+        .room-btn:hover { background: #111; color: #fff; }
+        .room-active { background: #1a0505 !important; color: var(--red) !important; border-left: 4px solid var(--red); font-weight: bold; }
+
+        /* ჩატი */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(5,5,5,0.8); }
+        #chat-flow { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         
-        .msg-row { display: flex; gap: 12px; align-items: flex-start; max-width: 80%; }
-        .msg-ava { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #333; }
-        .msg-nick { font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
-        .bubble { padding: 12px 16px; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 0 18px 18px 18px; font-size: 14px; color: #ccc; }
-        .is-me { align-self: flex-end; flex-direction: row-reverse; }
-        .is-me .bubble { border-left: none; border-right: 3px solid var(--red); background: #150505; border-radius: 18px 0 18px 18px; }
-        .is-me .msg-nick { color: var(--red); text-align: right; }
+        /* მესიჯების დიზაინი */
+        .m-wrap { max-width: 85%; margin-bottom: 5px; }
+        .m-nick { font-size: 11px; font-weight: bold; color: #555; margin-bottom: 2px; padding-left: 5px; }
+        .m-msg { padding: 12px 18px; background: #111; border: 1px solid #1a1a1a; border-radius: 5px 15px 15px 15px; font-size: 14px; line-height: 1.5; color: #ddd; position: relative; }
+        
+        .is-me { align-self: flex-end; }
+        .is-me .m-nick { color: var(--red); text-align: right; padding-right: 5px; }
+        .is-me .m-msg { background: #1a0505; border-color: #2a0a0a; border-radius: 15px 5px 15px 15px; border-right: 3px solid var(--red); color: #fff; }
 
-        /* Side Panels */
-        .side-panel { width: 250px; background: #000; border: 1px solid var(--border); transition: 0.3s; overflow-y: auto; z-index: 100; }
-        #side-left { border-right: 1px solid var(--border); }
-        #side-right { border-left: 1px solid var(--border); }
+        /* მარჯვენა მენიუ - წევრები */
+        .side-users { width: 220px; background: var(--panel); border-left: 1px solid var(--border); padding: 0; }
+        .u-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 13px; border-bottom: 1px solid #0d0d0d; }
+        .u-status { width: 8px; height: 8px; background: #0f0; border-radius: 50%; box-shadow: 0 0 8px #0f0; }
 
-        .panel-h { padding: 20px; color: #444; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        .room-item { padding: 12px 20px; cursor: pointer; color: #888; font-size: 14px; transition: 0.2s; }
-        .room-item:hover, .room-active { color: var(--red); background: #0a0000; }
+        /* ქვედა პანელი */
+        .input-wrap { padding: 20px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 15px; }
+        #msg-in { 
+            flex: 1; background: #0a0a0a; border: 1px solid #222; padding: 15px 25px; 
+            border-radius: 5px; color: #fff; outline: none; font-size: 14px;
+        }
+        #msg-in:focus { border-color: var(--red); }
+        .send-btn { background: var(--red); border: none; width: 55px; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .send-btn:hover { background: #cc0000; transform: translateY(-2px); }
 
-        .user-item { padding: 10px 20px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #aaa; }
-        .u-status { width: 8px; height: 8px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 5px #00ff00; }
-
-        /* Input */
-        .input-area { padding: 20px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 15px; }
-        #msg-in { flex: 1; background: #0a0a0a; border: 1px solid #222; padding: 14px 25px; border-radius: 30px; color: #fff; outline: none; }
-        .send-btn { background: var(--red); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; transition: 0.3s; }
-        .send-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(255,0,0,0.3); }
-
-        /* Mobile Responsive */
-        @media (max-width: 900px) { .side-panel { display: none; } }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #222; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="head-left">
-            <div class="logo">OLD MAFIA</div>
-        </div>
-        <div class="profile-box" onclick="alert('პროფილის პარამეტრები')">
-            <img id="my-ava" src="https://i.ibb.co/4pLKV60/user.png">
-            <span id="u-name-head">გამომძიებელი</span>
+        <div class="logo">OLD MAFIA</div>
+        <div class="user-top">
+            <img src="https://i.ibb.co/4pLKV60/user.png">
+            <span id="my-nick-head">...</span>
         </div>
     </header>
 
-    <div class="main-wrapper">
-        <nav id="side-left" class="side-panel">
-            <div class="panel-h">ოთახები</div>
-            <div class="room-item room-active" onclick="changeRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
-            <div class="room-item" onclick="changeRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
-            <div class="room-item" onclick="changeRoom('გამოძიება')">🔍 გამოძიება</div>
-            <div class="room-item" onclick="changeRoom('ვიქტორინა')">❓ ვიქტორინა</div>
-            <div class="room-item" onclick="changeRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
-            <div class="room-item" onclick="changeRoom('მუსიკა')">🎵 მუსიკა</div>
-            <div class="room-item" onclick="changeRoom('ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
-        </nav>
-
-        <div id="chat-flow">იტვირთება...</div>
-
-        <aside id="side-right" class="side-panel">
-            <div class="panel-h">ონლაინ</div>
-            <div class="user-item">
-                <div class="u-status"></div>
-                <span id="u-name-list">...</span>
-            </div>
-        </aside>
-    </div>
-
-    <div class="input-area">
-        <input type="text" id="msg-in" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') send()">
-        <button class="send-btn" onclick="send()">➤</button>
-    </div>
-
-<script>
-    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    const myNick = localStorage.getItem('username') || 'მაფიოზი';
-    let currentRoom = 'ზოგადი ჩატი';
-
-    // სახელების დასმა
-    document.getElementById('u-name-head').innerText = myNick;
-    document.getElementById('u-name-list').innerText = myNick + " (შენ)";
-
-    function changeRoom(name) {
-        currentRoom = name;
-        document.querySelectorAll('.room-item').forEach(el => el.classList.toggle('room-active', el.innerText.includes(name)));
-        sync();
-    }
-
-    async function sync() {
-        const { data: msgs } = await _sb.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
-        const flow = document.getElementById('chat-flow');
-        if (msgs) {
-            flow.innerHTML = msgs.reverse().map(m => {
-                const isMe = m.nickname === myNick;
-                return `
-                <div class="msg-row ${isMe ? 'is-me' : ''}">
-                    <div class="msg-body">
-                        <span class="msg-nick">${m.nickname}</span>
-                        <div class="bubble">${m.message}</div>
-                    </div>
-                </div>`;
-            }).join('');
-            flow.scrollTop = flow.scrollHeight;
-        }
-    }
-
-    async function send() {
-        const i = document.getElementById('msg-in');
-        if(!i.value.trim()) return;
-        const txt = i.value; i.value = "";
-        await _sb.from('messages').insert([{ nickname: myNick, message: txt, room_name: currentRoom }]);
-        sync();
-    }
-
-    setInterval(sync, 3000);
-    sync();
-</script>
-</body>
-</html>
+    <div class="wrapper">
+        <div class="side-rooms">
+            <div class="side-h">მთავარი მენიუ</div>
+            <div class="room-btn room-active" onclick="changeRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
+            <div class="room-btn" onclick="changeRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
+            <div class="room-btn" onclick="changeRoom('გამოძიება')">🔍 გამოძიება</div>
+            <div class="room-btn" onclick="changeRoom('ვიქტორინა')">❓ ვიქტორინა</div>
+            <div class="room-btn" onclick="changeRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
+            <div class="room-btn" onclick="changeRoom('ჩამოხრჩობანა')">🪢 ჩამოხრჩობანა</div>
+            <div class="room-btn" onclick="changeRoom('მუსიკა
