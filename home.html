@@ -6,69 +6,49 @@
     <title>კაიფმანია - ჩატი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* --- ბაზისური სტილი --- */
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        /* მთავარი სტილი */
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* --- ზედა პანელი --- */
-        .chat-header { padding: 15px; background: #0d0d0d; border-bottom: 2px solid red; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
-        .back-btn { background: #222; border: 1px solid #444; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        /* ზედა ზოლი */
+        .chat-header { padding: 15px; background: #0d0d0d; border-bottom: 2px solid red; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
+        .room-title { font-weight: bold; color: white; }
+        .user-info { color: #ff4444; font-size: 14px; font-weight: bold; }
+        .back-btn { background: #222; color: white; border: 1px solid #444; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; transition: 0.3s; }
+        .back-btn:hover { background: #444; }
 
-        /* --- 12 ოთახის მენიუ (მთავარი გვერდი) --- */
-        #rooms-menu {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-        }
-        .room-card {
-            background: linear-gradient(145deg, #1a1a1a, #050505);
-            border: 1px solid #ff0000;
-            border-radius: 12px;
-            padding: 25px 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(255,0,0,0.2);
-        }
+        /* 12 ოთახის მენიუ (Grid) */
+        #rooms-menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; overflow-y: auto; flex: 1; align-content: start; }
+        .room-card { background: linear-gradient(145deg, #1a1a1a, #050505); border: 1px solid #ff0000; border-radius: 15px; padding: 25px 10px; text-align: center; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; box-shadow: 0 4px 10px rgba(255,0,0,0.2); }
         .room-card:active { transform: scale(0.95); box-shadow: 0 0 20px red; }
-        .room-card span { font-size: 24px; }
+        .room-card span { font-size: 30px; }
+        .vip-card { border-color: gold; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
 
-        /* --- ჩატის კონტეინერი (თავიდან დამალულია) --- */
-        #chat-window { display: none; flex-direction: column; flex: 1; height: 100%; }
-        .messages-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #050505; }
-        
-        /* მესიჯის სტილი */
-        .msg { background: #111; padding: 10px 15px; border-radius: 15px 15px 15px 0px; border-left: 3px solid red; max-width: 85%; align-self: flex-start; line-height: 1.4; }
-        .msg b { color: #ff4444; display: block; font-size: 12px; margin-bottom: 4px; }
+        /* ჩატის ფანჯარა */
+        #chat-window { display: none; flex-direction: column; flex: 1; background: #050505; }
+        .messages-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { background: #111; padding: 12px 15px; border-radius: 15px 15px 15px 0px; border-left: 4px solid red; max-width: 85%; align-self: flex-start; box-shadow: 3px 3px 10px rgba(0,0,0,0.5); }
+        .msg b { color: #ff4444; display: block; font-size: 13px; margin-bottom: 5px; }
 
-        /* ქვედა საწერი ზოლი */
+        /* საწერი ზოლი */
         .input-area { padding: 15px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 10px; }
-        input { flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px; color: white; border-radius: 20px; outline: none; }
-        button { background: red; color: white; border: none; padding: 0 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-
-        /* სპეციალური ოთახები */
-        .vip { border-color: gold; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        input { flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px 18px; color: white; border-radius: 25px; outline: none; transition: 0.3s; }
+        input:focus { border-color: red; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+        button { background: red; color: white; border: none; padding: 0 25px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #cc0000; transform: scale(1.05); }
     </style>
 </head>
 <body>
 
     <div class="chat-header">
-        <button class="back-btn" id="back-to-menu" style="display: none;" onclick="showMenu()">← უკან</button>
-        <span id="room-display">კაიფმანია 🕶️</span>
-        <span id="user-nickname" style="color: #888; font-size: 12px;">...</span>
+        <button class="back-btn" id="back-to-menu" style="display: none;" onclick="showMenu()">← მენიუ</button>
+        <span class="room-title" id="header-title">კაიფმანია 🕶️</span>
+        <span class="user-info" id="user-nickname">იტვირთება...</span>
     </div>
 
     <div id="rooms-menu">
         <div class="room-card" onclick="openChat('general', '💬 ზოგადი ჩატი')"><span>💬</span> ზოგადი</div>
         <div class="room-card" onclick="openChat('music', '🎵 მუსიკა')"><span>🎵</span> მუსიკა</div>
-        <div class="room-card vip" onclick="openChat('vip', '💎 VIP საუბრები')"><span>💎</span> VIP</div>
+        <div class="room-card room-card vip-card" onclick="openChat('vip', '💎 VIP საუბრები')"><span>💎</span> VIP ჩატი</div>
         <div class="room-card" onclick="openChat('investigation', '🔍 გამოძიება')"><span>🔍</span> გამოძიება</div>
         <div class="room-card" onclick="openChat('quiz', '🧩 ვიქტორინა')"><span>🧩</span> ვიქტორინა</div>
         <div class="room-card" onclick="openChat('cipher', '🔐 შიფროგრამა')"><span>🔐</span> შიფრი</div>
@@ -83,8 +63,8 @@
     <div id="chat-window">
         <div class="messages-container" id="chat-messages"></div>
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება...">
-            <button onclick="sendMessage()">➤</button>
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">გაგზავნა</button>
         </div>
     </div>
 
@@ -96,7 +76,7 @@
         let currentRoom = '';
         let myNickname = '';
 
-        // 1. პროფილის ჩატვირთვა
+        // მომხმარებლის გაგება და ნიკის გასწორება
         async function loadProfile() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) { window.location.href = 'index.html'; return; }
@@ -107,53 +87,44 @@
                 .eq('id', user.id)
                 .single();
 
-            myNickname = profile ? profile.username : user.email.split('@')[0];
+            // თუ profiles ცხრილში ნიკი არაა, ვიღებთ მეილის ნაწილს @-მდე
+            myNickname = (profile && profile.username) ? profile.username : user.email.split('@')[0];
             document.getElementById('user-nickname').innerText = myNickname;
         }
 
-        // 2. ჩატის გახსნა
         function openChat(room, title) {
             currentRoom = room;
             document.getElementById('rooms-menu').style.display = 'none';
             document.getElementById('chat-window').style.display = 'flex';
             document.getElementById('back-to-menu').style.display = 'block';
-            document.getElementById('room-display').innerText = title;
-            
+            document.getElementById('header-title').innerText = title;
             document.getElementById('chat-messages').innerHTML = ''; 
             loadMessages();
         }
 
-        // 3. მენიუში დაბრუნება
         function showMenu() {
             document.getElementById('rooms-menu').style.display = 'grid';
             document.getElementById('chat-window').style.display = 'none';
             document.getElementById('back-to-menu').style.display = 'none';
-            document.getElementById('room-display').innerText = 'კაიფმანია 🕶️';
+            document.getElementById('header-title').innerText = 'კაიფმანია 🕶️';
         }
 
-        // 4. მესიჯების ჩატვირთვა (შენი კოდი უცვლელად)
         async function loadMessages() {
             const { data } = await supabaseClient
                 .from('messages')
                 .select('*')
                 .eq('room', currentRoom)
                 .order('inserted_at', { ascending: true });
-
             if (data) data.forEach(msg => renderMessage(msg));
         }
 
-        // 5. გაგზავნა
         async function sendMessage() {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
             if (!text) return;
-
             const { data: { user } } = await supabaseClient.auth.getUser();
             await supabaseClient.from('messages').insert([{ 
-                content: text, 
-                user_id: user.id, 
-                user_email: myNickname, 
-                room: currentRoom 
+                content: text, user_id: user.id, user_email: myNickname, room: currentRoom 
             }]);
             input.value = '';
         }
@@ -167,16 +138,12 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // 6. Realtime მოსმენა
-        supabaseClient
-            .channel('schema-db-changes')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                if (payload.new.room === currentRoom) renderMessage(payload.new);
-            })
-            .subscribe();
+        supabaseClient.channel('schema-db-changes').on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'messages' }, 
+            payload => { if (payload.new.room === currentRoom) renderMessage(payload.new); }
+        ).subscribe();
 
         async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
-
         loadProfile();
     </script>
 </body>
