@@ -3,88 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAFIA - FIX</title>
+    <title>OLD MAFIA - SUPREME</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { padding: 15px; background: #111; border-bottom: 1px solid red; text-align: center; color: red; font-weight: bold; }
+        :root { --red: #ff0000; --bg: #050505; --border: #222; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        header { height: 60px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; }
+        .head-btn { font-size: 24px; color: var(--red); cursor: pointer; }
+        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
         
-        /* მესიჯები - ყველაფერი მარცხნივ */
-        #chat { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .m-line { background: #111; border-left: 3px solid red; padding: 10px; border-radius: 0 10px 10px 10px; max-width: 90%; align-self: flex-start; }
-        .m-user { color: #888; font-size: 11px; font-weight: bold; display: block; margin-bottom: 3px; }
-        .m-text { color: #ccc; font-size: 14px; word-break: break-all; }
+        /* მესიჯის სტილი - ყველა მარცხნივ */
+        .msg-row { display: flex; gap: 12px; align-items: flex-start; max-width: 90%; }
+        .msg-ava { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #333; object-fit: cover; background: #222; }
+        .msg-body { display: flex; flex-direction: column; }
+        .msg-nick { font-size: 12px; font-weight: bold; color: #888; margin-bottom: 4px; }
+        .bubble { padding: 10px 15px; background: #111; border: 1px solid #333; border-radius: 0 15px 15px 15px; font-size: 14px; }
+        .is-me .msg-nick { color: var(--red); }
+        .is-me .bubble { border-left: 3px solid var(--red); background: #1a0505; }
 
-        /* წერის ზონა */
-        .input-box { padding: 10px; background: #111; display: flex; gap: 10px; border-top: 1px solid #222; }
-        input { flex: 1; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 5px; outline: none; }
-        button { background: red; color: white; border: none; padding: 0 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .input-area { padding: 15px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        #msg-in { flex: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
+        
+        .side-panel { position: fixed; top: 0; height: 100%; background: #080808; z-index: 2000; transition: 0.3s; width: 260px; padding: 20px; border: 1px solid var(--border); }
+        #side-left { left: -260px; } #side-right { right: -260px; }
+        .open-l { left: 0 !important; } .open-r { right: 0 !important; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; }
+        .show { display: block; }
     </style>
 </head>
 <body>
-    <header>🕵️ OLD MAFIA CHAT</header>
-    <div id="chat">იტვირთება...</div>
-    <div class="input-box">
+    <div class="overlay" id="blur" onclick="closeAll()"></div>
+    <header>
+        <div class="head-btn" onclick="openM('l')">☰</div>
+        <b id="active-room">💬 ზოგადი ჩატი</b>
+        <div class="head-btn" onclick="openM('r')">👥</div>
+    </header>
+
+    <div id="chat-flow">იტვირთება...</div>
+
+    <div class="input-area">
         <input type="text" id="msg-in" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
-        <button onclick="send()">➤</button>
+        <button onclick="send()" style="background:none; border:none; color:red; font-size:24px;">➤</button>
     </div>
 
+    <nav id="side-left" class="side-panel"><h3>ოთახები</h3><div id="room-list"></div></nav>
+    <aside id="side-right" class="side-panel"><h3>წევრები</h3><div id="user-list"></div></aside>
+
 <script>
-    // შენი მონაცემები
-    const _URL = "https://ftfciebnywbondaiarnc.supabase.co";
-    const _KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-    const _sb = supabase.createClient(_URL, _KEY);
-    
-    // ნიკნეიმი (თუ არ არის, დაარქმევს 'სტუმარს')
+    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('username') || 'სტუმარი';
+    const defImg = 'https://i.ibb.co/4pLKV60/user.png';
+    let curRoom = '💬 ზოგადი ჩატი';
 
-    async function loadMsgs() {
-        try {
-            const { data, error } = await _sb
-                .from('messages_v3')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(40);
+    function openM(s) { document.getElementById('side-'+(s==='l'?'left':'right')).classList.add('open-'+s); document.getElementById('blur').classList.add('show'); }
+    function closeAll() { document.querySelectorAll('.side-panel').forEach(p=>p.classList.remove('open-l','open-r')); document.getElementById('blur').classList.remove('show'); }
 
-            if (error) throw error;
+    async function sync() {
+        const { data: users } = await _sb.from('avatars_v3').select('*');
+        const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', curRoom).order('created_at', { ascending: false }).limit(40);
+        
+        let uMap = {};
+        users?.forEach(u => uMap[u.nickname] = u);
+        document.getElementById('user-list').innerHTML = users?.map(u => `<div style="margin-bottom:10px;">• ${u.nickname}</div>`).join('') || '';
 
-            const chat = document.getElementById('chat');
-            if (data && data.length > 0) {
-                chat.innerHTML = data.reverse().map(m => `
-                    <div class="m-line">
-                        <span class="m-user">${m.nickname}</span>
-                        <span class="m-text">${m.message}</span>
+        const flow = document.getElementById('chat-flow');
+        if (msgs && msgs.length > 0) {
+            flow.innerHTML = msgs.reverse().map(m => {
+                const isMe = m.nickname === myNick;
+                const u = uMap[m.nickname] || {};
+                return `
+                <div class="msg-row ${isMe ? 'is-me' : ''}">
+                    <img src="${u.avatar_url || defImg}" onerror="this.src='${defImg}'" class="msg-ava">
+                    <div class="msg-body">
+                        <span class="msg-nick">${m.nickname}</span>
+                        <div class="bubble">${m.message}</div>
                     </div>
-                `).join('');
-                chat.scrollTop = chat.scrollHeight;
-            } else {
-                chat.innerHTML = '<div style="color:#444;text-align:center">მესიჯები არ არის</div>';
-            }
-        } catch (e) {
-            document.getElementById('chat').innerHTML = '<div style="color:red">ბაზასთან კავშირი გაწყდა!</div>';
+                </div>`;
+            }).join('');
+        } else {
+            flow.innerHTML = '<div style="text-align:center; color:#444;">მესიჯები არ არის</div>';
         }
+        flow.scrollTop = flow.scrollHeight;
     }
 
     async function send() {
-        const inp = document.getElementById('msg-in');
-        const txt = inp.value.trim();
-        if (!txt) return;
-
-        const { error } = await _sb
-            .from('messages_v3')
-            .insert([{ nickname: myNick, message: txt }]);
-
-        if (error) {
-            alert("შეცდომა გაგზავნისას!");
-        } else {
-            inp.value = "";
-            loadMsgs();
-        }
+        const i = document.getElementById('msg-in'); if(!i.value.trim()) return;
+        await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_name: curRoom }]);
+        i.value = ""; sync();
     }
 
-    // განახლება ყოველ 3 წამში
-    setInterval(loadMsgs, 3000);
-    loadMsgs();
+    window.onload = () => { sync(); setInterval(sync, 4000); };
 </script>
 </body>
 </html>
