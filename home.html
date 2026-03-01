@@ -3,132 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ზოგადი ჩატი</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>კაიფმანია - ჩატი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background: #050505; color: white; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; background: #000; color: white; font-family: 'Arial', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* მარცხენა მენიუ - ოთახები */
+        .sidebar { width: 90px; background: #0a0a0a; border-right: 2px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; }
+        .room-icon { width: 60px; height: 60px; background: #151515; border-radius: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 2px solid #333; transition: 0.3s; font-size: 11px; text-transform: uppercase; font-weight: bold; text-align: center; color: #888; }
+        .room-icon:hover { border-color: red; color: white; box-shadow: 0 0 15px red; }
+        .room-icon.active { border-color: red; background: #200; color: white; }
 
-        /* მესიჯების კონტეინერი */
-        #chat-window {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        /* ჩატის მთავარი ნაწილი */
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: #000; }
+        
+        /* ზედა ზოლი - ნიკი და ოთახის სახელი */
+        .header { height: 60px; background: #0d0d0d; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; }
+        .header h2 { color: red; margin: 0; font-size: 18px; text-shadow: 0 0 10px red; }
+        .my-nickname { color: #aaa; font-size: 14px; }
 
-        .message {
-            background: #1a1a1a;
-            padding: 10px 15px;
-            border-radius: 10px;
-            max-width: 80%;
-            border-left: 3px solid red;
-        }
+        /* მესიჯების ფანჯარა */
+        .messages-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .message { background: #111; padding: 12px; border-radius: 12px; border-left: 4px solid red; max-width: 75%; }
+        .message b { color: red; display: block; font-size: 13px; margin-bottom: 4px; }
+        .message span { color: #eee; font-size: 15px; }
 
-        .message .user { color: red; font-weight: bold; font-size: 12px; margin-bottom: 5px; }
-
-        /* ქვედა პანელი (წერა) */
-        .input-area {
-            background: #111;
-            padding: 15px;
-            display: flex;
-            gap: 10px;
-            border-top: 1px solid #333;
-        }
-
-        input {
-            flex: 1;
-            background: #222;
-            border: 1px solid #444;
-            padding: 12px;
-            color: white;
-            border-radius: 5px;
-            outline: none;
-        }
-
+        /* ქვედა საწერი ზოლი */
+        .input-bar { padding: 20px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 15px; }
+        input { flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 14px; color: white; border-radius: 12px; outline: none; font-size: 15px; }
         input:focus { border-color: red; }
-
-        button {
-            background: red;
-            color: white;
-            border: none;
-            padding: 0 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        button { background: red; color: white; border: none; padding: 0 25px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background: darkred; box-shadow: 0 0 10px red; }
     </style>
 </head>
 <body>
 
-    <header style="padding: 15px; border-bottom: 1px solid red; text-align: center;">
-        <h3 style="color: red;">ზოგადი ჩატი</h3>
-    </header>
+    <div class="sidebar">
+        <div class="room-icon active" onclick="changeRoom('general', this)">ზოგადი</div>
+        <div class="room-icon" onclick="changeRoom('mafia', this)">მაფია</div>
+        <div class="room-icon" onclick="changeRoom('vip', this)">VIP</div>
+    </div>
 
-    <div id="chat-window">
+    <div class="chat-main">
+        <div class="header">
+            <h2 id="room-title">ზოგადი ჩატი</h2>
+            <div id="user-info" class="my-nickname">გამარჯობა, იტვირთება...</div>
         </div>
 
-    <div class="input-area">
-        <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება...">
-        <button onclick="sendMessage()">გაგზავნა</button>
+        <div class="messages-box" id="chat-messages">
+            </div>
+
+        <div class="input-bar">
+            <input type="text" id="msgInput" placeholder="დაწერე რამე...">
+            <button onclick="sendMessage()">გაგზავნა</button>
+        </div>
     </div>
 
     <script>
-        // Supabase-ის მონაცემები (ჩასვი შენი)
-        const supabaseUrl = 'YOUR_SUPABASE_URL';
-        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
-
-        const chatWindow = document.getElementById('chat-window');
-        const msgInput = document.getElementById('msgInput');
-
-        // 1. მესიჯების გაგზავნა
-        async function sendMessage() {
-            const text = msgInput.value;
-            if (!text) return;
-
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            if (user) {
-                const { error } = await supabase
-                    .from('messages') // დარწმუნდი რომ ბაზაში გაქვს ცხრილი 'messages'
-                    .insert([{ 
-                        content: text, 
-                        user_id: user.id, 
-                        user_email: user.email,
-                        room: 'general' 
-                    }]);
-
-                if (error) console.error(error);
-                msgInput.value = ''; // ველის გასუფთავება
-            } else {
-                alert("გთხოვთ გაიაროთ ავტორიზაცია!");
-            }
-        }
-
-        // 2. მესიჯების რეალურ დროში მიღება (Realtime)
-        supabase
-            .channel('public:messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                displayMessage(payload.new);
-            })
-            .subscribe();
-
-        // 3. მესიჯის ვიზუალურად ჩვენება
-        function displayMessage(msg) {
-            const div = document.createElement('div');
-            div.className = 'message';
-            div.innerHTML = `<div class="user">${msg.user_email}</div><div>${msg.content}</div>`;
-            chatWindow.appendChild(div);
-            chatWindow.scrollTop = chatWindow.scrollHeight; // ავტომატური სქროლი ქვემოთ
-        }
-
-        // Enter-ზე გაგზავნა
-        msgInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendMessage();
-        });
-    </script>
-</body>
-</html>
+        // Supabase-ის მონაცემები
+        const SB_
