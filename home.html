@@ -3,52 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OLD MAFIA - SUPREME</title>
+    <title>OLD MAFIA - FINAL FIX</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --red: #ff0000; --bg: #050505; --card: #111; --border: #222; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        header { height: 60px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; z-index: 1000; }
-        .head-btn { font-size: 24px; color: var(--red); cursor: pointer; padding: 5px; }
+
+        header { height: 60px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; }
+        .head-btn { font-size: 24px; color: var(--red); cursor: pointer; }
+
+        /* გვერდითა მენიუები */
         .side-panel { position: fixed; top: 0; height: 100%; background: #080808; z-index: 2000; transition: 0.3s; width: 280px; overflow-y: auto; padding: 20px; border: 1px solid var(--border); }
         #side-left { left: -280px; }
         #side-right { right: -280px; }
-        .open-left { transform: translateX(280px); }
-        .open-right { transform: translateX(-280px); }
+        .open-left { left: 0 !important; }
+        .open-right { right: 0 !important; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; backdrop-filter: blur(5px); }
-        .active { display: block; }
-        .u-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border); cursor: pointer; position: relative; }
-        .u-ava { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; border: 1px solid #333; }
-        .online-dot { width: 10px; height: 10px; border-radius: 50%; position: absolute; left: 40px; bottom: 10px; border: 2px solid var(--card); }
-        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-        .bubble { padding: 12px 16px; background: var(--card); border-radius: 18px; font-size: 14px; border: 1px solid var(--border); max-width: 80%; }
-        .msg.me { align-self: flex-end; } .msg.me .bubble { background: #300; border-color: #600; }
-        #prof-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: #0a0a0a; border: 1px solid #333; border-radius: 30px; padding: 25px; z-index: 3000; text-align: center; }
+        .overlay.active { display: block; }
+
+        /* ჩატის არეალი */
+        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 20px; background: #050505; }
+        
+        .msg-wrapper { display: flex; gap: 10px; max-width: 80%; width: fit-content; }
+        .msg-wrapper.me { margin-left: auto; flex-direction: row-reverse; } /* შენი მესიჯი მარჯვნივ */
+        .msg-wrapper.other { margin-right: auto; } /* სხვისი მესიჯი მარცხნივ */
+
+        .msg-ava { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #444; flex-shrink: 0; }
+        .bubble-cont { display: flex; flex-direction: column; }
+        .msg-nick { font-size: 11px; color: #666; margin-bottom: 4px; font-weight: bold; }
+        .me .msg-nick { text-align: right; color: var(--red); }
+
+        .bubble { padding: 10px 15px; background: #1a1a1a; border-radius: 15px; font-size: 14px; border: 1px solid var(--border); line-height: 1.4; word-break: break-word; }
+        .me .bubble { background: #300; border-color: #600; }
+
+        /* მომხმარებლების სია */
+        .u-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border); cursor: pointer; }
+        .u-ava-list { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .online-dot { width: 12px; height: 12px; border-radius: 50%; position: absolute; margin-left: 30px; margin-top: 25px; border: 2px solid var(--card); }
+
+        /* პროფილის მოდალი */
+        #prof-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: #0a0a0a; border: 1px solid #333; border-radius: 25px; padding: 25px; z-index: 3000; text-align: center; }
         .p-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; color: #fff; }
-        .input-box { padding: 15px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-        #msg-in { flex: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 25px; color: #fff; }
+
+        /* ინპუტი */
+        .input-box { padding: 15px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+        #msg-in { flex: 1; background: #111; border: 1px solid #333; padding: 12px 20px; border-radius: 30px; color: #fff; outline: none; }
     </style>
 </head>
 <body>
     <div class="overlay" id="blur" onclick="closeAll()"></div>
     <div id="prof-modal"></div>
-    <nav id="side-left" class="side-panel"><div id="rooms-list"></div></nav>
-    <aside id="side-right" class="side-panel"><div id="users-list"></div></aside>
-    <header><div class="head-btn" onclick="openMenu('left')">☰</div><div id="room-title">💬 ზოგადი ჩატი</div><div class="head-btn" onclick="openMenu('right')">👥</div></header>
+
+    <nav id="side-left" class="side-panel">
+        <h3 style="color:red; margin-bottom:15px;">ოთახები</h3>
+        <div id="rooms-list"></div>
+    </nav>
+
+    <aside id="side-right" class="side-panel">
+        <h3 style="color:red; margin-bottom:15px;">წევრები</h3>
+        <div id="users-list"></div>
+    </aside>
+
+    <header>
+        <div class="head-btn" onclick="openMenu('left')">☰</div>
+        <div id="room-title" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
+        <div class="head-btn" onclick="openMenu('right')">👥</div>
+    </header>
+
     <div id="chat-flow"></div>
+
     <div class="input-box">
-        <div id="mini-ava" onclick="openProfile(myNick)"></div>
-        <input type="text" id="msg-in" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendMsg()">
-        <button onclick="sendMsg()" style="background:none; border:none; color:red; font-size:28px;">➤</button>
+        <div id="mini-ava" onclick="openProfile(myNick)" style="cursor:pointer;"></div>
+        <input type="text" id="msg-in" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') sendMsg()">
+        <button onclick="sendMsg()" style="background:none; border:none; color:red; font-size:28px; cursor:pointer;">➤</button>
     </div>
 
 <script>
     const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('username');
+    const defaultAva = 'https://i.ibb.co/4pLKV60/user.png';
     let curRoom = '💬 ზოგადი ჩატი', myData = null;
 
-    const rooms = ['💬 ზოგადი ჩატი', '🛡️ ადმინისტრაცია', '💎 VIP საუბრები', '🕵️ საგამოძიებო', '📜 წესები', '😂 იუმორი', '🎵 მუსიკა', '🤝 გაცნობა'];
+    const rooms = ['💬 ზოგადი ჩატი', '🛡️ ადმინისტრაცია', '💎 VIP საუბრები', '🕵️ საგამოძიებო', '📜 წესები', '😂 იუმორი', '🎵 მუსიკა', '🖼️ გალერეა', '🤝 გაცნობა'];
 
     function openMenu(s) { document.getElementById('side-'+s).classList.add(s==='left'?'open-left':'open-right'); document.getElementById('blur').classList.add('active'); }
     function closeAll() { document.querySelectorAll('.side-panel').forEach(p=>p.classList.remove('open-left','open-right')); document.getElementById('prof-modal').style.display='none'; document.getElementById('blur').classList.remove('active'); }
@@ -59,15 +96,34 @@
         const { data: users } = await _sb.from('avatars_v3').select('*');
         const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', curRoom).order('created_at', { ascending: false }).limit(50);
         
-        let uHtml = '';
+        let uMap = {}, uHtml = '';
         users?.forEach(u => {
-            if(u.nickname === myNick) { myData = u; document.getElementById('mini-ava').innerHTML = `<img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" style="width:35px; height:35px; border-radius:50%; border:1px solid red;">`; }
+            uMap[u.nickname] = u;
+            if(u.nickname === myNick) {
+                myData = u;
+                document.getElementById('mini-ava').innerHTML = `<img src="${u.avatar_url || defaultAva}" onerror="this.src='${defaultAva}'" style="width:35px; height:35px; border-radius:50%; border:2px solid red; object-fit:cover;">`;
+            }
             const isOnline = (new Date() - new Date(u.last_seen)) < 30000;
-            uHtml += `<div class="u-card" onclick="openProfile('${u.nickname}')"><img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" class="u-ava"><div class="online-dot" style="background:${isOnline?'#0f0':'#444'}"></div><div><b>${u.nickname}</b><br><small style="color:red;">${u.role || 'წევრი'}</small></div></div>`;
+            uHtml += `<div class="u-card" onclick="openProfile('${u.nickname}')">
+                <img src="${u.avatar_url || defaultAva}" onerror="this.src='${defaultAva}'" class="u-ava-list">
+                <div class="online-dot" style="background:${isOnline?'#0f0':'#444'}"></div>
+                <div style="margin-left:10px;"><b>${u.nickname}</b><br><small style="color:red;">${u.role || 'წევრი'}</small></div>
+            </div>`;
         });
 
         document.getElementById('users-list').innerHTML = uHtml;
-        document.getElementById('chat-flow').innerHTML = msgs?.reverse().map(m => `<div class="msg ${m.nickname===myNick?'me':''}"><b>${m.nickname}:</b><div class="bubble">${m.message}</div></div>`).join('');
+        document.getElementById('chat-flow').innerHTML = msgs?.reverse().map(m => {
+            const u = uMap[m.nickname] || {};
+            const isMe = m.nickname === myNick;
+            return `
+                <div class="msg-wrapper ${isMe ? 'me' : 'other'}">
+                    <img src="${u.avatar_url || defaultAva}" onerror="this.src='${defaultAva}'" class="msg-ava">
+                    <div class="bubble-cont">
+                        <span class="msg-nick">${m.nickname}</span>
+                        <div class="bubble">${m.message}</div>
+                    </div>
+                </div>`;
+        }).join('') || '';
         document.getElementById('chat-flow').scrollTop = document.getElementById('chat-flow').scrollHeight;
     }
 
@@ -81,35 +137,48 @@
         const iAmBoss = (myData.role || '').includes('დამფუძნებელი');
 
         modal.innerHTML = `
-            <div style="text-align:right; cursor:pointer;" onclick="closeAll()">✕</div>
-            <img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" style="width:100px; height:100px; border-radius:20px; border:2px solid red; object-fit:cover;">
-            <h2>${u.nickname}</h2>
-            <p style="color:red; font-weight:bold;">${u.role || 'წევრი'}</p>
-            <div style="background:#111; padding:10px; border-radius:10px; margin:10px 0;">${u.status || '...'}</div>
+            <div style="text-align:right; cursor:pointer; font-size:24px;" onclick="closeAll()">✕</div>
+            <img src="${u.avatar_url || defaultAva}" onerror="this.src='${defaultAva}'" style="width:110px; height:110px; border-radius:50%; border:3px solid red; object-fit:cover; margin-bottom:10px;">
+            <h2 style="margin-bottom:5px;">${u.nickname}</h2>
+            <p style="color:red; font-weight:bold; margin-bottom:15px;">${u.role || 'წევრი'}</p>
+            <div style="background:#111; padding:15px; border-radius:15px; border:1px solid #222; margin-bottom:20px;">${u.status || 'სტატუსი ცარიელია...'}</div>
             
             ${isMe ? `
-                <button class="p-btn" style="background:red;" onclick="updateStatus()">✍️ სტატუსი</button>
-                <button class="p-btn" style="background:#222;" onclick="updateAva()">🖼️ ფოტო</button>
+                <button class="p-btn" style="background:red;" onclick="updateStatus()">✍️ სტატუსის შეცვლა</button>
+                <button class="p-btn" style="background:#222;" onclick="updateAva()">🖼️ ფოტოს შეცვლა</button>
+                <button class="p-btn" style="background:none; color:#555; font-size:12px;" onclick="logout()">🚪 გასვლა</button>
             ` : `
-                <button class="p-btn" style="background:#0055ff;">✉️ მიწერა</button>
+                <button class="p-btn" style="background:#0055ff;" onclick="alert('PM მალე დაემატება!')">✉️ მიწერა</button>
                 ${iAmBoss ? `
-                    <div style="border-top:1px solid #333; margin-top:10px; padding-top:10px;">
-                        <button class="p-btn" style="background:orange; color:black;" onclick="setRole('${u.nickname}', '🛡️ ადმინისტრატორი')">⭐ ადმინი</button>
-                        <button class="p-btn" style="background:red;" onclick="setRole('${u.nickname}', '🚫 ბლოკირებული')">🚫 BAN</button>
-                    </div>
+                    <button class="p-btn" style="background:orange; color:black;" onclick="setRole('${u.nickname}', '🛡️ ადმინისტრატორი')">⭐ ადმინი</button>
+                    <button class="p-btn" style="background:white; color:black;" onclick="setRole('${u.nickname}', 'წევრი')">❌ ჩამორთმევა</button>
                 ` : ''}
             `}
         `;
     }
 
-    async function updateStatus() { const s = prompt("ახალი სტატუსი:"); if(s) { await _sb.from('avatars_v3').update({ status: s }).eq('nickname', myNick); sync(); closeAll(); } }
-    async function updateAva() { const url = prompt("ფოტოს URL:"); if(url) { await _sb.from('avatars_v3').update({ avatar_url: url }).eq('nickname', myNick); sync(); closeAll(); } }
-    async function setRole(n, r) { await _sb.from('avatars_v3').update({ role: r }).eq('nickname', n); alert('შესრულდა!'); sync(); closeAll(); }
-    async function sendMsg() { const i = document.getElementById('msg-in'); if(!i.value.trim()) return; await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_name: curRoom }]); i.value = ""; sync(); }
-    function initRooms() { document.getElementById('rooms-list').innerHTML = rooms.map(r => `<div class="item ${r===curRoom?'room-active':''}" onclick="changeR('${r}')">${r}</div>`).join(''); }
-    function changeR(r) { curRoom = r; document.getElementById('room-title').innerText = r; closeAll(); initRooms(); sync(); }
+    async function updateStatus() { 
+        const s = prompt("შეიყვანე ახალი სტატუსი:"); 
+        if(s) { await _sb.from('avatars_v3').update({ status: s }).eq('nickname', myNick); sync(); closeAll(); } 
+    }
     
-    window.onload = () => { initRooms(); sync(); setInterval(sync, 5000); };
+    async function updateAva() { 
+        const url = prompt("ჩასვი ფოტოს პირდაპირი ლინკი (URL):"); 
+        if(url) { await _sb.from('avatars_v3').update({ avatar_url: url }).eq('nickname', myNick); sync(); closeAll(); } 
+    }
+
+    async function setRole(n, r) { await _sb.from('avatars_v3').update({ role: r }).eq('nickname', n); sync(); closeAll(); }
+    
+    async function sendMsg() {
+        const i = document.getElementById('msg-in'); if(!i.value.trim()) return;
+        await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_name: curRoom }]);
+        i.value = ""; sync();
+    }
+
+    function initRooms() { document.getElementById('rooms-list').innerHTML = rooms.map(r => `<div style="padding:12px; background:#111; border:1px solid #222; border-radius:12px; margin-bottom:8px; cursor:pointer; font-size:14px; ${r===curRoom?'border-color:red; color:red; font-weight:bold;':''}" onclick="changeR('${r}')">${r}</div>`).join(''); }
+    function changeR(r) { curRoom = r; document.getElementById('room-title').innerText = r; closeAll(); initRooms(); sync(); }
+    function logout() { localStorage.clear(); location.href='index.html'; }
+    window.onload = () => { initRooms(); sync(); setInterval(sync, 4000); };
 </script>
 </body>
 </html>
