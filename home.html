@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OLD MAFIA - ADMIN CONTROL</title>
+    <title>OLD MAFIA - THE BOSS EDITION</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --red: #ff0000; --bg: #050505; --card: #111; --border: #222; }
@@ -21,25 +21,24 @@
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; backdrop-filter: blur(5px); }
         .active { display: block; }
 
-        .prof-link { width: 100%; padding: 15px; background: #1a0505; border: 1px solid #500; border-radius: 12px; color: white; font-weight: bold; margin-bottom: 15px; cursor: pointer; text-align: center; }
+        .my-prof-card { background: linear-gradient(45deg, #200, #000); padding: 15px; border-radius: 15px; border: 1px solid #500; margin-bottom: 20px; text-align: center; cursor: pointer; }
         .room-item { padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; cursor: pointer; font-size: 14px; }
-        .room-active { border-color: var(--red); background: #200; color: var(--red); }
+        .room-active { border-color: var(--red); background: #1a0505; color: var(--red); font-weight: bold; }
 
-        .u-card { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--card); border-radius: 12px; margin-bottom: 6px; border: 1px solid var(--border); cursor: pointer; }
-        .u-ava { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
-        .list-section { color: var(--red); font-size: 11px; font-weight: bold; margin: 20px 0 10px; text-transform: uppercase; opacity: 0.7; }
+        .u-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border-radius: 12px; margin-bottom: 5px; border: 1px solid var(--border); cursor: pointer; }
+        .u-ava { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; }
+        .section-title { color: var(--red); font-size: 11px; font-weight: bold; margin: 20px 0 10px; text-transform: uppercase; opacity: 0.7; }
 
         #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
         .msg { display: flex; gap: 10px; max-width: 85%; }
         .msg.me { align-self: flex-end; flex-direction: row-reverse; }
-        .bubble { padding: 10px 15px; background: var(--card); border-radius: 15px; font-size: 14px; border: 1px solid var(--border); }
+        .bubble { padding: 12px 16px; background: var(--card); border-radius: 18px; font-size: 14px; border: 1px solid var(--border); }
         .msg.me .bubble { background: #300; border-color: #600; }
 
-        #prof-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 360px; background: #0d0d0d; border: 1px solid #333; border-radius: 25px; padding: 25px; z-index: 3000; text-align: center; }
-        .p-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; color: #fff; }
+        #prof-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 360px; background: #0a0a0a; border: 1px solid #333; border-radius: 30px; padding: 25px; z-index: 3000; text-align: center; box-shadow: 0 0 50px #000; }
+        .p-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; color: #fff; font-size: 14px; }
         .btn-blue { background: #0055ff; }
-        .btn-red { background: var(--red); }
-        .btn-gray { background: #222; }
+        .btn-gray { background: #222; border: 1px solid #444; color: gold; }
     </style>
 </head>
 <body>
@@ -47,20 +46,25 @@
     <div id="prof-modal"></div>
 
     <nav id="side-left" class="side-panel">
-        <div class="prof-link" onclick="openProfile(myNick)">👤 ჩემი პროფილი</div>
+        <div class="my-prof-card" onclick="openProfile(myNick)">
+            <div id="my-side-ava"></div>
+            <h3 id="my-name-side" style="margin-top:10px;">ბოსი</h3>
+            <p style="font-size:10px; color:red;">ნახე შენი პროფილი</p>
+        </div>
+        <div class="section-title">ოთახები</div>
         <div id="rooms-list"></div>
     </nav>
 
     <aside id="side-right" class="side-panel">
-        <div class="list-section">👑 ადმინისტრაცია</div>
+        <div class="section-title">👑 ადმინისტრაცია</div>
         <div id="staff-list"></div>
-        <div class="list-section">👤 წევრები</div>
+        <div class="section-title">👤 წევრები</div>
         <div id="members-list"></div>
     </aside>
 
     <header>
         <div onclick="openMenu('left')" style="font-size:24px; color:red; cursor:pointer;">☰</div>
-        <div id="room-title">ზოგადი ჩატი</div>
+        <div id="room-title">💬 ზოგადი ჩატი</div>
         <div id="top-ava" onclick="openProfile(myNick)" style="cursor:pointer;"></div>
     </header>
 
@@ -74,8 +78,8 @@
 <script>
     const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('username');
-    let curRoom = '💬 ზოგადი ჩატი', myRole = 'წევრი';
-    
+    let curRoom = '💬 ზოგადი ჩატი', myRole = '';
+
     const rooms = ['💬 ზოგადი ჩატი', '🛡️ ადმინისტრაცია', '💎 VIP საუბრები', '🕵️ საგამოძიებო', '📜 წესები', '🔒 შიფროგრამა', '🎯 ვიქტორინა', '🪢 ჩამოხრჩობანა', '😂 იუმორი', '🎵 მუსიკა', '🖼️ გალერეა', '🤝 გაცნობა', '📝 პოეზია'];
 
     function openMenu(s) { document.getElementById('side-'+s).classList.add(s==='left'?'open-left':'open-right'); document.getElementById('blur').classList.add('active'); }
@@ -92,6 +96,8 @@
             if(u.nickname === myNick) {
                 myRole = u.role || 'წევრი';
                 document.getElementById('top-ava').innerHTML = `<img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" style="width:35px; height:35px; border-radius:50%; border:1px solid red;">`;
+                document.getElementById('my-side-ava').innerHTML = `<img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" style="width:60px; height:60px; border-radius:15px; border:2px solid red;">`;
+                document.getElementById('my-name-side').innerText = u.nickname;
             }
             const card = `<div class="u-card" onclick="openProfile('${u.nickname}')">
                 <img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" class="u-ava">
@@ -106,7 +112,7 @@
             const u = uMap[m.nickname] || {};
             return `<div class="msg ${m.nickname===myNick?'me':''}">
                 <img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" class="u-ava" style="width:30px; height:30px;" onclick="openProfile('${m.nickname}')">
-                <div><div style="font-size:9px; opacity:0.5;">${m.nickname}</div><div class="bubble">${m.message}</div></div>
+                <div><div class="bubble">${m.message}</div></div>
             </div>`;
         }).join('') || '';
         document.getElementById('chat-flow').scrollTop = document.getElementById('chat-flow').scrollHeight;
@@ -119,47 +125,33 @@
         modal.style.display = 'block'; document.getElementById('blur').classList.add('active');
         
         const isMe = nick === myNick;
-        const canManage = myRole.includes('დამფუძნებელი') && !isMe;
+        const isAdmin = myRole.includes('დამფუძნებელი');
 
         modal.innerHTML = `
             <div style="text-align:right; cursor:pointer;" onclick="closeAll()">✕</div>
             <img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" style="width:100px; height:100px; border-radius:20px; border:2px solid red; object-fit:cover; margin-bottom:10px;">
-            <h2 style="margin-bottom:5px;">${u.nickname}</h2>
-            <div style="color:red; font-size:12px; font-weight:bold; margin-bottom:15px;">${u.role || 'წევრი'}</div>
+            <h2>${u.nickname}</h2>
+            <div style="color:red; font-weight:bold; margin-bottom:15px;">${u.role || 'წევრი'}</div>
             <div style="background:#000; padding:10px; border-radius:10px; border:1px solid #222; margin-bottom:15px;">${u.status || '...'}</div>
             
-            ${isMe ? `
-                <button class="p-btn btn-red" onclick="saveStatus()">💾 სტატუსის შეცვლა</button>
-                <button class="p-btn btn-gray" onclick="logout()">🚪 გასვლა</button>
-            ` : `
-                <button class="p-btn btn-blue" onclick="startPM('${u.nickname}')">✉️ პირადი (PM)</button>
-                ${canManage ? `
-                    <div style="margin-top:15px; border-top:1px solid #333; pt:10px;">
-                        <button class="p-btn btn-gray" style="color:orange;" onclick="setRole('${u.nickname}', '🛡️ ადმინისტრატორი')">⭐ ადმინი</button>
-                        <button class="p-btn btn-gray" style="color:gold;" onclick="setRole('${u.nickname}', '👑 დამფუძნებელი')">👑 დამფუძნებელი</button>
-                        <button class="p-btn btn-red" onclick="setRole('${u.nickname}', 'წევრი')">❌ ჩამორთმევა</button>
-                    </div>
+            ${isMe ? `<button class="p-btn btn-pm" style="background:red;" onclick="logout()">🚪 გასვლა</button>` : `
+                <button class="p-btn btn-blue" onclick="startPM('${u.nickname}')">✉️ პირადი მიმოწერა</button>
+                ${isAdmin ? `
+                    <button class="p-btn btn-gray" onclick="setRole('${u.nickname}', '🛡️ ადმინისტრატორი')">⭐ ადმინი</button>
+                    <button class="p-btn btn-pm" style="background:#444;" onclick="setRole('${u.nickname}', 'წევრი')">❌ ჩამორთმევა</button>
                 ` : ''}
             `}
         `;
     }
 
-    async function setRole(nick, role) {
-        await _sb.from('avatars_v3').update({ role: role }).eq('nickname', nick);
-        alert('როლი შეიცვალა!'); closeAll(); sync();
-    }
-
-    function startPM(target) { curRoom = [myNick, target].sort().join('_PM_'); document.getElementById('room-title').innerText = '📩 PM: ' + target; closeAll(); sync(); }
-    async function saveStatus() { const s = prompt("შეიყვანე ახალი სტატუსი:"); if(s) { await _sb.from('avatars_v3').update({ status: s }).eq('nickname', myNick); sync(); } }
+    async function setRole(n, r) { await _sb.from('avatars_v3').update({ role: r }).eq('nickname', n); alert('როლი განახლდა!'); sync(); }
+    function startPM(t) { curRoom = [myNick, t].sort().join('_PM_'); document.getElementById('room-title').innerText = '📩 PM: ' + t; closeAll(); sync(); }
     async function sendMsg() {
         const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
         await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_name: curRoom }]);
         i.value = ""; sync();
     }
-
-    function initRooms() {
-        document.getElementById('rooms-list').innerHTML = rooms.map(r => `<div class="room-item ${r===curRoom?'room-active':''}" onclick="changeR('${r}')">${r}</div>`).join('');
-    }
+    function initRooms() { document.getElementById('rooms-list').innerHTML = rooms.map(r => `<div class="room-item ${r===curRoom?'room-active':''}" onclick="changeR('${r}')">${r}</div>`).join(''); }
     function changeR(r) { curRoom = r; document.getElementById('room-title').innerText = r; closeAll(); initRooms(); sync(); }
     function logout() { localStorage.clear(); location.href='index.html'; }
     window.onload = () => { if(!myNick) { location.href='index.html'; return; } initRooms(); sync(); setInterval(sync, 4000); };
