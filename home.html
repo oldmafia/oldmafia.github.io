@@ -2,87 +2,140 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OLD MAFIA - THE KINGDOM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - OFFICIAL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --red: #ff0000; --bg: #050505; --panel: #0a0a0a; --border: #1a1a1a; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* ზედა ზოლი */
+        /* Header */
         header { 
             height: 60px; background: #000; border-bottom: 2px solid var(--red);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
-            box-shadow: 0 2px 15px rgba(255,0,0,0.2); z-index: 100;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 15px;
+            z-index: 2001; position: relative; box-shadow: 0 2px 10px rgba(255,0,0,0.2);
         }
-        .logo { color: var(--red); font-weight: 900; font-size: 20px; letter-spacing: 3px; text-shadow: 2px 2px #000; }
-        
-        .user-top { display: flex; align-items: center; gap: 12px; background: #111; padding: 6px 15px; border-radius: 5px; border: 1px solid #222; }
-        .user-top img { width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--red); }
-        .user-top span { font-size: 14px; font-weight: bold; color: var(--red); }
+        .menu-btn { font-size: 24px; color: var(--red); cursor: pointer; padding: 5px; width: 40px; text-align: center; }
+        .logo { color: var(--red); font-weight: 900; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
 
-        .wrapper { flex: 1; display: flex; overflow: hidden; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); }
+        .wrapper { flex: 1; display: flex; position: relative; overflow: hidden; }
 
-        /* მარცხენა მენიუ - ოთახები */
-        .side-rooms { width: 240px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; }
-        .side-h { padding: 20px; font-size: 11px; color: #444; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #111; }
-        .room-btn { 
-            padding: 15px 20px; cursor: pointer; color: #888; transition: 0.3s; 
-            border-bottom: 1px solid #0d0d0d; display: flex; align-items: center; gap: 10px;
+        /* გვერდითა პანელები */
+        .side-panel { 
+            position: absolute; top: 0; bottom: 0; width: 260px; background: #080808; 
+            z-index: 2000; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border); overflow-y: auto;
         }
-        .room-btn:hover { background: #111; color: #fff; }
-        .room-active { background: #1a0505 !important; color: var(--red) !important; border-left: 4px solid var(--red); font-weight: bold; }
-
-        /* ჩატი */
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(5,5,5,0.8); }
-        #chat-flow { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        #side-left { left: -265px; border-right: 2px solid var(--red); }
+        #side-right { right: -265px; border-left: 2px solid var(--red); }
         
-        /* მესიჯების დიზაინი */
+        /* მენიუს გახსნა */
+        .side-panel.open { transform: translateX(0); }
+        #side-left.open { left: 0; }
+        #side-right.open { right: 0; }
+
+        /* ჩატის ზონა */
+        .chat-area { flex: 1; display: flex; flex-direction: column; z-index: 100; position: relative; width: 100%; background: #050505; }
+        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* მესიჯები */
         .m-wrap { max-width: 85%; margin-bottom: 5px; }
-        .m-nick { font-size: 11px; font-weight: bold; color: #555; margin-bottom: 2px; padding-left: 5px; }
-        .m-msg { padding: 12px 18px; background: #111; border: 1px solid #1a1a1a; border-radius: 5px 15px 15px 15px; font-size: 14px; line-height: 1.5; color: #ddd; position: relative; }
+        .m-nick { font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px; }
+        .m-msg { padding: 10px 15px; background: #111; border: 1px solid #1a1a1a; border-radius: 0 12px 12px 12px; font-size: 14px; color: #ccc; line-height: 1.4; }
         
         .is-me { align-self: flex-end; }
-        .is-me .m-nick { color: var(--red); text-align: right; padding-right: 5px; }
-        .is-me .m-msg { background: #1a0505; border-color: #2a0a0a; border-radius: 15px 5px 15px 15px; border-right: 3px solid var(--red); color: #fff; }
+        .is-me .m-nick { color: var(--red); text-align: right; }
+        .is-me .m-msg { background: #1a0505; border-right: 3px solid var(--red); border-radius: 12px 0 12px 12px; color: #fff; border-left: none; }
 
-        /* მარჯვენა მენიუ - წევრები */
-        .side-users { width: 220px; background: var(--panel); border-left: 1px solid var(--border); padding: 0; }
-        .u-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 13px; border-bottom: 1px solid #0d0d0d; }
-        .u-status { width: 8px; height: 8px; background: #0f0; border-radius: 50%; box-shadow: 0 0 8px #0f0; }
+        /* მენიუს ელემენტები */
+        .side-h { padding: 20px; font-size: 12px; color: var(--red); font-weight: bold; border-bottom: 1px solid #111; text-transform: uppercase; letter-spacing: 1px; }
+        .room-btn { padding: 15px 20px; cursor: pointer; color: #888; border-bottom: 1px solid #0d0d0d; font-size: 14px; transition: 0.2s; }
+        .room-btn:active { background: #111; }
+        .room-active { background: #1a0505; color: var(--red); font-weight: bold; border-left: 4px solid var(--red); }
 
         /* ქვედა პანელი */
-        .input-wrap { padding: 20px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 15px; }
+        .input-wrap { padding: 12px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
         #msg-in { 
-            flex: 1; background: #0a0a0a; border: 1px solid #222; padding: 15px 25px; 
-            border-radius: 5px; color: #fff; outline: none; font-size: 14px;
+            flex: 1; background: #0d0d0d; border: 1px solid #222; padding: 12px 18px; 
+            border-radius: 25px; color: #fff; outline: none; font-size: 14px;
         }
         #msg-in:focus { border-color: var(--red); }
-        .send-btn { background: var(--red); border: none; width: 55px; border-radius: 5px; color: #fff; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .send-btn:hover { background: #cc0000; transform: translateY(-2px); }
+        .send-btn { background: var(--red); border: none; width: 45px; height: 45px; border-radius: 50%; color: #fff; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #222; }
+        /* ბლარი მენიუს დროს */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; backdrop-filter: blur(3px); }
+        .overlay.show { display: block; }
+
+        /* ონლაინ სია */
+        .u-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #eee; }
+        .u-dot { width: 8px; height: 8px; background: #0f0; border-radius: 50%; box-shadow: 0 0 8px #0f0; }
     </style>
 </head>
 <body>
+    <div class="overlay" id="blur" onclick="closeMenus()"></div>
 
     <header>
-        <div class="logo">OLD MAFIA</div>
-        <div class="user-top">
-            <img src="https://i.ibb.co/4pLKV60/user.png">
-            <span id="my-nick-head">...</span>
-        </div>
+        <div class="menu-btn" onclick="toggleMenu('l')">☰</div>
+        <div class="logo" id="active-title">ზოგადი ჩატი</div>
+        <div class="menu-btn" onclick="toggleMenu('r')">👥</div>
     </header>
 
     <div class="wrapper">
-        <div class="side-rooms">
-            <div class="side-h">მთავარი მენიუ</div>
+        <nav id="side-left" class="side-panel">
+            <div class="side-h">ოთახები 🏚️</div>
             <div class="room-btn room-active" onclick="changeRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
             <div class="room-btn" onclick="changeRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
             <div class="room-btn" onclick="changeRoom('გამოძიება')">🔍 გამოძიება</div>
             <div class="room-btn" onclick="changeRoom('ვიქტორინა')">❓ ვიქტორინა</div>
             <div class="room-btn" onclick="changeRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
             <div class="room-btn" onclick="changeRoom('ჩამოხრჩობანა')">🪢 ჩამოხრჩობანა</div>
-            <div class="room-btn" onclick="changeRoom('მუსიკა
+            <div class="room-btn" onclick="changeRoom('მუსიკა')">🎵 მუსიკა</div>
+            <div class="room-btn" onclick="changeRoom('იუმორი')">😂 იუმორი</div>
+            <div class="room-btn" onclick="changeRoom('გალერეა')">🖼️ გალერეა</div>
+            <div class="room-btn" onclick="changeRoom('ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
+            <div class="room-btn" onclick="changeRoom('დახმარება')">🆘 დახმარება</div>
+        </nav>
+
+        <main class="chat-area">
+            <div id="chat-flow">იტვირთება...</div>
+            <div class="input-wrap">
+                <input type="text" id="msg-in" placeholder="დაწერე მესიჯი..." autocomplete="off">
+                <button class="send-btn" onclick="send()">➤</button>
+            </div>
+        </main>
+
+        <aside id="side-right" class="side-panel">
+            <div class="side-h">ჩემი პროფილი</div>
+            <div style="padding: 20px; text-align: center; border-bottom: 1px solid #111;">
+                <img src="https://i.ibb.co/4pLKV60/user.png" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid red; margin-bottom: 10px;">
+                <div id="display-nick" style="color:red; font-weight:bold; font-size: 18px;"></div>
+                <div style="font-size: 10px; color: #444; margin-top: 5px;">სტატუსი: მაფიოზი</div>
+            </div>
+            <div class="side-h">ონლაინ</div>
+            <div class="u-item">
+                <div class="u-dot"></div>
+                <span id="list-nick"></span>
+            </div>
+        </aside>
+    </div>
+
+<script>
+    // Supabase კონფიგურაცია
+    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
+    // მომხმარებლის სახელი
+    const myNick = localStorage.getItem('username') || 'Anonymous';
+    let currentRoom = 'ზოგადი ჩატი';
+
+    // სახელების დასმა ვიზუალში
+    document.getElementById('display-nick').innerText = myNick;
+    document.getElementById('list-nick').innerText = myNick + " (შენ)";
+
+    // მენიუს ფუნქციები
+    function toggleMenu(side) {
+        const menu = document.getElementById(side === 'l' ? 'side-left' : 'side-right');
+        const isOpen = menu.classList.contains('open');
+        closeMenus();
+        if(!isOpen) {
+            menu.classList.add('open');
