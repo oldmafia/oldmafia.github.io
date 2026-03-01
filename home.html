@@ -5,31 +5,47 @@
     <title>კაიფმანია - ჩატი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        /* შენი ორიგინალი დიზაინი სურათიდან */
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 90px; background: #0a0a0a; border-right: 2px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; overflow-y: auto; }
-        .room-icon { width: 65px; height: 65px; background: #151515; border-radius: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 2px solid #333; transition: 0.4s; font-size: 11px; font-weight: bold; text-align: center; color: #888; }
+        * { box-sizing: border-box; }
+
+        .sidebar { width: 90px; background: #0a0a0a; border-right: 2px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; }
+        .room-icon { 
+            width: 65px; height: 65px; background: #151515; border-radius: 20px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; border: 2px solid #333; 
+            transition: 0.4s; font-size: 11px; font-weight: bold; text-align: center; color: #888;
+        }
+        /* წითელი ნეონის ეფექტი */
         .room-icon:hover, .room-icon.active { border-color: red; color: white; box-shadow: 0 0 20px red; transform: scale(1.05); background: #200; }
+
         .chat-main { flex: 1; display: flex; flex-direction: column; }
         .header { height: 70px; background: #0d0d0d; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; }
         .header h2 { color: red; margin: 0; font-size: 20px; text-shadow: 0 0 15px red; }
+
         .messages-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .message { background: rgba(20, 20, 20, 0.8); padding: 12px 18px; border-radius: 15px; border-left: 4px solid red; max-width: 85%; }
+        .message { background: rgba(20, 20, 20, 0.8); padding: 12px 18px; border-radius: 15px; border-left: 4px solid red; max-width: 85%; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message b { color: red; display: block; font-size: 13px; margin-bottom: 5px; }
+
+        /* საწერი ზოლი */
         .input-bar { padding: 15px 25px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 15px; }
-        input { flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 15px; color: white; border-radius: 30px; outline: none; }
+        input { flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 15px; color: white; border-radius: 30px; outline: none; transition: 0.3s; }
+        input:focus { border-color: red; box-shadow: 0 0 10px rgba(255,0,0,0.2); }
         .send-btn { background: red; color: white; border: none; padding: 0 30px; border-radius: 30px; cursor: pointer; font-weight: bold; transition: 0.3s; }
     </style>
 </head>
 <body>
+
     <div class="sidebar">
         <div class="room-icon active" onclick="changeRoom('general', this)">ზოგადი</div>
         <div class="room-icon" onclick="changeRoom('mafia', this)">მაფია</div>
         <div class="room-icon" onclick="changeRoom('vip', this)">VIP</div>
     </div>
+
     <div class="chat-main">
         <div class="header">
             <h2 id="room-title">ზოგადი ჩატი</h2>
-            <div id="user-info" style="color: #aaa; font-size: 14px;">...</div>
+            <div id="user-info" style="color: #aaa; font-size: 14px;">იტვირთება...</div>
         </div>
         <div class="messages-box" id="chat-messages"></div>
         <div class="input-bar">
@@ -37,19 +53,26 @@
             <button class="send-btn" onclick="sendMessage()">გაგზავნა</button>
         </div>
     </div>
+
     <script>
-        const supabaseClient = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co";
+        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
         let currentRoom = 'general';
         let myProfile = null;
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) { window.location.href = "index.html"; return; }
+
             let { data: p } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            
             if (!p) {
                 const { data: newP } = await supabaseClient.from('profiles').insert([{ id: user.id, username: user.email.split('@')[0] }]).select().single();
                 p = newP;
             }
+
             myProfile = p;
             document.getElementById('user-info').innerText = myProfile.username;
             loadMessages();
