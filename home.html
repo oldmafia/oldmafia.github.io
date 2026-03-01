@@ -3,139 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OLD MAFIA - OFFICIAL</title>
+    <title>OLD MAFIA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff0000; --bg: #050505; --panel: #0a0a0a; --border: #1a1a1a; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: #050505; color: white; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* Header */
         header { 
-            height: 60px; background: #000; border-bottom: 2px solid var(--red);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 15px;
-            z-index: 2001; position: relative; box-shadow: 0 2px 10px rgba(255,0,0,0.2);
+            height: 55px; background: #000; border-bottom: 2px solid red;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0;
         }
-        .menu-btn { font-size: 24px; color: var(--red); cursor: pointer; padding: 5px; width: 40px; text-align: center; }
-        .logo { color: var(--red); font-weight: 900; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
+        .btn { color: red; font-size: 22px; cursor: pointer; width: 40px; text-align: center; }
+        .logo { font-weight: bold; color: red; letter-spacing: 1px; font-size: 14px; }
 
-        .wrapper { flex: 1; display: flex; position: relative; overflow: hidden; }
+        /* Main Wrapper */
+        .wrapper { flex: 1; position: relative; overflow: hidden; display: flex; }
 
-        /* გვერდითა პანელები */
-        .side-panel { 
-            position: absolute; top: 0; bottom: 0; width: 260px; background: #080808; 
-            z-index: 2000; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid var(--border); overflow-y: auto;
+        /* Side Panels (Mobile Ready) */
+        .panel { 
+            position: absolute; top: 0; width: 260px; height: 100%; background: #0a0a0a; 
+            z-index: 1000; transition: 0.3s; border: 1px solid #1a1a1a; overflow-y: auto;
         }
-        #side-left { left: -265px; border-right: 2px solid var(--red); }
-        #side-right { right: -265px; border-left: 2px solid var(--red); }
+        #left { left: -260px; border-right: 2px solid red; }
+        #right { right: -260px; border-left: 2px solid red; }
+        .panel.show-l { left: 0; }
+        .panel.show-r { right: 0; }
+
+        /* Chat Area */
+        #chat-container { flex: 1; display: flex; flex-direction: column; height: 100%; background: #050505; }
+        #flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* Messages */
+        .msg { max-width: 85%; margin-bottom: 5px; }
+        .nick { font-size: 10px; color: #666; font-weight: bold; margin-bottom: 2px; }
+        .text { padding: 10px 14px; background: #111; border-radius: 0 12px 12px 12px; font-size: 14px; color: #ccc; border: 1px solid #1a1a1a; }
         
-        /* მენიუს გახსნა */
-        .side-panel.open { transform: translateX(0); }
-        #side-left.open { left: 0; }
-        #side-right.open { right: 0; }
+        .me { align-self: flex-end; }
+        .me .nick { color: red; text-align: right; }
+        .me .text { background: #1a0505; border-right: 3px solid red; border-radius: 12px 0 12px 12px; color: #fff; }
 
-        /* ჩატის ზონა */
-        .chat-area { flex: 1; display: flex; flex-direction: column; z-index: 100; position: relative; width: 100%; background: #050505; }
-        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        
-        /* მესიჯები */
-        .m-wrap { max-width: 85%; margin-bottom: 5px; }
-        .m-nick { font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px; }
-        .m-msg { padding: 10px 15px; background: #111; border: 1px solid #1a1a1a; border-radius: 0 12px 12px 12px; font-size: 14px; color: #ccc; line-height: 1.4; }
-        
-        .is-me { align-self: flex-end; }
-        .is-me .m-nick { color: var(--red); text-align: right; }
-        .is-me .m-msg { background: #1a0505; border-right: 3px solid var(--red); border-radius: 12px 0 12px 12px; color: #fff; border-left: none; }
+        /* Rooms & Users List */
+        .p-head { padding: 15px; color: red; font-weight: bold; font-size: 12px; border-bottom: 1px solid #1a1a1a; text-transform: uppercase; }
+        .item { padding: 12px 20px; color: #888; border-bottom: 1px solid #0d0d0d; cursor: pointer; font-size: 14px; }
+        .active { background: #1a0505; color: red; font-weight: bold; }
 
-        /* მენიუს ელემენტები */
-        .side-h { padding: 20px; font-size: 12px; color: var(--red); font-weight: bold; border-bottom: 1px solid #111; text-transform: uppercase; letter-spacing: 1px; }
-        .room-btn { padding: 15px 20px; cursor: pointer; color: #888; border-bottom: 1px solid #0d0d0d; font-size: 14px; transition: 0.2s; }
-        .room-btn:active { background: #111; }
-        .room-active { background: #1a0505; color: var(--red); font-weight: bold; border-left: 4px solid var(--red); }
+        /* Input Area */
+        .input-box { height: 65px; background: #000; border-top: 1px solid #1a1a1a; display: flex; padding: 10px; gap: 10px; flex-shrink: 0; }
+        input { flex: 1; background: #0d0d0d; border: 1px solid #222; border-radius: 20px; color: white; padding: 0 15px; outline: none; font-size: 14px; }
+        .send { background: red; border: none; width: 45px; border-radius: 50%; color: white; font-weight: bold; cursor: pointer; }
 
-        /* ქვედა პანელი */
-        .input-wrap { padding: 12px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
-        #msg-in { 
-            flex: 1; background: #0d0d0d; border: 1px solid #222; padding: 12px 18px; 
-            border-radius: 25px; color: #fff; outline: none; font-size: 14px;
-        }
-        #msg-in:focus { border-color: var(--red); }
-        .send-btn { background: var(--red); border: none; width: 45px; height: 45px; border-radius: 50%; color: #fff; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-        /* ბლარი მენიუს დროს */
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; backdrop-filter: blur(3px); }
-        .overlay.show { display: block; }
-
-        /* ონლაინ სია */
-        .u-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #eee; }
-        .u-dot { width: 8px; height: 8px; background: #0f0; border-radius: 50%; box-shadow: 0 0 8px #0f0; }
+        /* Overlay */
+        #ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 900; }
     </style>
 </head>
 <body>
-    <div class="overlay" id="blur" onclick="closeMenus()"></div>
+
+    <div id="ov" onclick="closeAll()"></div>
 
     <header>
-        <div class="menu-btn" onclick="toggleMenu('l')">☰</div>
-        <div class="logo" id="active-title">ზოგადი ჩატი</div>
-        <div class="menu-btn" onclick="toggleMenu('r')">👥</div>
+        <div class="btn" onclick="openP('left')">☰</div>
+        <div class="logo" id="title">ზოგადი ჩატი</div>
+        <div class="btn" onclick="openP('right')">👥</div>
     </header>
 
     <div class="wrapper">
-        <nav id="side-left" class="side-panel">
-            <div class="side-h">ოთახები 🏚️</div>
-            <div class="room-btn room-active" onclick="changeRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
-            <div class="room-btn" onclick="changeRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
-            <div class="room-btn" onclick="changeRoom('გამოძიება')">🔍 გამოძიება</div>
-            <div class="room-btn" onclick="changeRoom('ვიქტორინა')">❓ ვიქტორინა</div>
-            <div class="room-btn" onclick="changeRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
-            <div class="room-btn" onclick="changeRoom('ჩამოხრჩობანა')">🪢 ჩამოხრჩობანა</div>
-            <div class="room-btn" onclick="changeRoom('მუსიკა')">🎵 მუსიკა</div>
-            <div class="room-btn" onclick="changeRoom('იუმორი')">😂 იუმორი</div>
-            <div class="room-btn" onclick="changeRoom('გალერეა')">🖼️ გალერეა</div>
-            <div class="room-btn" onclick="changeRoom('ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
-            <div class="room-btn" onclick="changeRoom('დახმარება')">🆘 დახმარება</div>
-        </nav>
+        <div id="left" class="panel">
+            <div class="p-head">ოთახები</div>
+            <div class="item active" onclick="goR('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
+            <div class="item" onclick="goR('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
+            <div class="item" onclick="goR('გამოძიება')">🔍 გამოძიება</div>
+            <div class="item" onclick="goR('ვიქტორინა')">❓ ვიქტორინა</div>
+            <div class="item" onclick="goR('შიფროგრამა')">🔐 შიფროგრამა</div>
+            <div class="item" onclick="goR('ჩამოხრჩობანა')">🪢 ჩამოხრჩობანა</div>
+            <div class="item" onclick="goR('მუსიკა')">🎵 მუსიკა</div>
+            <div class="item" onclick="goR('იუმორი')">😂 იუმორი</div>
+            <div class="item" onclick="goR('გალერეა')">🖼️ გალერეა</div>
+            <div class="item" onclick="goR('ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
+            <div class="item" onclick="goR('დახმარება')">🆘 დახმარება</div>
+        </div>
 
-        <main class="chat-area">
-            <div id="chat-flow">იტვირთება...</div>
-            <div class="input-wrap">
-                <input type="text" id="msg-in" placeholder="დაწერე მესიჯი..." autocomplete="off">
-                <button class="send-btn" onclick="send()">➤</button>
+        <div id="chat-container">
+            <div id="flow">იტვირთება...</div>
+            <div class="input-box">
+                <input type="text" id="in" placeholder="დაწერე..." autocomplete="off">
+                <button class="send" onclick="send()">➤</button>
             </div>
-        </main>
+        </div>
 
-        <aside id="side-right" class="side-panel">
-            <div class="side-h">ჩემი პროფილი</div>
-            <div style="padding: 20px; text-align: center; border-bottom: 1px solid #111;">
-                <img src="https://i.ibb.co/4pLKV60/user.png" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid red; margin-bottom: 10px;">
-                <div id="display-nick" style="color:red; font-weight:bold; font-size: 18px;"></div>
-                <div style="font-size: 10px; color: #444; margin-top: 5px;">სტატუსი: მაფიოზი</div>
+        <div id="right" class="panel">
+            <div class="p-head">პროფილი</div>
+            <div style="padding: 20px; text-align: center;">
+                <img src="https://i.ibb.co/4pLKV60/user.png" style="width: 60px; border-radius: 50%; border: 2px solid red;">
+                <div id="my-n" style="color:red; font-weight:bold; margin-top:10px; font-size: 18px;"></div>
             </div>
-            <div class="side-h">ონლაინ</div>
-            <div class="u-item">
-                <div class="u-dot"></div>
-                <span id="list-nick"></span>
-            </div>
-        </aside>
+            <div class="p-head">ონლაინ</div>
+            <div class="item">🟢 <span id="my-n2"></span></div>
+        </div>
     </div>
 
 <script>
-    // Supabase კონფიგურაცია
     const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    
-    // მომხმარებლის სახელი
-    const myNick = localStorage.getItem('username') || 'Anonymous';
-    let currentRoom = 'ზოგადი ჩატი';
+    const myNick = localStorage.getItem('username') || 'მაფიოზი';
+    let room = 'ზოგადი ჩატი';
 
-    // სახელების დასმა ვიზუალში
-    document.getElementById('display-nick').innerText = myNick;
-    document.getElementById('list-nick').innerText = myNick + " (შენ)";
+    document.getElementById('my-n').innerText = myNick;
+    document.getElementById('my-n2').innerText = myNick;
 
-    // მენიუს ფუნქციები
-    function toggleMenu(side) {
-        const menu = document.getElementById(side === 'l' ? 'side-left' : 'side-right');
-        const isOpen = menu.classList.contains('open');
-        closeMenus();
-        if(!isOpen) {
-            menu.classList.add('open');
+    function openP(id) {
+        closeAll();
+        document.getElementById(id).classList.add(id === 'left' ? 'show-l' : 'show-r');
+        document.getElementById('ov').style.display = 'block';
+    }
+
+    function closeAll() {
+        document.getElementById('left').classList.remove('show-l');
+        document.getElementById('right').classList.remove('show-r');
+        document.getElementById('ov').style.display = 'none';
+    }
+
+    function goR(name) {
+        room = name;
+        document.getElementById('title').innerText = name;
+        document.querySelectorAll('.item').forEach(i => i.classList.toggle('active', i.innerText.includes(name)));
+        closeAll();
+        sync();
+    }
+
+    async function sync() {
+        const { data: msgs } = await _sb.from('messages').select('*').eq('room_name', room).order('created_at', { ascending: false }).limit(40);
+        if (msgs) {
+            document.getElementById('flow').innerHTML = msgs.reverse().map(m => `
+                <div class="msg ${m.nickname === myNick ? 'me' : ''}">
+                    <div class="nick">${m.nickname}</div>
+                    <div class="text">${m.message}</div>
+                </div>
+            `).join('');
+            const f = document.getElementById('flow');
+            f.scrollTop = f.scrollHeight;
+        }
+    }
+
+    async function send() {
+        const i = document.getElementById('in');
+        if(!i.value.trim()) return;
+        const t = i.value; i.value = "";
+        await _sb.from('messages').insert([{ nickname: myNick, message: t, room_name: room }]);
+        sync();
+    }
+
+    document.getElementById('in').addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
+    setInterval(sync, 2500);
+    sync();
+</script>
+</body>
+</html>
