@@ -2,47 +2,38 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>OLD MAFIA - HOME</title>
+    <title>MAFIA ROOMS - REBORN</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; height: 100vh; display: flex; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
         
-        /* მარცხენა მენიუ */
-        .sidebar { width: 260px; background: #0a0a0a; border-right: 1px solid #222; display: flex; flex-direction: column; overflow-y: auto; }
-        .sidebar h2 { color: #f00; padding: 20px; text-align: center; font-size: 18px; text-transform: uppercase; border-bottom: 1px solid #111; margin: 0; }
+        /* Sidebar სტილი შენი სურათის მიხედვით */
+        .sidebar { width: 260px; background: #0a0a0a; border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .sidebar h2 { color: #f00; padding: 20px; text-align: center; font-size: 18px; text-transform: uppercase; border-bottom: 1px solid #111; }
         
         .room-btn { 
-            padding: 12px 20px; background: none; border: none; color: #bbb; 
-            text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; transition: 0.2s;
+            padding: 15px 20px; background: none; border: none; color: #bbb; 
+            text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px;
         }
         .room-btn:hover { background: #111; color: white; }
         .active { color: #f00; font-weight: bold; background: #111; border-left: 4px solid #f00; }
 
-        /* ჩატის ზონა */
-        .chat-main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        /* ჩატის კონტეინერი */
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: #050505; }
+        header { padding: 10px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
         
-        header { 
-            padding: 10px 20px; background: #050505; border-bottom: 1px solid #1a1a1a; 
-            display: flex; justify-content: space-between; align-items: center; 
-        }
+        /* პროფილი და ავატარი */
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .avatar-img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #f00; background: #222; object-fit: cover; }
+        .founder-txt { color: gold !important; font-weight: bold; text-shadow: 0 0 5px gold; }
 
-        /* მომხმარებლის პროფილი ზემოთ მარჯვნივ */
-        .user-profile { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-        .avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #f00; object-fit: cover; background: #222; }
-        .role-tag { font-size: 10px; background: #f00; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .founder-tag { background: gold; color: black; font-weight: bold; }
-
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
-        
-        /* მესიჯის სტილი */
-        .msg { padding: 5px 10px; border-radius: 4px; line-height: 1.5; border-bottom: 1px solid #111; }
-        .founder-name { color: gold !important; text-shadow: 0 0 5px rgba(255,215,0,0.5); font-weight: bold; }
-        .user-name { color: #ff4d4d; font-weight: bold; margin-right: 8px; cursor: pointer; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg-line { margin-bottom: 5px; border-bottom: 1px solid #111; padding-bottom: 5px; }
+        .user-nick { color: #ff4d4d; font-weight: bold; margin-right: 10px; }
 
         .input-area { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
-        input#msgIn { flex: 1; padding: 12px 20px; background: #111; border: 1px solid #222; color: white; border-radius: 25px; outline: none; }
-        input#msgIn:focus { border-color: #f00; }
-        button#send { background: #f00; border: none; width: 45px; height: 45px; color: white; border-radius: 50%; cursor: pointer; font-size: 18px; }
+        input { flex: 1; padding: 12px 20px; background: #111; border: 1px solid #222; color: white; border-radius: 25px; outline: none; }
+        button#send { background: #f00; border: none; width: 45px; height: 45px; color: white; border-radius: 50%; cursor: pointer; font-size: 20px; }
     </style>
 </head>
 <body>
@@ -63,111 +54,72 @@
 
 <div class="chat-main">
     <header>
-        <div id="room-title" style="color: #f00; font-weight: bold;">💬 ზოგადი ჩატი</div>
-        <div class="user-profile" id="myProfileHeader">
-            <span id="myStatus" style="color: #666; font-style: italic; font-size: 11px; margin-right: 5px;">...</span>
-            <span id="myName">...</span>
-            <img src="https://via.placeholder.com/35" id="myAvatar" class="avatar">
+        <div id="room-name" style="color: #f00; font-weight: bold;">💬 ზოგადი ჩატი</div>
+        <div class="user-info">
+            <span id="myStatus" style="color: #666; font-size: 11px;"></span>
+            <span id="myNick">...</span>
+            <img src="" id="myAv" class="avatar-img" onerror="this.src='https://via.placeholder.com/35'">
         </div>
     </header>
 
     <div id="messages"></div>
 
     <div class="input-area">
-        <input type="text" id="msgIn" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') send()">
-        <button id="send" onclick="send()">➤</button>
+        <input type="text" id="minp" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMsg()">
+        <button id="send" onclick="sendMsg()">➤</button>
     </div>
 </div>
 
 <script>
-    // შენი ახალი Supabase მონაცემები
+    // შენი ახალი მონაცემები
     const supabaseClient = supabase.createClient(
         "https://ftfciebnywbondaiarnc.supabase.co",
         "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
     );
 
     let curRoom = 'ზოგადი ჩატი';
-    let myProfile = null;
+    let userProf = null;
 
-    async function init() {
+    async function startApp() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = "index.html"; return; }
 
-        // ვიღებთ პროფილს, ავატარს და სტატუსს
+        // ვიღებთ პროფილს
         const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-        myProfile = p;
+        userProf = p;
 
         if (p) {
-            document.getElementById('myName').innerHTML = `<span class="${p.role === 'დამფუძნებელი' ? 'founder-name' : ''}">${p.username}</span>`;
-            if (p.avatar_url) document.getElementById('myAvatar').src = p.avatar_url;
+            document.getElementById('myNick').innerHTML = `<span class="${p.role === 'დამფუძნებელი' ? 'founder-txt' : ''}">${p.username}</span>`;
+            if (p.avatar_url) document.getElementById('myAv').src = p.avatar_url;
             if (p.status) document.getElementById('myStatus').innerText = p.status;
-            
-            // თუ დამფუძნებელია, ვამატებთ თეგს
-            if (p.role === 'დამფუძნებელი') {
-                const tag = document.createElement('span');
-                tag.className = 'role-tag founder-tag';
-                tag.innerText = 'FOUNDER';
-                document.getElementById('myProfileHeader').prepend(tag);
-            }
         }
-        load();
+        loadMsgs();
     }
 
-    async function load() {
-        const { data, error } = await supabaseClient.from('messages')
-            .select('*')
-            .eq('room', curRoom)
-            .order('inserted_at', { ascending: true });
-
+    async function loadMsgs() {
+        const { data } = await supabaseClient.from('messages').select('*').eq('room', curRoom).order('inserted_at', { ascending: true });
         const box = document.getElementById('messages');
         box.innerHTML = '';
-        if (data) data.forEach(m => addMsg(m));
+        if (data) data.forEach(m => render(m));
         box.scrollTop = box.scrollHeight;
     }
 
-    async function send() {
-        const input = document.getElementById('msgIn');
-        const val = input.value.trim();
-        if (!val || !myProfile) return;
+    async function sendMsg() {
+        const inp = document.getElementById('minp');
+        if (!inp.value.trim()) return;
 
-        const { error } = await supabaseClient.from('messages').insert([{
-            content: val,
-            user_email: myProfile.username,
+        await supabaseClient.from('messages').insert([{
+            content: inp.value,
+            user_email: userProf.username,
             room: curRoom,
-            user_id: myProfile.id
+            user_id: userProf.id
         }]);
-
-        if (error) console.error("Error sending:", error);
-        input.value = '';
+        inp.value = '';
     }
 
-    function addMsg(m) {
+    function render(m) {
         const box = document.getElementById('messages');
         const div = document.createElement('div');
-        div.className = 'msg';
-        
-        // დამფუძნებლის სახელი ოქროსფრად
-        const nameClass = m.user_email === 'tojina' ? 'founder-name' : 'user-name';
-        
-        div.innerHTML = `<span class="${nameClass}">${m.user_email}:</span> <span style="color: #ddd;">${m.content}</span>`;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-    }
-
-    function setRoom(name, btn) {
-        curRoom = name;
-        document.getElementById('room-title').innerText = name;
-        document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        load();
-    }
-
-    // Realtime განახლება
-    supabaseClient.channel('chat-room').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
-        if (p.new.room === curRoom) addMsg(p.new);
-    }).subscribe();
-
-    init();
-</script>
-</body>
-</html>
+        div.className = 'msg-line';
+        const isF = m.user_email === 'tojina';
+        div.innerHTML = `<span class="${is
