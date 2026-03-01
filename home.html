@@ -101,4 +101,68 @@
         });
 
         document.getElementById('staff-list').innerHTML = staffH;
-        document
+        document.getElementById('members-list').innerHTML = membH;
+        document.getElementById('chat-flow').innerHTML = msgs?.reverse().map(m => {
+            const u = uMap[m.nickname] || {};
+            return `<div class="msg ${m.nickname===myNick?'me':''}">
+                <img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" class="u-ava" style="width:30px; height:30px;" onclick="openProfile('${m.nickname}')">
+                <div><div style="font-size:9px; opacity:0.5;">${m.nickname}</div><div class="bubble">${m.message}</div></div>
+            </div>`;
+        }).join('') || '';
+        document.getElementById('chat-flow').scrollTop = document.getElementById('chat-flow').scrollHeight;
+    }
+
+    async function openProfile(nick) {
+        closeAll();
+        const { data: u } = await _sb.from('avatars_v3').select('*').eq('nickname', nick).single();
+        const modal = document.getElementById('prof-modal');
+        modal.style.display = 'block'; document.getElementById('blur').classList.add('active');
+        
+        const isMe = nick === myNick;
+        const canManage = myRole.includes('დამფუძნებელი') && !isMe;
+
+        modal.innerHTML = `
+            <div style="text-align:right; cursor:pointer;" onclick="closeAll()">✕</div>
+            <img src="${u.avatar_url || 'https://i.ibb.co/4pLKV60/user.png'}" style="width:100px; height:100px; border-radius:20px; border:2px solid red; object-fit:cover; margin-bottom:10px;">
+            <h2 style="margin-bottom:5px;">${u.nickname}</h2>
+            <div style="color:red; font-size:12px; font-weight:bold; margin-bottom:15px;">${u.role || 'წევრი'}</div>
+            <div style="background:#000; padding:10px; border-radius:10px; border:1px solid #222; margin-bottom:15px;">${u.status || '...'}</div>
+            
+            ${isMe ? `
+                <button class="p-btn btn-red" onclick="saveStatus()">💾 სტატუსის შეცვლა</button>
+                <button class="p-btn btn-gray" onclick="logout()">🚪 გასვლა</button>
+            ` : `
+                <button class="p-btn btn-blue" onclick="startPM('${u.nickname}')">✉️ პირადი (PM)</button>
+                ${canManage ? `
+                    <div style="margin-top:15px; border-top:1px solid #333; pt:10px;">
+                        <button class="p-btn btn-gray" style="color:orange;" onclick="setRole('${u.nickname}', '🛡️ ადმინისტრატორი')">⭐ ადმინი</button>
+                        <button class="p-btn btn-gray" style="color:gold;" onclick="setRole('${u.nickname}', '👑 დამფუძნებელი')">👑 დამფუძნებელი</button>
+                        <button class="p-btn btn-red" onclick="setRole('${u.nickname}', 'წევრი')">❌ ჩამორთმევა</button>
+                    </div>
+                ` : ''}
+            `}
+        `;
+    }
+
+    async function setRole(nick, role) {
+        await _sb.from('avatars_v3').update({ role: role }).eq('nickname', nick);
+        alert('როლი შეიცვალა!'); closeAll(); sync();
+    }
+
+    function startPM(target) { curRoom = [myNick, target].sort().join('_PM_'); document.getElementById('room-title').innerText = '📩 PM: ' + target; closeAll(); sync(); }
+    async function saveStatus() { const s = prompt("შეიყვანე ახალი სტატუსი:"); if(s) { await _sb.from('avatars_v3').update({ status: s }).eq('nickname', myNick); sync(); } }
+    async function sendMsg() {
+        const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
+        await _sb.from('messages_v3').insert([{ nickname: myNick, message: i.value, room_name: curRoom }]);
+        i.value = ""; sync();
+    }
+
+    function initRooms() {
+        document.getElementById('rooms-list').innerHTML = rooms.map(r => `<div class="room-item ${r===curRoom?'room-active':''}" onclick="changeR('${r}')">${r}</div>`).join('');
+    }
+    function changeR(r) { curRoom = r; document.getElementById('room-title').innerText = r; closeAll(); initRooms(); sync(); }
+    function logout() { localStorage.clear(); location.href='index.html'; }
+    window.onload = () => { if(!myNick) { location.href='index.html'; return; } initRooms(); sync(); setInterval(sync, 4000); };
+</script>
+</body>
+</html>
