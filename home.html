@@ -2,70 +2,73 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>კაიფმანია - ჩატი</title>
+    <title>MAFIA ROOMS - ჩატი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        /* 13 ოთახის სქროლადი მენიუ */
-        .sidebar { width: 100px; background: #0a0a0a; border-right: 2px solid #222; display: flex; flex-direction: column; align-items: center; padding: 15px 0; gap: 15px; overflow-y: auto; }
+        /* მარცხენა მენიუ - შენი მოწოდებული ოთახები */
+        .sidebar { width: 130px; background: #080808; border-right: 2px solid #1a1a1a; display: flex; flex-direction: column; align-items: center; padding: 15px 0; gap: 8px; overflow-y: auto; }
+        .sidebar h2 { color: red; font-size: 12px; text-align: center; margin-bottom: 10px; text-shadow: 0 0 5px red; }
         .sidebar::-webkit-scrollbar { width: 3px; }
         .sidebar::-webkit-scrollbar-thumb { background: red; }
 
-        .room-btn { width: 75px; height: 75px; background: #111; border-radius: 15px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #222; transition: 0.3s; font-size: 10px; font-weight: bold; color: #666; text-align: center; flex-shrink: 0; gap: 5px; }
-        .room-btn i { font-size: 20px; }
-        .room-btn:hover, .room-btn.active { border-color: red; color: white; box-shadow: 0 0 15px red; background: #1a0000; transform: scale(1.05); }
+        .room-btn { width: 110px; min-height: 45px; background: #121212; border-radius: 8px; cursor: pointer; border: 1px solid #222; color: #bbb; font-size: 11px; text-align: left; padding: 10px; transition: 0.3s; margin-bottom: 2px; }
+        .room-btn:hover, .room-btn.active { border-color: red; color: white; background: #1a0000; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
 
         /* ცენტრალური ჩატი */
-        .chat-main { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #222; background: radial-gradient(circle at center, #050000 0%, #000 100%); }
-        .header { height: 70px; background: #0d0d0d; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; }
-        .header h2 { color: red; margin: 0; font-size: 18px; text-transform: uppercase; text-shadow: 0 0 10px red; letter-spacing: 2px; }
-
-        .messages-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .chat-main { flex: 1; display: flex; flex-direction: column; }
+        .header { height: 60px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+        .header h2 { color: red; margin: 0; font-size: 16px; text-transform: uppercase; }
         
-        /* მესიჯი პროფილით - ყველაფერი მარცხნივ */
-        .msg-row { display: flex; gap: 12px; align-items: flex-start; max-width: 85%; animation: slideIn 0.2s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        
-        .avatar { width: 40px; height: 40px; background: #000; border-radius: 50%; border: 1px solid red; display: flex; align-items: center; justify-content: center; color: red; font-weight: bold; flex-shrink: 0; box-shadow: 0 0 10px rgba(255,0,0,0.2); }
-        .msg-bubble { background: rgba(20, 20, 20, 0.95); padding: 12px 18px; border-radius: 0 15px 15px 15px; border-left: 3px solid red; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); }
-        .msg-bubble b { color: red; display: block; font-size: 12px; margin-bottom: 4px; }
-        .msg-bubble span { font-size: 15px; line-height: 1.4; color: #ddd; }
+        /* პროფილი ჰედერში */
+        .profile-box { display: flex; align-items: center; gap: 10px; color: #666; font-size: 12px; }
+        .av-circle { width: 32px; height: 32px; border: 1.5px solid red; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: red; font-weight: bold; }
 
-        /* იუზერები და კონვერტი */
-        .users-panel { width: 250px; background: #0a0a0a; padding: 20px 10px; }
-        .user-card { padding: 12px 15px; background: #111; border-radius: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
-        .user-card:hover, .user-card.active { border-color: red; background: #1a0000; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
-        .envelope-btn { color: #333; cursor: pointer; font-size: 18px; transition: 0.3s; }
-        .envelope-btn:hover { color: red; transform: scale(1.2); filter: drop-shadow(0 0 5px red); }
+        .messages-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg-row { display: flex; gap: 10px; align-items: flex-start; }
+        .avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid red; display: flex; align-items: center; justify-content: center; color: red; font-size: 12px; flex-shrink: 0; }
+        .bubble { background: #111; padding: 10px 15px; border-radius: 0 12px 12px 12px; border-left: 3px solid red; max-width: 70%; }
+        .bubble b { color: red; display: block; font-size: 11px; margin-bottom: 2px; }
+
+        /* მომხმარებლების პანელი */
+        .users-panel { width: 220px; background: #080808; padding: 15px; border-left: 1px solid #1a1a1a; }
+        .u-card { padding: 10px; background: #121212; border: 1px solid #222; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .mail-btn { color: #444; cursor: pointer; transition: 0.2s; }
+        .mail-btn:hover { color: red; transform: scale(1.2); }
 
         /* საწერი ველი */
-        .input-area { padding: 20px 25px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 15px; }
-        input { flex: 1; background: #151515; border: 1px solid #333; padding: 15px 25px; color: white; border-radius: 30px; outline: none; transition: 0.3s; }
-        input:focus { border-color: red; box-shadow: 0 0 10px rgba(255,0,0,0.1); }
-        .send-btn { background: red; color: white; border: none; padding: 0 30px; border-radius: 30px; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .input-area { padding: 15px; background: #0a0a0a; border-top: 1px solid #1a1a1a; display: flex; gap: 10px; }
+        input { flex: 1; background: #151515; border: 1px solid #333; padding: 12px 20px; color: white; border-radius: 20px; outline: none; }
+        .send-btn { background: red; color: white; border: none; padding: 0 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar" id="sidebar-rooms"></div>
+    <div class="sidebar">
+        <h2>MAFIA ROOMS</h2>
+        <div id="rooms-container"></div>
+    </div>
 
     <div class="chat-main">
         <div class="header">
-            <h2 id="current-title">იტვირთება...</h2>
-            <div id="my-name" style="color: #444; font-size: 12px; font-weight: bold;"></div>
+            <h2 id="active-title">ზოგადი ჩატი</h2>
+            <div class="profile-box">
+                <span id="me-user">...</span>
+                <div class="av-circle" id="me-av">?</div>
+            </div>
         </div>
-        <div class="messages-box" id="chat-messages"></div>
+        <div id="chat-box" class="messages-box"></div>
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
+            <input type="text" id="msgInp" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
             <button class="send-btn" onclick="send()">გაგზავნა</button>
         </div>
     </div>
 
     <div class="users-panel">
-        <h4 style="color: red; margin: 0 0 20px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">ონლაინ იუზერები</h4>
-        <div id="users-list"></div>
+        <div style="color: red; font-size: 10px; margin-bottom: 15px;">ონლაინ</div>
+        <div id="u-list"></div>
     </div>
 
     <script>
@@ -73,99 +76,89 @@
         const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-        let me = null, chatMode = 'room', activeId = 'room1';
+        let me = null, mode = 'room', target = 'ზოგადი ჩატი';
 
-        // 👇 აქ ჩაწერე შენი 13 ოთახის ნამდვილი სახელები!
-        const myRooms = [
-            { id: 'room1', name: 'ზოგადი ჩატი', icon: 'fa-comments' },
-            { id: 'room2', name: 'ვიპ საუბრები', icon: 'fa-skull' },
-            { id: 'room3', name: 'გამოძიება', icon: 'fa-crown' },
-            { id: 'room4', name: 'შიფროგრამა', icon: 'fa-fire' },
-            { id: 'room5', name: 'ჩამოხრჩობანა', icon: 'fa-ghost' },
-            { id: 'room6', name: 'ვიქტორინა', icon: 'fa-star' },
-            { id: 'room7', name: 'მაფიის ღამე', icon: 'fa-bolt' },
-            { id: 'room8', name: 'გალერეა', icon: 'fa-mask' },
-            { id: 'room9', name: 'მუსიკა', icon: 'fa-gem' },
-            { id: 'room10', name: 'ფორუმი', icon: 'fa-heart' },
-            { id: 'room11', name: 'დახმარება', icon: 'fa-radiation' },
-            { id: 'room12', name: 'ადმინისტრაცია', icon: 'fa-dragon' },
-            { id: 'room13', name: 'გასვლა', icon: 'fa-eye' }
+        const rooms = [
+            "💬 ზოგადი ჩატი", "💎 VIP საუბრები", "🔍 გამოძიება", "🔒 შიფროგრამა", 
+            "🧩 ვიქტორინა", "🪢 ჩამომხრჩობანა", "🎵 მუსიკა", "🖼️ გალერეა", 
+            "📝 ფორუმი", "🛡️ ადმინისტრაცია"
         ];
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) { window.location.href = "index.html"; return; }
-            
+            if (!user) return window.location.href = "index.html";
             let { data: p } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             me = p || { id: user.id, username: user.email.split('@')[0] };
-            document.getElementById('my-name').innerText = "@" + me.username;
+            
+            document.getElementById('me-user').innerText = me.username;
+            document.getElementById('me-av').innerText = me.username[0].toUpperCase();
 
-            renderRooms(); loadMessages(); loadUsers(); setupRealtime();
-        }
-
-        function renderRooms() {
-            const side = document.getElementById('sidebar-rooms');
-            myRooms.forEach(r => {
-                const btn = document.createElement('div');
-                btn.className = `room-btn ${r.id === activeId ? 'active' : ''}`;
-                btn.innerHTML = `<i class="fas ${r.icon}"></i>${r.name}`;
-                btn.onclick = () => switchChat('room', r.id, r.name, btn);
-                side.appendChild(btn);
+            const rc = document.getElementById('rooms-container');
+            rooms.forEach(r => {
+                const btn = document.createElement('button');
+                btn.className = `room-btn ${r === target ? 'active' : ''}`;
+                btn.innerText = r;
+                btn.onclick = () => {
+                    mode = 'room'; target = r;
+                    document.getElementById('active-title').innerText = r;
+                    document.querySelectorAll('.room-btn, .u-card').forEach(x => x.classList.remove('active'));
+                    btn.classList.add('active'); loadMsgs();
+                };
+                rc.appendChild(btn);
             });
-            document.getElementById('current-title').innerText = myRooms[0].name + " ჩატი";
+            loadMsgs(); loadUsers(); subscribe();
         }
 
         async function loadUsers() {
             const { data } = await supabaseClient.from('profiles').select('*').neq('id', me.id);
-            const list = document.getElementById('users-list'); list.innerHTML = '';
+            const list = document.getElementById('u-list'); list.innerHTML = '';
             data?.forEach(u => {
                 const card = document.createElement('div');
-                card.className = 'user-card';
-                card.innerHTML = `<span>${u.username}</span><i class="fas fa-envelope envelope-btn" onclick="switchChat('private', '${u.id}', '${u.username}', this.parentElement)"></i>`;
+                card.className = 'u-card';
+                card.innerHTML = `<span>${u.username}</span><i class="fas fa-envelope mail-btn" onclick="openPrivate('${u.id}', '${u.username}', this.parentElement)"></i>`;
                 list.appendChild(card);
             });
         }
 
-        async function loadMessages() {
-            const box = document.getElementById('chat-messages'); box.innerHTML = '';
-            let q = (chatMode === 'room') ? 
-                supabaseClient.from('messages').select('*').eq('room', activeId) :
-                supabaseClient.from('private_messages').select('*').or(`and(sender_id.eq.${me.id},receiver_id.eq.${activeId}),and(sender_id.eq.${activeId},receiver_id.eq.${me.id})`);
-            
-            const { data } = await q.order('inserted_at', { ascending: true });
-            data?.forEach(m => renderMsg(m)); box.scrollTop = box.scrollHeight;
+        function openPrivate(id, name, el) {
+            mode = 'private'; target = id;
+            document.getElementById('active-title').innerText = "პირადი: " + name;
+            document.querySelectorAll('.room-btn, .u-card').forEach(x => x.classList.remove('active'));
+            el.classList.add('active'); loadMsgs();
         }
 
-        function switchChat(newMode, id, label, el) {
-            chatMode = newMode; activeId = id;
-            document.getElementById('current-title').innerText = (newMode === 'room' ? label + " ჩატი" : "პრივატი: " + label);
-            document.querySelectorAll('.room-btn, .user-card').forEach(b => b.classList.remove('active'));
-            el.classList.add('active'); loadMessages();
+        async function loadMsgs() {
+            const box = document.getElementById('chat-box'); box.innerHTML = '';
+            let q = (mode === 'room') ? 
+                supabaseClient.from('messages').select('*').eq('room', target) : 
+                supabaseClient.from('private_messages').select('*').or(`and(sender_id.eq.${me.id},receiver_id.eq.${target}),and(sender_id.eq.${target},receiver_id.eq.${me.id})`);
+            
+            const { data } = await q.order('inserted_at', { ascending: true });
+            data?.forEach(m => draw(m)); box.scrollTop = box.scrollHeight;
         }
 
         async function send() {
-            const inp = document.getElementById('msgInput'); if (!inp.value.trim()) return;
-            const table = (chatMode === 'room') ? 'messages' : 'private_messages';
-            const payload = (chatMode === 'room') ? 
-                { content: inp.value, user_id: me.id, user_email: me.username, room: activeId } :
-                { content: inp.value, sender_id: me.id, receiver_id: activeId, sender_username: me.username };
-            await supabaseClient.from(table).insert([payload]); inp.value = '';
+            const i = document.getElementById('msgInp'); if (!i.value.trim()) return;
+            const table = (mode === 'room') ? 'messages' : 'private_messages';
+            const data = (mode === 'room') ? 
+                { content: i.value, user_id: me.id, user_email: me.username, room: target } : 
+                { content: i.value, sender_id: me.id, receiver_id: target, sender_username: me.username };
+            await supabaseClient.from(table).insert([data]); i.value = '';
         }
 
-        function renderMsg(m) {
-            const box = document.getElementById('chat-messages');
-            const name = m.user_email || m.sender_username;
-            const row = document.createElement('div');
-            row.className = 'msg-row';
-            row.innerHTML = `<div class="avatar">${name[0].toUpperCase()}</div><div class="msg-bubble"><b>${name}</b><span>${m.content}</span></div>`;
-            box.appendChild(row); box.scrollTop = box.scrollHeight;
+        function draw(m) {
+            const box = document.getElementById('chat-box');
+            const n = m.user_email || m.sender_username;
+            const div = document.createElement('div'); div.className = 'msg-row';
+            div.innerHTML = `<div class="avatar">${n[0].toUpperCase()}</div><div class="bubble"><b>${n}</b><span>${m.content}</span></div>`;
+            box.appendChild(div); box.scrollTop = box.scrollHeight;
         }
 
-        function setupRealtime() {
-            supabaseClient.channel('main').on('postgres_changes', { event: 'INSERT', schema: 'public' }, payload => {
-                const m = payload.new;
-                if (payload.table === 'messages' && chatMode === 'room' && m.room === activeId) renderMsg(m);
-                else if (payload.table === 'private_messages' && chatMode === 'private' && (m.sender_id === activeId || m.receiver_id === activeId)) renderMsg(m);
+        function subscribe() {
+            supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public' }, p => {
+                const m = p.new;
+                if (p.table === 'messages' && mode === 'room' && m.room === target) draw(m);
+                else if (p.table === 'private_messages' && mode === 'private' && (m.sender_id === target || m.receiver_id === target)) draw(m);
             }).subscribe();
         }
         init();
