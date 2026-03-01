@@ -3,95 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OLD MAFIA - THE RETURN</title>
+    <title>OLD MAFIA - CLEAN DESIGN</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff0000; --bg: #050505; --border: #222; }
+        :root { --red: #ff0000; --bg: #050505; --border: #1a1a1a; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: var(--bg); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        header { height: 60px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; z-index: 1000; }
-        .head-btn { font-size: 24px; color: var(--red); cursor: pointer; }
-        .logo { color: var(--red); font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+        /* Header - აქ იქნება პროფილი */
+        header { height: 65px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #000; }
+        .head-left { display: flex; align-items: center; gap: 15px; }
+        .logo { color: var(--red); font-weight: bold; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
+        
+        .profile-box { display: flex; align-items: center; gap: 10px; background: #111; padding: 5px 15px; border-radius: 30px; border: 1px solid #222; cursor: pointer; }
+        .profile-box img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--red); }
+        .profile-box span { font-size: 13px; font-weight: bold; color: #eee; }
 
-        .main-wrapper { flex: 1; display: flex; position: relative; overflow: hidden; }
+        .main-wrapper { flex: 1; display: flex; position: relative; }
 
         /* ჩატის არეალი */
-        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #050505; }
+        #chat-flow { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 15px; background: radial-gradient(circle at center, #0a0a0a 0%, #050505 100%); }
         
-        .msg-row { display: flex; gap: 10px; align-items: flex-start; max-width: 90%; margin-bottom: 5px; }
-        .msg-ava { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #333; flex-shrink: 0; object-fit: cover; }
-        .msg-body { display: flex; flex-direction: column; }
-        .msg-nick { font-size: 11px; font-weight: bold; color: #888; margin-bottom: 2px; }
-        .bubble { padding: 10px 14px; background: #111; border: 1px solid #222; border-radius: 0 15px 15px 15px; font-size: 14px; color: #ddd; }
-        .is-me .msg-nick { color: var(--red); }
-        .is-me .bubble { border-left: 3px solid var(--red); background: #1a0505; }
+        .msg-row { display: flex; gap: 12px; align-items: flex-start; max-width: 80%; }
+        .msg-ava { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #333; }
+        .msg-nick { font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
+        .bubble { padding: 12px 16px; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 0 18px 18px 18px; font-size: 14px; color: #ccc; }
+        .is-me { align-self: flex-end; flex-direction: row-reverse; }
+        .is-me .bubble { border-left: none; border-right: 3px solid var(--red); background: #150505; border-radius: 18px 0 18px 18px; }
+        .is-me .msg-nick { color: var(--red); text-align: right; }
 
-        /* გვერდითა პანელები */
-        .side-panel { position: absolute; top: 0; bottom: 0; width: 260px; background: #080808; border: 1px solid var(--border); transition: 0.3s; z-index: 2000; overflow-y: auto; }
-        #side-left { left: -260px; }
-        #side-right { right: -260px; }
-        .open-l { left: 0 !important; }
-        .open-r { right: 0 !important; }
+        /* Side Panels */
+        .side-panel { width: 250px; background: #000; border: 1px solid var(--border); transition: 0.3s; overflow-y: auto; z-index: 100; }
+        #side-left { border-right: 1px solid var(--border); }
+        #side-right { border-left: 1px solid var(--border); }
 
-        .panel-h { padding: 20px; color: var(--red); font-weight: bold; border-bottom: 1px solid var(--border); }
-        .room-item { padding: 12px 20px; border-bottom: 1px solid #111; cursor: pointer; font-size: 14px; color: #ccc; transition: 0.2s; }
-        .room-item:hover, .room-active { background: #1a0505; color: var(--red); border-left: 4px solid var(--red); }
+        .panel-h { padding: 20px; color: #444; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .room-item { padding: 12px 20px; cursor: pointer; color: #888; font-size: 14px; transition: 0.2s; }
+        .room-item:hover, .room-active { color: var(--red); background: #0a0000; }
 
-        /* ქვედა პანელი */
-        .input-area { padding: 15px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-        #msg-in { flex: 1; background: #111; border: 1px solid #333; padding: 12px 20px; border-radius: 25px; color: #fff; outline: none; }
-        .send-btn { background: var(--red); border: none; width: 42px; height: 42px; border-radius: 50%; color: white; cursor: pointer; }
+        .user-item { padding: 10px 20px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #aaa; }
+        .u-status { width: 8px; height: 8px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 5px #00ff00; }
 
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; }
-        .show { display: block; }
+        /* Input */
+        .input-area { padding: 20px; background: #000; border-top: 1px solid var(--border); display: flex; gap: 15px; }
+        #msg-in { flex: 1; background: #0a0a0a; border: 1px solid #222; padding: 14px 25px; border-radius: 30px; color: #fff; outline: none; }
+        .send-btn { background: var(--red); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; transition: 0.3s; }
+        .send-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(255,0,0,0.3); }
+
+        /* Mobile Responsive */
+        @media (max-width: 900px) { .side-panel { display: none; } }
     </style>
 </head>
 <body>
-    <div class="overlay" id="blur" onclick="closeSides()"></div>
 
     <header>
-        <div class="head-btn" onclick="toggleSide('l')">☰</div>
-        <div class="logo" id="room-title">ზოგადი ჩატი</div>
-        <div class="head-btn" onclick="toggleSide('r')">👥</div>
+        <div class="head-left">
+            <div class="logo">OLD MAFIA</div>
+        </div>
+        <div class="profile-box" onclick="alert('პროფილის პარამეტრები')">
+            <img id="my-ava" src="https://i.ibb.co/4pLKV60/user.png">
+            <span id="u-name-head">გამომძიებელი</span>
+        </div>
     </header>
 
     <div class="main-wrapper">
         <nav id="side-left" class="side-panel">
-            <div class="panel-h">ოთახები 🏚️</div>
-            <div id="room-list">
-                <div class="room-item room-active" onclick="changeRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
-                <div class="room-item" onclick="changeRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
-                <div class="room-item" onclick="changeRoom('გამოძიება')">🔍 გამოძიება</div>
-                <div class="room-item" onclick="changeRoom('ვიქტორინა')">❓ ვიქტორინა</div>
-                <div class="room-item" onclick="changeRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
-                <div class="room-item" onclick="changeRoom('ჩამოხრჩობანა')">🪢 ჩამოხრჩობანა</div>
-                <div class="room-item" onclick="changeRoom('მუსიკა')">🎵 მუსიკა</div>
-                <div class="room-item" onclick="changeRoom('იუმორი')">😂 იუმორი</div>
-                <div class="room-item" onclick="changeRoom('გალერეა')">🖼️ გალერეა</div>
-                <div class="room-item" onclick="changeRoom('ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
-                <div class="room-item" onclick="changeRoom('დახმარება')">🆘 დახმარება</div>
-            </div>
+            <div class="panel-h">ოთახები</div>
+            <div class="room-item room-active" onclick="changeRoom('ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
+            <div class="room-item" onclick="changeRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
+            <div class="room-item" onclick="changeRoom('გამოძიება')">🔍 გამოძიება</div>
+            <div class="room-item" onclick="changeRoom('ვიქტორინა')">❓ ვიქტორინა</div>
+            <div class="room-item" onclick="changeRoom('შიფროგრამა')">🔐 შიფროგრამა</div>
+            <div class="room-item" onclick="changeRoom('მუსიკა')">🎵 მუსიკა</div>
+            <div class="room-item" onclick="changeRoom('ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
         </nav>
 
         <div id="chat-flow">იტვირთება...</div>
 
         <aside id="side-right" class="side-panel">
-            <div class="panel-h">პროფილი & წევრები</div>
-            <div style="padding: 20px; text-align: center; border-bottom: 1px solid #222;">
-                <img id="my-ava" src="https://i.ibb.co/4pLKV60/user.png" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid red;">
-                <div id="u-name" style="margin-top:10px; font-weight:bold; color:red; font-size: 18px;"></div>
-                <button onclick="alert('მალე დაემატება!')" style="background:#222; color:white; border:none; padding:5px 10px; border-radius:5px; margin-top:8px; font-size:10px; cursor:pointer;">შეცვლა</button>
-            </div>
-            <div id="user-list-container" style="padding: 15px;">
-                <small style="color:#555">ონლაინ:</small>
-                <div id="online-users" style="margin-top:10px; color:#fff; font-size:14px;"></div>
+            <div class="panel-h">ონლაინ</div>
+            <div class="user-item">
+                <div class="u-status"></div>
+                <span id="u-name-list">...</span>
             </div>
         </aside>
     </div>
 
     <div class="input-area">
-        <input type="text" id="msg-in" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+        <input type="text" id="msg-in" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') send()">
         <button class="send-btn" onclick="send()">➤</button>
     </div>
 
@@ -100,34 +99,44 @@
     const myNick = localStorage.getItem('username') || 'მაფიოზი';
     let currentRoom = 'ზოგადი ჩატი';
 
-    // სახელის გამოჩენა
-    document.getElementById('u-name').innerText = myNick;
-    document.getElementById('online-users').innerText = `• ${myNick} (შენ)`;
-
-    function toggleSide(s) {
-        const p = document.getElementById('side-' + (s === 'l' ? 'left' : 'right'));
-        const isOpen = p.classList.contains('open-' + s);
-        closeSides();
-        if(!isOpen) {
-            p.classList.add('open-' + s);
-            document.getElementById('blur').classList.add('show');
-        }
-    }
-
-    function closeSides() {
-        document.querySelectorAll('.side-panel').forEach(el => el.classList.remove('open-l', 'open-r'));
-        document.getElementById('blur').classList.remove('show');
-    }
+    // სახელების დასმა
+    document.getElementById('u-name-head').innerText = myNick;
+    document.getElementById('u-name-list').innerText = myNick + " (შენ)";
 
     function changeRoom(name) {
         currentRoom = name;
-        document.getElementById('room-title').innerText = name;
-        document.querySelectorAll('.room-item').forEach(el => {
-            el.classList.toggle('room-active', el.innerText.includes(name));
-        });
-        closeSides();
+        document.querySelectorAll('.room-item').forEach(el => el.classList.toggle('room-active', el.innerText.includes(name)));
         sync();
     }
 
     async function sync() {
-        const { data: msgs } = await _sb.from('messages').select('*').eq('room_name
+        const { data: msgs } = await _sb.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
+        const flow = document.getElementById('chat-flow');
+        if (msgs) {
+            flow.innerHTML = msgs.reverse().map(m => {
+                const isMe = m.nickname === myNick;
+                return `
+                <div class="msg-row ${isMe ? 'is-me' : ''}">
+                    <div class="msg-body">
+                        <span class="msg-nick">${m.nickname}</span>
+                        <div class="bubble">${m.message}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            flow.scrollTop = flow.scrollHeight;
+        }
+    }
+
+    async function send() {
+        const i = document.getElementById('msg-in');
+        if(!i.value.trim()) return;
+        const txt = i.value; i.value = "";
+        await _sb.from('messages').insert([{ nickname: myNick, message: txt, room_name: currentRoom }]);
+        sync();
+    }
+
+    setInterval(sync, 3000);
+    sync();
+</script>
+</body>
+</html>
