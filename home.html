@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mafia Rooms</title>
+    <style>
+        /* --- ძირითადი სტილები --- */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #000;
+            color: white;
+            display: flex;
+        }
+
+        /* --- ზედა ზოლი (Header) --- */
+        .top-header {
+            position: fixed;
+            top: 0;
+            left: 280px; /* Sidebar-ის სიგანე */
+            right: 0;
+            height: 60px;
+            background-color: #0d0d0d;
+            border-bottom: 2px solid #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(255, 0, 0, 0.2);
+        }
+
+        #current-room-name {
+            color: #ff0000;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* --- გვერდითა მენიუ (Sidebar) --- */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            background-color: #0d0d0d;
+            border-right: 2px solid #ff0000;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column; /* ეს აცალკევებს მენიუს და ფუტერს */
+            z-index: 101;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #222;
+        }
+
+        .sidebar-title {
+            color: #ff0000;
+            font-size: 22px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        /* ოთახების სია */
+        .sidebar-menu {
+            flex-grow: 1; /* იკავებს მთელ თავისუფალ ადგილს */
+            overflow-y: auto; /* თუ ბევრი ოთახია, ჩამოსქროლავს */
+            padding: 10px 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 25px;
+            color: #ccc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 15px;
+        }
+
+        .menu-item:hover {
+            background-color: #1a0000;
+            color: #ff0000;
+            padding-left: 35px;
+        }
+
+        .icon {
+            margin-right: 15px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* --- ქვედა ნაწილი (Footer) --- */
+        .sidebar-footer {
+            border-top: 2px solid #222;
+            background-color: #050505;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            padding: 18px 25px;
+            color: #ff4444;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: #220000;
+            color: #ff0000;
+        }
+
+        /* კონტენტის ადგილი */
+        .main-content {
+            margin-left: 280px;
+            margin-top: 60px;
+            padding: 20px;
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+
+        /* სქროლბარის გასალამაზებლად */
+        .sidebar-menu::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: #ff0000;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <div id="current-room-name">ზოგადი ჩატი</div>
+    </header>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">MAFIA ROOMS</h2>
+        </div>
+
+        <div class="sidebar-menu">
+            <a href="#" class="menu-item" onclick="changeRoom('💬', 'ზოგადი ჩატი')"><span class="icon">💬</span> ზოგადი ჩატი</a>
+            <a href="#" class="menu-item" onclick="changeRoom('💎', 'VIP საუბრები')"><span class="icon">💎</span> VIP საუბრები</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🔍', 'გამოძიება')"><span class="icon">🔍</span> გამოძიება</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🔐', 'შიფროგრამა')"><span class="icon">🔐</span> შიფროგრამა</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🧩', 'ვიქტორინა')"><span class="icon">🧩</span> ვიქტორინა</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🪢', 'ჩამოხრჩობანა')"><span class="icon">🪢</span> ჩამოხრჩობანა</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🌑', 'მაფიის ღამე')"><span class="icon">🌑</span> მაფიის ღამე</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🎵', 'მუსიკა')"><span class="icon">🎵</span> მუსიკა</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🖼️', 'გალერეა')"><span class="icon">🖼️</span> გალერეა</a>
+            <a href="#" class="menu-item" onclick="changeRoom('📝', 'ფორუმი')"><span class="icon">📝</span> ფორუმი</a>
+            <a href="#" class="menu-item" onclick="changeRoom('🛡️', 'ადმინისტრაცია')"><span class="icon">🛡️</span> ადმინისტრაცია</a>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="#" class="logout-btn">
+                <span class="icon">🚪</span> გასვლა
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div id="room-content">
+            </div>
+    </main>
+
+    <script>
+        function changeRoom(icon, roomName) {
+            // ზედა ზოლში სახელის შეცვლა
+            document.getElementById('current-room-name').innerHTML = icon + " " + roomName;
+            
+            // აქ დაამატებ Supabase-ს ლოგიკას, რომ მონაცემები ოთახის მიხედვით წამოიღო
+            console.log("ოთახი შეიცვალა: " + roomName);
+        }
+    </script>
+
+</body>
+</html>
