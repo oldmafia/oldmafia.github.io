@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - OFFICIAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --main: #ff0000; --bg: #000; --card: #0a0a0a; --text: #fff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', sans-serif; }
+        body { background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        header { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; }
+        .h-img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--main); object-fit: cover; cursor: pointer; }
+        #room-title { color: var(--main); font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Chat Area */
+        #chat-flow { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: radial-gradient(circle, #0a0a0a 0%, #000 100%); }
+        .msg { display: flex; gap: 10px; max-width: 90%; align-self: flex-start; position: relative; }
+        .msg.me { align-self: flex-end; flex-direction: row-reverse; }
+        
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #333; object-fit: cover; flex-shrink: 0; cursor: pointer; }
+        .bubble-wrap { display: flex; flex-direction: column; }
+        
+        .u-info { font-size: 11px; color: #777; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .role-tag { color: var(--main); font-size: 10px; border: 1px solid #300; padding: 1px 5px; border-radius: 4px; background: #1a0000; }
+        .del-x { color: #ff4444; cursor: pointer; font-size: 12px; font-weight: normal; transition: 0.3s; }
+        .del-x:hover { color: #fff; }
+
+        .bubble { padding: 12px 16px; border-radius: 18px; border-top-left-radius: 2px; font-size: 14px; background: #161616; color: #eee; line-height: 1.4; border: 1px solid #222; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .msg.me .bubble { background: #220000; border-top-left-radius: 18px; border-top-right-radius: 2px; border-color: #400; }
+
+        /* Sidebar Panels */
+        .panel { position: fixed; top: 0; bottom: 0; width: 280px; background: #050505; z-index: 2000; transition: 0.4s; padding: 25px 15px; border-right: 1px solid #222; left: -300px; }
+        .panel.open { left: 0; }
+        .prof-panel { position: fixed; top: 0; bottom: 0; right: -320px; width: 310px; background: #080808; z-index: 2000; transition: 0.4s; padding: 25px 20px; border-left: 1px solid #222; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+        .prof-panel.open { right: 0; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 1500; }
+
+        /* Profile Elements */
+        .status-box { background: #111; padding: 12px; border-radius: 10px; font-size: 13px; color: #aaa; margin: 15px 0; border: 1px solid #222; text-align: left; min-height: 40px; }
+        .admin-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid #222; text-align: left; }
+        .admin-label { font-size: 10px; color: var(--main); text-transform: uppercase; margin-bottom: 10px; display: block; letter-spacing: 1px; }
+
+        /* Controls */
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; background: var(--main); color: #fff; }
+        .btn:active { transform: scale(0.98); }
+        .btn-ban { background: #440000; color: #ff4444; margin-top: 10px; border: 1px solid #600; }
+        
+        input, textarea { width: 100%; padding: 12px; background: #111; border: 1px solid #222; color: white; border-radius: 10px; margin-bottom: 10px; outline: none; font-size: 13px; }
+        textarea { height: 80px; resize: none; }
+
+        .input-bar { padding: 15px; background: #000; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; align-items: center; }
+        #msg-input { flex: 1; background: #121212; border: 1px solid #222; padding: 12px 20px; border-radius: 30px; color: white; transition: 0.3s; }
+        #msg-input:focus { border-color: var(--main); background: #1a1a1a; }
+        
+        .room-item { padding: 12px 15px; cursor: pointer; color: #666; border-radius: 8px; font-size: 14px; margin-bottom: 5px; transition: 0.2s; }
+        .room-item.active { background: #1a0000; color: var(--main); font-weight: bold; border-left: 3px solid var(--main); }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="blur" onclick="closeAll()"></div>
+
+    <nav class="panel" id="side-left">
+        <h2 style="color:var(--main); text-align:center; margin-bottom:20px; font-size: 18px;">ოთახები</h2>
+        <div id="rooms-list"></div>
+        <button onclick="logout()" style="color:#444; background:none; border:none; width:100%; margin-top:30px; cursor:pointer; font-size:12px;">სისტემიდან გასვლა</button>
+    </nav>
+
+    <aside class="prof-panel" id="side-right">
+        <div id="prof-box"></div>
+    </aside>
+
+    <header>
+        <div onclick="openMenu()" style="cursor:pointer; font-size:24px; color:var(--main);">☰</div>
+        <div id="room-title">💬 ზოგადი ჩატი</div>
+        <div id="my-avatar-container"></div>
+    </header>
+
+    <div id="chat-flow"></div>
+
+    <div class="input-bar">
+        <input type="text" id="msg-input" placeholder="დაწერე შეტყობინება..." autocomplete="off" onkeypress="if(event.key==='Enter') sendMsg()">
+        <button onclick="sendMsg()" style="background:none; border:none; color:var(--main); font-size:26px; cursor:pointer;">➤</button>
+    </div>
+
+<script>
+    const _sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
+    let myNick = localStorage.getItem('username');
+    if (!myNick || myNick === 'null') {
+        myNick = "სტუმარი_" + Math.floor(Math.random() * 999);
+        localStorage.setItem('username', myNick);
+    }
+
+    let curRoom = '💬 ზოგადი ჩატი';
+    let myFullData = null;
+    let iamPower = false; 
+
+    const rooms = ['💬 ზოგადი ჩატი', '🛡️ ადმინისტრაცია', '💎 VIP საუბრები', '🕵️ საგამოძიებო', '📜 წესები', '🔒 შიფროგრამა', '🎯 ვიქტორინა', '🪢 ჩამოხრჩობანა', '😂 იუმორი', '🎵 მუსიკა', '🖼️ გალერეა', '🤝 გაცნობა', '📝 პოეზია'];
+
+    function openMenu() { document.getElementById('side-left').classList.add('open'); document.getElementById('blur').style.display='block'; }
+    function closeAll() { document.getElementById('side-left').classList.remove('open'); document.getElementById('side-right').classList.remove('open'); document.getElementById('blur').style.display='none'; }
+
+    async function loadChat() {
+        const { data: msgs } = await _sb.from('messages_v3').select('*').eq('room_name', curRoom).order('created_at', { ascending: false }).limit(60);
+        const { data: users } = await _sb.from('avatars_v3').select('*');
+        
+        let uMap = {};
+        if(users) {
+            users.forEach(u => {
+                uMap[u.nickname] = u;
+                if(u.nickname === myNick) {
+                    myFullData = u;
+                    const r = u.role || 'წევრი';
+                    // უფლებების შემოწმება
+                    iamPower = (myNick === 'abu007' || r === 'დამფუძნებელი' || r === 'ადმინისტრატორი');
+                    document.getElementById('my-avatar-container').innerHTML = `<img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="h-img" onclick="openProfile('${myNick}')">`;
+                }
+            });
+        }
+
+        document.getElementById('chat-flow').innerHTML = msgs?.reverse().map(m => {
+            const u = uMap[m.nickname] || {};
+            const isMe = (m.nickname === myNick);
+            
+            return `
+                <div class="msg ${isMe ? 'me' : ''}">
+                    <img src="${u.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" class="avatar" onclick="openProfile('${m.nickname}')">
+                    <div class="bubble-wrap">
+                        <span class="u-info">
+                            ${m.nickname} 
+                            ${u.role ? `<span class="role-tag">${u.role}</span>` : ''} 
+                            ${iamPower ? `<b class="del-x" onclick="deleteMsg(${m.id})">წაშლა ×</b>` : ''}
+                        </span>
+                        <div class="bubble">${m.message}</div>
+                    </div>
+                </div>`;
+        }).join('') || "";
+        
+        if(!document.getElementById('chat-flow').dataset.scrolled) {
+            document.getElementById('chat-flow').scrollTop = document.getElementById('chat-flow').scrollHeight;
+        }
+    }
+
+    async function openProfile(nick) {
+        document.getElementById('side-right').classList.add('open');
+        document.getElementById('blur').style.display='block';
+        const { data: u } = await _sb.from('avatars_v3').select('*').eq('nickname', nick).single();
+        
+        const isMe = (nick === myNick);
+        const canManage = (myNick === 'abu007' || myFullData?.role === 'დამფუძნებელი' || myFullData?.role === 'ადმინისტრატორი');
+        const isTargetBoss = (nick === 'abu007' || u?.role === 'დამფუძნებელი');
+
+        document.getElementById('prof-box').innerHTML = `
+            <div style="text-align:center;">
+                <img src="${u?.avatar_url || 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG.png'}" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--main); object-fit:cover; margin-bottom:15px; box-shadow: 0 0 20px rgba(255,0,0,0.2);">
+                <h3 style="color:#fff; font-size:20px;">${nick}</h3>
+                <p style="color:var(--main); font-size:12px; font-weight:bold; margin-top:5px;">${u?.role || 'წევრი'}</p>
+                
+                <div class="status-box">
+                    <b>სტატუსი:</b><br>${u?.status || 'სტატუსი ცარიელია...'}
+                </div>
+
+                ${isMe ? `
+                    <div style="margin-top:20px; text-align:left;">
+                        <p style="font-size:11px; color:#555; margin-bottom:8px;">პროფილის განახლება:</p>
+                        <textarea id="upd-st" placeholder="შეცვალე სტატუსი...">${u?.status || ''}</textarea>
+                        <input type="text" id="upd-av" placeholder="ფოტოს ლინკი (URL)" value="${u?.avatar_url || ''}">
+                        <button class="btn" onclick="saveProfile('${nick}')">მონაცემების შენახვა</button>
+                    </div>
+                ` : ''}
+
+                ${(canManage && !isMe && !isTargetBoss) ? `
+                    <div class="admin-section">
+                        <span class="admin-label">ადმინ პანელი</span>
+                        <input type="text" id="new-role-val" placeholder="ჩაწერე: ადმინისტრატორი ან დამფუძნებელი" style="font-size:11px;">
+                        <button class="btn" style="background:#1a1a1a; border:1px solid #333; font-size:12px;" onclick="updateUserRole('${nick}')">როლის მინიჭება</button>
+                        <button class="btn btn-ban" onclick="banUser('${nick}')">ჩახსნა (ბლოკი) 🚫</button>
+                    </div>
+                ` : ''}
+            </div>`;
+    }
+
+    async function saveProfile(nick) {
+        const s = document.getElementById('upd-st').value;
+        const a = document.getElementById('upd-av').value;
+        await _sb.from('avatars_v3').upsert({ nickname: nick, status: s, avatar_url: a, role: myFullData?.role || 'წევრი' });
+        alert("პროფილი განახლდა!");
+        location.reload();
+    }
+
+    async function updateUserRole(nick) {
+        const r = document.getElementById('new-role-val').value.trim();
+        if(!r) return alert("ჩაწერე როლი!");
+        await _sb.from('avatars_v3').upsert({ nickname: nick, role: r });
+        alert(nick + "-ს მიენიჭა სტატუსი: " + r);
+        location.reload();
+    }
+
+    async function banUser(nick) {
+        if(confirm("ნამდვილად გსურს " + nick + "-ის ჩახსნა?")) {
+            await _sb.from('avatars_v3').upsert({ nickname: nick, role: 'ჩახსნილი' });
+            alert(nick + " ჩაიხსნა!");
+            location.reload();
+        }
+    }
+
+    async function sendMsg() {
+        if(myFullData?.role === 'ჩახსნილი') return alert("შენ ჩახსნილი ხარ და ვეღარ წერ! 🚫");
+        const inp = document.getElementById('msg-input');
+        if(!inp.value.trim()) return;
+        await _sb.from('messages_v3').insert([{ nickname: myNick, message: inp.value, room_name: curRoom }]);
+        inp.value = ""; 
+        document.getElementById('chat-flow').dataset.scrolled = "";
+        loadChat();
+    }
+
+    async function deleteMsg(id) {
+        if(confirm("წავშალოთ ეს შეტყობინება?")) {
+            await _sb.from('messages_v3').delete().eq('id', id);
+            loadChat();
+        }
+    }
+
+    function changeRoom(r) {
+        curRoom = r;
+        document.getElementById('room-title').innerText = r;
+        closeAll();
+        document.getElementById('chat-flow').dataset.scrolled = "";
+        loadChat();
+        initRooms();
+    }
+
+    function initRooms() {
+        document.getElementById('rooms-list').innerHTML = rooms.map(r => `
+            <div class="room-item ${r === curRoom ? 'active' : ''}" onclick="changeRoom('${r}')">${r}</div>
+        `).join('');
+    }
+
+    function logout() {
+        if(confirm("გსურთ გასვლა?")) {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    }
+
+    // Auto-scroll logic
+    document.getElementById('chat-flow').onscroll = function() {
+        const f = document.getElementById('chat-flow');
+        if(f.scrollTop < f.scrollHeight - f.clientHeight - 100) { f.dataset.scrolled = "true"; }
+        else { f.dataset.scrolled = ""; }
+    };
+
+    window.onload = () => {
+        initRooms();
+        loadChat();
+        setInterval(loadChat, 3000);
+    };
+</script>
+</body>
+</html>
