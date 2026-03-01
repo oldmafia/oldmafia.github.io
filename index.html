@@ -1,235 +1,153 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>კაიფმანია - შესვლა</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია - ჩატი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; height: 100vh; }
+        
+        /* მარცხენა მენიუ (ოთახები) */
+        .sidebar { width: 80px; background: #0d0d0d; border-right: 1px solid #222; display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; }
+        .room-icon { width: 50px; height: 50px; background: #1a1a1a; border-radius: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 1px solid #333; transition: 0.3s; font-size: 12px; text-align: center; }
+        .room-icon:hover { border-color: red; box-shadow: 0 0 10px red; }
+        .room-icon.active { border-color: red; background: #300; }
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        /* მთავარი ჩატის არე */
+        .chat-area { flex: 1; display: flex; flex-direction: column; }
+        .chat-header { padding: 15px; background: #0d0d0d; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .messages-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* მესიჯის სტილი */
+        .msg { background: #111; padding: 10px; border-radius: 10px; border-left: 3px solid red; max-width: 80%; }
+        .msg b { color: red; display: block; font-size: 12px; margin-bottom: 3px; }
 
-<style>
-body {
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: radial-gradient(circle, #330000 0%, #000 70%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.card-wrapper {
-    position: relative;
-    width: 350px;
-}
-
-.card-wrapper::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: red;
-    border-radius: 30px;
-    transform: rotate(-4deg);
-    box-shadow: 0 0 80px red;
-    z-index: 0;
-}
-
-.card {
-    position: relative;
-    background: #0d0d0d;
-    padding: 40px 25px;
-    border-radius: 30px;
-    transform: rotate(-2deg);
-    z-index: 1;
-    text-align: center;
-    border: 1px solid #222;
-}
-
-h1 {
-    color: white;
-    text-shadow: 0 0 20px red;
-    margin-bottom: 25px;
-    font-size: 28px;
-}
-
-input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 12px;
-    border: 1px solid #333;
-    background: #1a1a1a;
-    color: white;
-    outline: none;
-    box-sizing: border-box;
-}
-
-input:focus {
-    border-color: red;
-}
-
-button {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 20px;
-    background: red;
-    color: white;
-    font-weight: bold;
-    margin-bottom: 12px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: 0.3s;
-}
-
-button:hover {
-    background: darkred;
-    box-shadow: 0 0 15px red;
-}
-
-.hidden {
-    display: none;
-}
-
-#message {
-    color: white;
-    margin-top: 10px;
-    min-height: 20px;
-    font-size: 13px;
-}
-</style>
+        /* ქვედა საწერი ზოლი */
+        .input-area { padding: 20px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input { flex: 1; background: #1a1a1a; border: 1px solid #333; padding: 12px; color: white; border-radius: 10px; outline: none; }
+        input:focus { border-color: red; }
+        button { background: red; color: white; border: none; padding: 0 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-<div class="card-wrapper">
-    <div class="card">
-        <h1>კაიფმანია 😎🔥</h1>
-
-        <div id="mainButtons">
-            <button id="regBtn">რეგისტრაცია</button>
-            <button id="logBtn">შესვლა</button>
-        </div>
-
-        <div id="formSection" class="hidden">
-            <input type="text" id="nickname" placeholder="აირჩიე ნიკნეიმი">
-            <input type="email" id="email" placeholder="ელფოსტა">
-            <input type="password" id="password" placeholder="პაროლი">
-            <button id="submitBtn"></button>
-            <button onclick="location.reload()" style="background:transparent; font-size:12px; color:#555;">უკან დაბრუნება</button>
-        </div>
-
-        <p id="message"></p>
+    <div class="sidebar">
+        <div class="room-icon active" onclick="changeRoom('general', this)">ზოგადი</div>
+        <div class="room-icon" onclick="changeRoom('mafia', this)">მაფია</div>
+        <div class="room-icon" onclick="changeRoom('vip', this)">VIP</div>
     </div>
-</div>
 
-<script>
-// Supabase-ის კონფიგურაცია
-const { createClient } = supabase;
-const supabaseClient = createClient(
-  "https://ftfciebnywbondaiarnc.supabase.co",
-  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-);
+    <div class="chat-area">
+        <div class="chat-header">
+            <span id="room-name">ოთახი: ზოგადი</span>
+            <span id="user-nickname" style="color: #555; font-size: 14px;">იტვირთება...</span>
+        </div>
 
-const mainButtons = document.getElementById("mainButtons");
-const formSection = document.getElementById("formSection");
-const nicknameInput = document.getElementById("nickname");
-const submitBtn = document.getElementById("submitBtn");
-const message = document.getElementById("message");
+        <div class="messages-container" id="chat-messages">
+            </div>
 
-// ღილაკების ლოგიკა
-document.getElementById("regBtn").addEventListener("click", () => {
-  mainButtons.classList.add("hidden");
-  formSection.classList.remove("hidden");
-  nicknameInput.style.display = "block";
-  submitBtn.innerText = "რეგისტრაცია";
-  submitBtn.onclick = register;
-});
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება...">
+            <button onclick="sendMessage()">გაგზავნა</button>
+        </div>
+    </div>
 
-document.getElementById("logBtn").addEventListener("click", () => {
-  mainButtons.classList.add("hidden");
-  formSection.classList.remove("hidden");
-  nicknameInput.style.display = "none";
-  submitBtn.innerText = "შესვლა";
-  submitBtn.onclick = login;
-});
+    <script>
+        const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co";
+        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-// რეგისტრაციის ფუნქცია
-async function register() {
-  const nickname = nicknameInput.value.trim();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+        let currentRoom = 'general';
+        let myNickname = '';
 
-  if(!nickname || !email || !password) {
-    message.innerText = "⚠️ შეავსე ყველა ველი";
-    return;
-  }
+        // 1. მომხმარებლის ნიკის გაგება
+        async function loadProfile() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
 
-  message.innerText = "მიმდინარეობს რეგისტრაცია...";
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('username')
+                .eq('id', user.id)
+                .single();
 
-  // 1. ვარეგისტრირებთ მომხმარებელს Auth-ში
-  const { data, error } = await supabaseClient.auth.signUp({
-    email: email,
-    password: password,
-    options: {
-      data: { nickname: nickname }
-    }
-  });
+            myNickname = profile ? profile.username : user.email;
+            document.getElementById('user-nickname').innerText = "შენი ნიკი: " + myNickname;
+            
+            loadMessages(); // მესიჯების ჩატვირთვა
+        }
 
-  if(error) {
-    message.innerText = "❌ " + error.message;
-    return;
-  }
+        // 2. ოთახის შეცვლა
+        function changeRoom(room, el) {
+            currentRoom = room;
+            document.getElementById('room-name').innerText = "ოთახი: " + room.toUpperCase();
+            
+            // ღილაკების ფერის შეცვლა
+            document.querySelectorAll('.room-icon').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
 
-  // 2. ავტომატურად ვამატებთ ნიკს Profiles ცხრილში
-  if (data.user) {
-    const { error: profileError } = await supabaseClient
-      .from('profiles')
-      .insert([{ id: data.user.id, username: nickname }]);
+            document.getElementById('chat-messages').innerHTML = ''; // გასუფთავება
+            loadMessages();
+        }
 
-    if (profileError) {
-      console.log("ბაზაში ნიკი ვერ ჩაიწერა:", profileError.message);
-    }
-  }
+        // 3. ძველი მესიჯების ჩატვირთვა
+        async function loadMessages() {
+            const { data } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('room', currentRoom)
+                .order('inserted_at', { ascending: true });
 
-  localStorage.setItem('username', nickname);
-  message.style.color = "#00ff00";
-  message.innerText = "✅ წარმატებით დარეგისტრირდი!";
-  
-  setTimeout(() => { window.location.href = "home.html"; }, 1500);
-}
+            if (data) {
+                data.forEach(msg => renderMessage(msg));
+            }
+        }
 
-// შესვლის ფუნქცია
-async function login() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+        // 4. მესიჯის გაგზავნა
+        async function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if (!text) return;
 
-  if(!email || !password) {
-    message.innerText = "⚠️ შეიყვანე მეილი და პაროლი";
-    return;
-  }
+            const { data: { user } } = await supabaseClient.auth.getUser();
 
-  message.innerText = "მოწმდება მონაცემები...";
+            const { error } = await supabaseClient
+                .from('messages')
+                .insert([{ 
+                    content: text, 
+                    user_id: user.id, 
+                    user_email: myNickname, 
+                    room: currentRoom 
+                }]);
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
+            if (!error) input.value = '';
+        }
 
-  if(error) {
-    message.innerText = "❌ " + error.message;
-    return;
-  }
+        // 5. მესიჯის ეკრანზე დახატვა
+        function renderMessage(msg) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.innerHTML = `<b>${msg.user_email}</b> ${msg.content}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
 
-  // ნიკის წამოღება მეტამონაცემებიდან
-  const userNickname = data.user.user_metadata.nickname || "მოთამაშე";
-  localStorage.setItem('username', userNickname);
+        // 6. რეალურ დროში მოსმენა
+        supabaseClient
+            .channel('schema-db-changes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                if (payload.new.room === currentRoom) {
+                    renderMessage(payload.new);
+                }
+            })
+            .subscribe();
 
-  message.style.color = "#00ff00";
-  message.innerText = "✅ მოგესალმებით, " + userNickname + "!";
-  
-  setTimeout(() => { window.location.href = "home.html"; }, 1500);
-}
-</script>
-
+        loadProfile();
+    </script>
 </body>
 </html>
