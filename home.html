@@ -3,44 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Old Mafia - Home</title>
+    <title>Old Mafia - Full</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; background: #000; color: #fff; overflow: hidden; }
         .app-container { display: flex; height: 100vh; width: 100vw; }
-
-        /* Sidebar - მენიუ */
-        .sidebar { width: 300px; min-width: 300px; background: #0d0d0d; border-right: 2px solid red; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
-        .profile-section { padding: 25px; background: #151515; border-bottom: 1px solid #222; text-align: center; }
-        .avatar-img { width: 85px; height: 85px; border-radius: 50%; border: 2px solid red; object-fit: cover; background: #222; }
-        #myNick { color: red; font-size: 20px; font-weight: bold; margin: 5px 0; }
-        #myRole { display: inline-block; padding: 3px 12px; border-radius: 5px; font-weight: bold; font-size: 11px; margin-bottom: 10px; }
-
-        /* ოთახების სია */
-        .rooms-list { flex-grow: 1; overflow-y: auto; padding: 10px 0; }
-        .room-item { padding: 12px 20px; color: #ccc; cursor: pointer; border-bottom: 1px solid #111; display: flex; align-items: center; font-size: 14px; }
-        .room-item:hover, .room-item.active { background: #1a0000; color: red; border-left: 4px solid red; }
-
-        /* ჩატი */
-        .main-chat { flex-grow: 1; display: flex; flex-direction: column; background: #000; }
-        .chat-header { height: 60px; border-bottom: 2px solid red; display: flex; align-items: center; padding: 0 15px; background: #0d0d0d; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
-        .msg-row { display: flex; gap: 10px; max-width: 85%; margin-bottom: 5px; }
-        .msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
-        .msg-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid red; }
-        .msg-bubble { background: #1a1a1a; padding: 10px 15px; border-radius: 12px; font-size: 14px; position: relative; }
-        .me .msg-bubble { background: red; color: white; }
-        .msg-user-name { font-size: 10px; color: red; font-weight: bold; display: block; margin-bottom: 3px; }
+        /* Sidebar */
+        .sidebar { width: 300px; min-width: 300px; background: #0d0d0d; border-right: 2px solid red; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
+        .profile-box { padding: 20px; background: #151515; border-bottom: 1px solid #222; text-align: center; }
+        .avatar-frame { width: 85px; height: 85px; border-radius: 50%; border: 2px solid red; margin: 0 auto 10px; overflow: hidden; background: #222; }
+        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
+        
+        #nickDisplay { color: red; font-size: 20px; font-weight: bold; margin: 5px 0; }
+        .role-tag { font-size: 10px; padding: 3px 10px; border-radius: 5px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+        
+        /* Rooms List */
+        .rooms { flex-grow: 1; overflow-y: auto; }
+        .room { padding: 12px 20px; color: #ccc; cursor: pointer; border-bottom: 1px solid #111; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .room:hover { background: #0a0a0a; }
+        .room.active { background: #1a0000; color: red; border-left: 4px solid red; }
 
-        .chat-input-bar { padding: 15px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 10px; }
-        .text-input { flex-grow: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 25px; padding: 12px 20px; color: #fff; outline: none; }
-        .send-btn { background: red; border: none; width: 45px; height: 45px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
+        /* Chat Area */
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #050505; }
+        .messages { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        .msg { display: flex; gap: 8px; max-width: 85%; align-items: flex-end; }
+        .msg.me { align-self: flex-end; flex-direction: row-reverse; }
+        .msg-img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid red; }
+        .msg-bubble { background: #1a1a1a; padding: 10px 14px; border-radius: 15px; font-size: 14px; line-height: 1.4; position: relative; }
+        .me .msg-bubble { background: red; color: #fff; border-bottom-right-radius: 2px; }
+        .msg-user { font-size: 9px; color: #888; margin-bottom: 2px; display: block; }
+        .me .msg-user { text-align: right; color: #ffcccc; }
 
-        @media (max-width: 800px) {
-            .sidebar { position: fixed; left: -300px; height: 100%; width: 280px; }
-            .sidebar.active { left: 0; }
+        .input-bar { padding: 15px; background: #0d0d0d; border-top: 1px solid #222; display: flex; gap: 10px; }
+        input { flex: 1; background: #111; border: 1px solid red; border-radius: 25px; padding: 12px 18px; color: #fff; outline: none; }
+        .send-btn { background: red; border: none; color: #fff; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .send-btn:active { transform: scale(0.9); }
+
+        @media (max-width: 800px) { 
+            .sidebar { position: fixed; left: -300px; height: 100%; } 
+            .sidebar.active { left: 0; } 
         }
     </style>
 </head>
@@ -48,36 +52,39 @@
 
 <div class="app-container">
     <nav class="sidebar" id="sidebar">
-        <div class="profile-section">
-            <img src="" id="myImg" class="avatar-img">
-            <p id="myNick">იტვირთება...</p>
-            <div id="myRole">მოთამაშე</div>
+        <div class="profile-box">
+            <div class="avatar-frame"><img src="" id="uImg"></div>
+            <p id="nickDisplay">იტვირთება...</p>
+            <div id="roleDisplay" class="role-tag">...</div>
         </div>
-
-        <div class="rooms-list">
-            <div class="room-item active" onclick="changeRoom('💬', 'ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
-            <div class="room-item" onclick="changeRoom('💎', 'VIP საუბრები', this)">💎 VIP საუბრები</div>
-            <div class="room-item" onclick="changeRoom('🔍', 'გამოძიება', this)">🔍 გამოძიება</div>
-            <div class="room-item" onclick="changeRoom('🔐', 'შიფროგრამა', this)">🔐 შიფროგრამა</div>
-            <div class="room-item" onclick="changeRoom('🧩', 'ვიქტორინა', this)">🧩 ვიქტორინა</div>
-            <div class="room-item" onclick="changeRoom('🪢', 'ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
-            <div class="room-item" onclick="changeRoom('🌑', 'მაფიის ღამე', this)">🌑 მაფიის ღამე</div>
-            <div class="room-item" onclick="changeRoom('🎵', 'მუსიკა', this)">🎵 მუსიკა</div>
-            <div class="room-item" onclick="changeRoom('🖼️', 'გალერეა', this)">🖼️ გალერეა</div>
-            <div class="room-item" onclick="changeRoom('📝', 'ფორუმი', this)">📝 ფორუმი</div>
-            <div class="room-item" onclick="changeRoom('🛡️', 'ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+        
+        <div class="rooms">
+            <div class="room active" onclick="changeR('💬', 'ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+            <div class="room" onclick="changeR('💎', 'VIP საუბრები', this)">💎 VIP საუბრები</div>
+            <div class="room" onclick="changeR('🔍', 'გამოძიება', this)">🔍 გამოძიება</div>
+            <div class="room" onclick="changeR('🔐', 'შიფროგრამა', this)">🔐 შიფროგრამა</div>
+            <div class="room" onclick="changeR('🧩', 'ვიქტორინა', this)">🧩 ვიქტორინა</div>
+            <div class="room" onclick="changeR('🪢', 'ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+            <div class="room" onclick="changeR('🌑', 'მაფიის ღამე', this)">🌑 მაფიის ღამე</div>
+            <div class="room" onclick="changeR('🎵', 'მუსიკა', this)">🎵 მუსიკა</div>
+            <div class="room" onclick="changeR('🖼️', 'გალერეა', this)">🖼️ გალერეა</div>
+            <div class="room" onclick="changeR('📝', 'ფორუმი', this)">📝 ფორუმი</div>
+            <div class="room" onclick="changeR('🛡️', 'ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
         </div>
-        <button onclick="logout()" style="margin:15px; background:none; border:1px solid red; color:red; padding:10px; cursor:pointer; border-radius:5px;">გასვლა</button>
+        
+        <button onclick="logout()" style="padding:15px; background:none; border:none; color:red; cursor:pointer; font-weight:bold;">🚪 გასვლა</button>
     </nav>
 
-    <main class="main-chat">
-        <header class="chat-header">
-            <button onclick="document.getElementById('sidebar').classList.toggle('active')" style="background:red; border:none; color:white; padding:8px 12px; margin-right:10px; border-radius:5px;">☰</button>
-            <h2 id="roomTitle" style="font-size:16px; color:red; margin:0;">💬 ზოგადი ჩატი</h2>
+    <main class="chat-area">
+        <header style="padding:15px; border-bottom:2px solid red; display:flex; align-items:center; background:#0d0d0d;">
+            <button onclick="document.getElementById('sidebar').classList.toggle('active')" style="background:red; color:#fff; border:none; padding:8px 12px; margin-right:12px; border-radius:5px; cursor:pointer;">☰</button>
+            <span id="rTitle" style="color:red; font-weight:bold; font-size:18px;">💬 ზოგადი ჩატი</span>
         </header>
-        <div class="chat-messages" id="chatBox"></div>
-        <div class="chat-input-bar">
-            <input type="text" id="mInp" class="text-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+        
+        <div class="messages" id="chatBox"></div>
+        
+        <div class="input-bar">
+            <input type="text" id="mInp" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') send()">
             <button class="send-btn" onclick="send()">➤</button>
         </div>
     </main>
@@ -86,34 +93,53 @@
 <script>
     const sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     let me = {};
-    let currentRoom = 'ზოგადი ჩატი';
+    let room = 'ზოგადი ჩატი';
 
     async function init() {
         const { data: { user } } = await sb.auth.getUser();
-        if (!user) { window.location.href = "index.html"; return; }
-        
+        if(!user) { window.location.href="index.html"; return; }
+
         let { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single();
-        me = { id: user.id, nick: p.username || 'მოთამაშე', role: p.role || 'user', avatar: p.avatar_url || 'https://via.placeholder.com/85' };
-
-        document.getElementById('myNick').innerText = me.nick;
-        document.getElementById('myImg').src = me.avatar;
         
-        const rBadge = document.getElementById('myRole');
-        if(me.role === 'owner') { rBadge.innerText = 'დამფუძნებელი'; rBadge.style.background = 'gold'; rBadge.style.color = 'black'; }
-        else { rBadge.innerText = 'მოთამაშე'; rBadge.style.background = '#333'; }
+        if(!p) {
+            const { data: n } = await sb.from('profiles').insert([{ id: user.id, username: 'მოთამაშე', role: 'user' }]).select().single();
+            p = n;
+        }
 
-        load();
-        sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => load()).subscribe();
+        me = { 
+            id: user.id, 
+            nick: p.username, 
+            role: p.role, 
+            avatar: p.avatar_url || 'https://via.placeholder.com/100' 
+        };
+
+        document.getElementById('nickDisplay').innerText = me.nick;
+        document.getElementById('uImg').src = me.avatar;
+        
+        const rTag = document.getElementById('roleDisplay');
+        if(me.role === 'owner') {
+            rTag.innerText = 'დამფუძნებელი';
+            rTag.style.background = 'gold';
+            rTag.style.color = '#000';
+        } else {
+            rTag.innerText = 'მოთამაშე';
+            rTag.style.background = '#333';
+        }
+
+        loadMsgs();
+        sb.channel('chat-room').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
     }
 
-    async function load() {
-        const { data } = await sb.from('messages').select('*').eq('room', currentRoom).order('created_at', { ascending: true });
+    async function loadMsgs() {
+        const { data } = await sb.from('messages').select('*').eq('room', room).order('created_at', { ascending: true });
         const box = document.getElementById('chatBox');
+        if(!data) return;
+        
         box.innerHTML = data.map(m => `
-            <div class="msg-row ${m.user_id === me.id ? 'me' : ''}">
-                <img src="${m.avatar || 'https://via.placeholder.com/35'}" class="msg-avatar">
+            <div class="msg ${m.user_id === me.id ? 'me' : ''}">
+                <img src="${m.avatar || 'https://via.placeholder.com/30'}" class="msg-img">
                 <div class="msg-content">
-                    <span class="msg-user-name">${m.username}</span>
+                    <span class="msg-user">${m.username}</span>
                     <div class="msg-bubble">${m.text}</div>
                 </div>
             </div>
@@ -122,18 +148,25 @@
     }
 
     async function send() {
-        const inp = document.getElementById('mInp');
-        if(!inp.value.trim()) return;
-        await sb.from('messages').insert([{ text: inp.value, room: currentRoom, user_id: me.id, username: me.nick, avatar: me.avatar }]);
-        inp.value = "";
+        const i = document.getElementById('mInp');
+        if(!i.value.trim()) return;
+        
+        await sb.from('messages').insert([{ 
+            text: i.value, 
+            room: room, 
+            user_id: me.id, 
+            username: me.nick, 
+            avatar: me.avatar 
+        }]);
+        i.value = "";
     }
 
-    function changeRoom(icon, name, el) {
-        currentRoom = name;
-        document.getElementById('roomTitle').innerText = icon + " " + name;
-        document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+    function changeR(icon, name, el) {
+        room = name;
+        document.getElementById('rTitle').innerText = icon + " " + name;
+        document.querySelectorAll('.room').forEach(r => r.classList.remove('active'));
         el.classList.add('active');
-        load();
+        loadMsgs();
         if(window.innerWidth < 800) document.getElementById('sidebar').classList.remove('active');
     }
 
