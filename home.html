@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mafia Rooms - Home</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #000; color: #fff; overflow: hidden;
+        }
+
+        .app-container { display: flex; height: 100vh; width: 100vw; position: relative; }
+
+        /* მობილური ფონი (Overlay) */
+        .sidebar-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99;
+        }
+
+        /* --- სიდბარი (მენიუ) --- */
+        .sidebar {
+            width: 280px; min-width: 280px; background-color: #0d0d0d;
+            border-right: 2px solid #ff0000; display: flex; flex-direction: column;
+            transition: transform 0.3s ease; z-index: 100;
+        }
+
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #222; }
+        .sidebar-title { color: #ff0000; font-size: 20px; margin: 0; font-weight: bold; letter-spacing: 2px; }
+
+        .sidebar-menu { flex-grow: 1; overflow-y: auto; padding: 10px 0; }
+        .menu-item {
+            display: flex; align-items: center; padding: 14px 20px;
+            color: #ddd; text-decoration: none; border-bottom: 1px solid #1a1a1a;
+        }
+        .menu-item:active { background: #1a0000; color: #ff0000; }
+        .icon { margin-right: 15px; width: 25px; text-align: center; font-size: 18px; }
+
+        .special-room { color: #ff0000 !important; font-weight: bold; }
+
+        /* ფუტერი (ბოლო ღილაკები) */
+        .sidebar-footer { border-top: 1px solid #333; background-color: #050505; }
+        .logout-btn { color: #ff4444 !important; font-weight: bold; cursor: pointer; }
+
+        /* --- ჩატის მხარე --- */
+        .main-chat { flex-grow: 1; display: flex; flex-direction: column; background-color: #000; }
+
+        .chat-header {
+            height: 60px; border-bottom: 2px solid #ff0000;
+            display: flex; align-items: center; padding: 0 15px; background-color: #0d0d0d;
+        }
+
+        .menu-toggle {
+            background: #ff0000; border: none; color: white;
+            padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-right: 15px;
+            font-size: 18px;
+        }
+
+        .chat-header h2 { font-size: 16px; color: #ff0000; margin: 0; text-transform: uppercase; }
+
+        /* მესიჯების ველი */
+        .chat-area { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; font-size: 14px; align-self: flex-start; background: #222; color: #ccc; }
+        .sent { align-self: flex-end; background: #ff0000; color: #fff; }
+
+        /* --- ქვედა საწერი გრაფა --- */
+        .input-panel {
+            padding: 10px; background: #0d0d0d; border-top: 1px solid #222;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .chat-input {
+            flex-grow: 1; background: #1a1a1a; border: 1px solid #333;
+            border-radius: 20px; padding: 10px 15px; color: #fff; outline: none; font-size: 14px;
+        }
+
+        .send-btn {
+            background: #ff0000; border: none; width: 40px; height: 40px;
+            border-radius: 50%; color: white; cursor: pointer; font-size: 18px;
+        }
+
+        /* მობილური ადაპტაცია */
+        @media (max-width: 900px) {
+            .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="sidebar-overlay" id="overlay" onclick="toggleM()"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h2 class="sidebar-title">MAFIA ROOMS</h2></div>
+        <div class="sidebar-menu">
+            <div class="menu-item" onclick="changeR('💬', 'ზოგადი ჩატი')"><span class="icon">💬</span> ზოგადი ჩატი</div>
+            <div class="menu-item" onclick="changeR('💎', 'ვიპ საუბრები')"><span class="icon">💎</span> ვიპ საუბრები</div>
+            <div class="menu-item" onclick="changeR('🔍', 'გამოძიება')"><span class="icon">🔍</span> გამოძიება</div>
+            <div class="menu-item special-room" onclick="changeR('🌑', 'მაფიის ღამე')"><span class="icon">🌑</span> მაფიის ღამე</div>
+            <div class="menu-item" onclick="changeR('🔐', 'შიფროგრამა')"><span class="icon">🔐</span> შიფროგრამა</div>
+            <div class="menu-item" onclick="changeR('🧩', 'ვიქტორინა')"><span class="icon">🧩</span> ვიქტორინა</div>
+            <div class="menu-item" onclick="changeR('🪢', 'ჩამოხრჩობანა')"><span class="icon">🪢</span> ჩამოხრჩობანა</div>
+            <div class="menu-item" onclick="changeR('🎵', 'მუსიკა')"><span class="icon">🎵</span> მუსიკა</div>
+            <div class="menu-item" onclick="changeR('🖼️', 'გალერეა')"><span class="icon">🖼️</span> გალერეა</div>
+            <div class="menu-item" onclick="changeR('📝', 'ფორუმი')"><span class="icon">📝</span> ფორუმი</div>
+            <div class="menu-item" onclick="changeR('🛡️', 'ადმინისტრაცია')"><span class="icon">🛡️</span> ადმინისტრაცია</div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="menu-item" style="color:#5bc0de" onclick="changeR('❓', 'დახმარება')"><span class="icon">❓</span> დახმარება</div>
+            <a href="index.html" class="menu-item logout-btn"><span class="icon">🚪</span> გასვლა</a>
+        </div>
+    </nav>
+
+    <main class="main-chat">
+        <header class="chat-header">
+            <button class="menu-toggle" onclick="toggleM()">☰</button>
+            <h2 id="r-title">💬 ზოგადი ჩატი</h2>
+        </header>
+        <div class="chat-area" id="c-box">
+            <div class="msg">მოგესალმებით! აირჩიეთ ოთახი.</div>
+        </div>
+        <div class="input-panel">
+            <input type="text" id="m-input" class="chat-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">➤</button>
+        </div>
+    </main>
+</div>
+
+<script>
+    function toggleM() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+    function changeR(i, n) {
+        document.getElementById('r-title').innerHTML = i + " " + n;
+        document.getElementById('c-box').innerHTML = `<div style="text-align:center;color:#444;margin-top:20px;">[ ${n} ]</div>`;
+        if (window.innerWidth <= 900) toggleM();
+    }
+    function send() {
+        const inp = document.getElementById('m-input');
+        const box = document.getElementById('c-box');
+        if (inp.value.trim()) {
+            const d = document.createElement('div');
+            d.className = 'msg sent';
+            d.innerText = inp.value;
+            box.appendChild(d);
+            inp.value = "";
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+</script>
+</body>
+</html>
