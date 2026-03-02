@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Old Mafia - Elite</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --main-red: #ff0000; --dark-bg: #0a0a0a; --panel-bg: #121212; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { margin: 0; background: #000; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar - დახვეწილი მენიუ */
+        .sidebar { width: 280px; min-width: 280px; background: var(--dark-bg); border-right: 1px solid #222; display: flex; flex-direction: column; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
+        .profile-card { padding: 30px 20px; text-align: center; background: linear-gradient(180deg, #1a0505 0%, #0a0a0a 100%); border-bottom: 1px solid #1a1a1a; }
+        
+        .avatar-wrapper { width: 90px; height: 90px; margin: 0 auto 15px; position: relative; border-radius: 50%; padding: 3px; background: linear-gradient(45deg, var(--main-red), #550000); }
+        .avatar-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #000; cursor: pointer; }
+        .edit-badge { position: absolute; bottom: 5px; right: 5px; background: var(--main-red); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #000; }
+
+        .user-nick { font-size: 20px; font-weight: 800; color: #fff; margin: 0; text-shadow: 0 0 10px rgba(255,0,0,0.3); }
+        .founder-tag { background: linear-gradient(90deg, #ffd700, #ffae00); color: #000; font-size: 10px; padding: 3px 12px; border-radius: 20px; font-weight: 900; text-transform: uppercase; margin-top: 8px; display: inline-block; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+        
+        .status-box { margin-top: 15px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid #1a1a1a; }
+        .status-txt { font-size: 11px; color: #888; margin-bottom: 8px; display: block; }
+        .change-btn { background: transparent; border: 1px solid #333; color: #888; font-size: 10px; padding: 6px; border-radius: 8px; width: 100%; cursor: pointer; transition: 0.3s; }
+        .change-btn:hover { border-color: var(--main-red); color: #fff; }
+
+        /* ოთახების სია */
+        .rooms-container { flex-grow: 1; overflow-y: auto; padding: 15px 10px; }
+        .room-btn { padding: 14px 18px; border-radius: 12px; margin-bottom: 5px; color: #999; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: 0.3s; }
+        .room-btn:hover { background: rgba(255,0,0,0.05); color: #fff; }
+        .room-btn.active { background: linear-gradient(90deg, rgba(255,0,0,0.15) 0%, transparent 100%); color: var(--main-red); font-weight: bold; border-left: 4px solid var(--main-red); }
+
+        /* ჩატი - მთავარი ზონა */
+        .chat-view { flex-grow: 1; display: flex; flex-direction: column; background: #070707; }
+        .chat-top { padding: 20px; background: var(--dark-bg); border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; }
+        .chat-top h2 { margin: 0; font-size: 16px; color: var(--main-red); letter-spacing: 1px; }
+
+        .msg-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .msg-bubble { max-width: 80%; padding: 12px 16px; border-radius: 18px; position: relative; font-size: 14px; animation: fadeIn 0.3s ease; }
+        .msg-sender { font-size: 10px; font-weight: bold; color: var(--main-red); margin-bottom: 4px; display: block; opacity: 0.8; }
+        .me { align-self: flex-end; background: var(--main-red); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(255,0,0,0.2); }
+        .them { align-self: flex-start; background: var(--panel-bg); color: #ddd; border-bottom-left-radius: 4px; border: 1px solid #1a1a1a; }
+
+        /* ინპუტი - სადაც მესიჯს ვწერთ */
+        .input-wrapper { padding: 20px; background: var(--dark-bg); border-top: 1px solid #1a1a1a; }
+        .input-box { background: #1a1a1a; border-radius: 30px; padding: 5px 5px 5px 20px; display: flex; align-items: center; border: 1px solid #222; transition: 0.3s; }
+        .input-box:focus-within { border-color: var(--main-red); box-shadow: 0 0 10px rgba(255,0,0,0.1); }
+        .input-box input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 0; outline: none; font-size: 14px; }
+        .send-trigger { background: var(--main-red); border: none; width: 40px; height: 40px; border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .send-trigger:active { transform: scale(0.9); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @media (max-width: 800px) {
+            .sidebar { width: 80px; min-width: 80px; }
+            .sidebar span, .founder-tag, .status-box, .edit-badge { display: none; }
+            .user-nick { font-size: 12px; }
+            .room-btn { justify-content: center; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="profile-card">
+            <div class="avatar-wrapper" onclick="document.getElementById('imgInp').click()">
+                <img id="myAvatar" src="https://via.placeholder.com/90">
+                <div class="edit-badge">📷</div>
+            </div>
+            <input type="file" id="imgInp" hidden onchange="uploadPhoto(this)">
+            <h1 class="user-nick" id="myNick">...</h1>
+            <div class="founder-tag">დამფუძნებელი</div>
+            
+            <div class="status-box">
+                <span id="myStatus" class="status-txt">სტატუსი არაა</span>
+                <button class="change-btn" onclick="updateStatus()">შეცვლა</button>
+            </div>
+        </div>
+
+        <div class="rooms-container">
+            <div class="room-btn active" onclick="switchRoom('💬 ზოგადი ჩატი', this)">💬 <span>ზოგადი ჩატი</span></div>
+            <div class="room-btn" onclick="switchRoom('💎 VIP საუბრები', this)">💎 <span>VIP საუბრები</span></div>
+            <div class="room-btn" onclick="switchRoom('🔍 გამოძიება', this)">🔍 <span>გამოძიება</span></div>
+            <div class="room-btn" onclick="switchRoom('🔐 შიფროგრამა', this)">🔐 <span>შიფროგრამა</span></div>
+            <div class="room-btn" onclick="switchRoom('🧩 ვიქტორინა', this)">🧩 <span>ვიქტორინა</span></div>
+            <div class="room-btn" onclick="switchRoom('🪢 ჩამოხრჩობანა', this)">🪢 <span>ჩამოხრჩობანა</span></div>
+            <div class="room-btn" onclick="switchRoom('🌑 მაფიის ღამე', this)">🌑 <span>მაფიის ღამე</span></div>
+            <div class="room-btn" onclick="switchRoom('🎵 მუსიკა', this)">🎵 <span>მუსიკა</span></div>
+            <div class="room-btn" onclick="switchRoom('🛡️ ადმინისტრაცია', this)">🛡️ <span>ადმინისტრაცია</span></div>
+        </div>
+        
+        <div style="padding:20px; border-top:1px solid #1a1a1a; cursor:pointer; color:#666; font-size:12px; text-align:center;" onclick="logoff()">🚪 გასვლა</div>
+    </div>
+
+    <div class="chat-view">
+        <div class="chat-top">
+            <h2 id="activeRoom">💬 ზოგადი ჩატი</h2>
+            <div style="font-size: 12px; color: #444;">OLD MAFIA v2.0</div>
+        </div>
+        <div class="msg-container" id="chatFlow"></div>
+        <div class="input-wrapper">
+            <div class="input-box">
+                <input type="text" id="msgIn" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') pushMsg()">
+                <button class="send-trigger" onclick="pushMsg()">➤</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let me = {}, currentRoom = '💬 ზოგადი ჩატი';
+
+    async function startApp() {
+        const { data: { user } } = await sb.auth.getUser();
+        if(!user) return location.href="index.html";
+
+        let { data: p } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        me = { id: user.id, nick: p?.username || "tojina", avatar: p?.avatar_url || "https://via.placeholder.com/90", status: p?.status || "სტატუსი არაა" };
+
+        document.getElementById('myNick').innerText = me.nick;
+        document.getElementById('myAvatar').src = me.avatar;
+        document.getElementById('myStatus').innerText = me.status;
+
+        loadMessages();
+        sb.channel('live').on('postgres_changes',{event:'*',schema:'public',table:'messages'},()=>loadMessages()).subscribe();
+    }
+
+    async function updateStatus() {
+        const s = prompt("რა არის შენი ახალი სტატუსი?");
+        if(!s) return;
+        const { error } = await sb.from('profiles').update({ status: s }).eq('id', me.id);
+        if(!error) { document.getElementById('myStatus').innerText = s; }
+    }
+
+    async function uploadPhoto(el) {
+        const file = el.files[0]; if(!file) return;
+        const name = `avatars/${me.id}_${Date.now()}`;
+        const { data } = await sb.storage.from('avatars').upload(name, file);
+        if(data) {
+            const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(name);
+            await sb.from('profiles').update({ avatar_url: publicUrl }).eq('id', me.id);
+            document.getElementById('myAvatar').src = publicUrl;
+        }
+    }
+
+    async function loadMessages() {
+        const { data } = await sb.from('messages').select('*').eq('room', currentRoom).order('created_at', { ascending: true }).limit(50);
+        const flow = document.getElementById('chatFlow');
+        if(!data) return;
+        flow.innerHTML = data.map(m => `
+            <div class="msg-bubble ${m.user_id === me.id ? 'me' : 'them'}">
+                <span class="msg-sender">${m.username}</span>
+                ${m.text}
+            </div>
+        `).join('');
+        flow.scrollTop = flow.scrollHeight;
+    }
+
+    async function pushMsg() {
+        const i = document.getElementById('msgIn'); if(!i.value.trim()) return;
+        await sb.from('messages').insert([{ text: i.value, room: currentRoom, user_id: me.id, username: me.nick }]);
+        i.value = "";
+    }
+
+    function switchRoom(name, el) {
+        currentRoom = name; document.getElementById('activeRoom').innerText = name;
+        document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active'); loadMessages();
+    }
+
+    async function logoff() { await sb.auth.signOut(); location.href="index.html"; }
+    startApp();
+</script>
+</body>
+</html>
