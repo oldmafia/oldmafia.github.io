@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia - Fixed</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 280px; background: #0d0d0d; border-right: 2px solid red; display: flex; flex-direction: column; }
+        .profile { padding: 20px; text-align: center; border-bottom: 1px solid #222; }
+        .avatar { width: 70px; height: 70px; border-radius: 50%; border: 2px solid red; object-fit: cover; }
+        
+        /* ოთახების სტილი */
+        .rooms-list { flex-grow: 1; overflow-y: auto; padding-top: 10px; }
+        .room-item { 
+            padding: 15px 20px; 
+            border-bottom: 1px solid #1a1a1a; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+            transition: 0.2s;
+        }
+        .room-item:hover { background: #1a0000; color: red; }
+        .room-item.active { background: #2b0000; border-left: 4px solid red; color: red; font-weight: bold; }
+
+        .chat { flex-grow: 1; display: flex; flex-direction: column; }
+        #chatBox { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .input-area { padding: 15px; display: flex; gap: 10px; background: #0d0d0d; }
+        input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid red; background: #000; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="profile">
+            <img id="uImg" src="https://via.placeholder.com/70" class="avatar">
+            <p id="uNick" style="color:red; font-weight:bold; margin: 10px 0 5px;">იტვირთება...</p>
+            <span id="uRole" style="font-size:10px; background: #333; padding: 2px 8px; border-radius: 4px;">მოთამაშე</span>
+        </div>
+
+        <div class="rooms-list">
+            <div class="room-item active" onclick="setRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+            <div class="room-item" onclick="setRoom('VIP საუბრები', this)">💎 VIP საუბრები</div>
+            <div class="room-item" onclick="setRoom('გამოძიება', this)">🔍 გამოძიება</div>
+            <div class="room-item" onclick="setRoom('მაფიის ღამე', this)">🌑 მაფიის ღამე</div>
+            <div class="room-item" onclick="setRoom('ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+        </div>
+
+        <button onclick="logout()" style="padding:15px; background:none; border:none; color:red; cursor:pointer;">🚪 გასვლა</button>
+    </div>
+
+    <div class="chat">
+        <header style="padding:15px; border-bottom:1px solid red; font-weight:bold;">
+            📍 <span id="currentRoomTitle">ზოგადი ჩატი</span>
+        </header>
+        <div id="chatBox"></div>
+        <div class="input-area">
+            <input type="text" id="mInp" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+            <button onclick="send()" style="background:red; color:white; border:none; padding:10px 20px; border-radius:20px;">➤</button>
+        </div>
+    </div>
+
+<script>
+    const sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let me = {};
+    let room = 'ზოგადი ჩატი';
+
+    async function init() {
+        const { data: { user } } = await sb.auth.getUser();
+        if(!user) return window.location.href="index.html";
+
+        // პროფილის წამოღება (თუ ვერ პოულობს, ვწერთ tojina-ს)
+        let { data: p } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        
+        me = {
+            id: user.id,
+            nick: (p && p.username) ? p.username : "tojina",
+            role: (p && p.role) ? p.role : "owner",
+            avatar: (p && p.avatar_url) ? p.avatar_url : "https://via.placeholder.com/70"
+        };
+
+        document.getElementById('uNick').innerText = me.nick;
+        document.getElementById('uImg').src = me.avatar;
+        
+        const rTag = document.getElementById('uRole');
+        if(me.role === 'owner') {
+            rTag.innerText = 'დამფუძნებელი';
+            rTag.style.background = 'gold';
+            rTag.style.color = '#000';
+        }
+
+        load();
+        sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => load()).subscribe();
+    }
+
+    async function load() {
+        const { data } = await sb.from('messages').select('*').eq('room', room).order('created_at', { ascending: true });
+        const box = document.getElementById('chatBox');
+        if(data) {
+            box.innerHTML = data.map(m => `
+                <div style="margin-bottom:10px; text-align: ${m.user_id === me.id ? 'right' : 'left'}">
+                    <small style="color:red; font-size:10px;">${m.username}</small>
+                    <div style="background:${m.user_id === me.id ? 'red' : '#222'}; display:inline-block; padding:8px 12px; border-radius:10px; margin-top:2px;">
+                        ${m.text}
+                    </div>
+                </div>
+            `).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+
+    async function send() {
+        const i = document.getElementById('mInp');
+        if(!i.value.trim()) return;
+        await sb.from('messages').insert([{ 
+            text: i.value, 
+            room: room, 
+            user_id: me.id, 
+            username: me.nick, 
+            avatar: me.avatar 
+        }]);
+        i.value = "";
+    }
+
+    function setRoom(name, el) {
+        room = name;
+        document.getElementById('currentRoomTitle').innerText = name;
+        document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+        el.classList.add('active');
+        load();
+    }
+
+    async function logout() { await sb.auth.signOut(); window.location.href="index.html"; }
+    init();
+</script>
+</body>
+</html>
