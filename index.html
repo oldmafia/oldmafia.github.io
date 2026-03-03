@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია - შესვლა</title>
+    <style>
+        body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; font-family: 'Segoe UI', sans-serif; }
+        .login-card { background: #0a0a0a; padding: 40px; border-radius: 25px; border: 2px solid #ff0000; box-shadow: 0 0 40px rgba(255, 0, 0, 0.5); text-align: center; width: 320px; }
+        h1 { color: white; margin-bottom: 25px; font-size: 28px; }
+        .btn { width: 100%; padding: 15px; background: #ff0000; border: none; color: white; font-weight: bold; border-radius: 12px; cursor: pointer; font-size: 16px; margin-top: 10px; transition: 0.3s; }
+        .btn:hover { transform: scale(1.05); box-shadow: 0 0 20px #ff0000; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 10px; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>კაიფმანია 😎🔥</h1>
+        <input type="text" id="userNick" placeholder="შეიყვანე შენი ნიკი">
+        <button class="btn" onclick="goToChat()">შესვლა</button>
+    </div>
+
+    <script>
+        function goToChat() {
+            const nick = document.getElementById('userNick').value;
+            if(nick.trim() !== "") {
+                localStorage.setItem('userName', nick);
+                window.location.href = 'home.html';
+            } else {
+                alert("გთხოვთ შეიყვანოთ ნიკი!");
+            }
+        }
+    </script>
+</body>
+</html>
