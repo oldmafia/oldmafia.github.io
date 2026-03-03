@@ -7,125 +7,183 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root { --main-red: #cc0000; --dark-bg: #0b0b0b; --panel-bg: #161616; }
-        body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .profile-card { background: var(--panel-bg); padding: 30px; border-radius: 25px; border: 1px solid #222; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .avatar-container { position: relative; width: 130px; height: 130px; margin: 0 auto 20px; }
-        #userAvatar { width: 130px; height: 130px; border-radius: 50%; border: 3px solid var(--main-red); object-fit: cover; background: #222; }
-        .upload-btn { position: absolute; bottom: 5px; right: 5px; background: var(--main-red); color: white; border: 2px solid var(--panel-bg); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-        h2 { margin: 10px 0 5px; color: #fff; font-size: 24px; }
-        .role-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 11px; background: #222; color: gold; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; border: 1px solid #333; }
-        .input-group { margin-bottom: 15px; text-align: left; }
-        label { display: block; font-size: 11px; color: #555; margin-bottom: 5px; margin-left: 12px; font-weight: bold; }
-        input { width: 100%; padding: 14px 18px; background: #0f0f0f; border: 1px solid #252525; color: #fff; border-radius: 12px; outline: none; }
-        .save-btn { width: 100%; padding: 15px; background: var(--main-red); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .back-link { color: #555; text-decoration: none; font-size: 13px; display: block; margin-top: 20px; }
-        #fileInput { display: none; }
+        body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; padding: 20px; }
+        .profile-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; }
+        .profile-card { background: var(--panel-bg); padding: 30px; border-radius: 25px; border: 1px solid #222; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .avatar-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px; }
+        #userAvatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--main-red); object-fit: cover; background: #222; }
+        .upload-btn { position: absolute; bottom: 0; right: 0; background: var(--main-red); color: white; border: 2px solid var(--panel-bg); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: none; }
+        
+        h2 { margin: 10px 0 5px; color: #fff; }
+        .role-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 11px; background: #222; color: gold; font-weight: bold; border: 1px solid #333; margin-bottom: 15px; }
+        
+        .status-box { font-style: italic; color: #999; margin-bottom: 20px; font-size: 14px; }
+        
+        .admin-controls { display: none; background: #111; padding: 15px; border-radius: 15px; border: 1px dashed var(--main-red); margin-top: 15px; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .admin-btn { padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-gold { background: gold; color: #000; }
+        .btn-blue { background: #0066ff; color: #fff; }
+        .btn-black { background: #333; color: #fff; }
+        .btn-red { background: #ff0000; color: #fff; }
+
+        .comment-section { background: var(--panel-bg); padding: 20px; border-radius: 25px; border: 1px solid #222; }
+        .comment-input { width: 100%; background: #0b0b0b; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 10px; margin-bottom: 10px; outline: none; }
+        .comment-list { list-style: none; padding: 0; margin-top: 15px; text-align: left; }
+        .comment-item { padding: 10px; border-bottom: 1px solid #222; font-size: 13px; }
+        .comment-user { color: var(--main-red); font-weight: bold; margin-right: 5px; }
+
+        .edit-fields { display: none; margin-top: 20px; text-align: left; }
+        input { width: 100%; padding: 12px; background: #0b0b0b; border: 1px solid #252525; color: #fff; border-radius: 10px; margin-bottom: 10px; }
+        .save-btn { width: 100%; padding: 12px; background: var(--main-red); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .back-link { color: #555; text-decoration: none; font-size: 13px; margin-top: 20px; display: block; }
     </style>
 </head>
 <body>
-<div class="profile-card">
-    <div class="avatar-container">
-        <img id="userAvatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
-        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">+</button>
+
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="avatar-container">
+            <img id="userAvatar" src="">
+            <button id="cameraBtn" class="upload-btn" onclick="document.getElementById('fileInput').click()">📷</button>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" onchange="uploadPhoto()" style="display:none">
+        
+        <h2 id="displayNick">იტვირთება...</h2>
+        <div id="displayRole" class="role-badge">მომხმარებელი</div>
+        <div id="displayStatus" class="status-box"></div>
+
+        <div id="editArea" class="edit-fields">
+            <input type="text" id="editNick" placeholder="ახალი ნიკი">
+            <input type="text" id="editStatus" placeholder="სტატუსი">
+            <button class="save-btn" onclick="saveProfile()">შენახვა</button>
+        </div>
+
+        <div id="adminPanel" class="admin-controls">
+            <button class="admin-btn btn-gold" onclick="setRole('owner')">დამფუძნებელი</button>
+            <button class="admin-btn btn-blue" onclick="setRole('admin')">ადმინისტრატორი</button>
+            <button class="admin-btn btn-black" onclick="setRole('user')">როლის ჩახსნა</button>
+            <button id="blockBtn" class="admin-btn btn-red" onclick="toggleBlock()">დაბლოკვა</button>
+        </div>
+
+        <a href="home.html" class="back-link">← დაბრუნება ჩატში</a>
     </div>
-    <input type="file" id="fileInput" accept="image/*" onchange="uploadPhoto()">
-    <h2 id="displayNick">იტვირთება...</h2>
-    <div id="displayRole" class="role-badge">USER</div>
-    <div class="input-group"><label>ნიკნეიმი</label><input type="text" id="newNick" placeholder="შეიყვანეთ ნიკი"></div>
-    <div class="input-group"><label>სტატუსი</label><input type="text" id="userStatus" placeholder="თქვენი სტატუსი"></div>
-    <button id="saveBtn" class="save-btn" onclick="updateProfile()">შენახვა</button>
-    <a href="home.html" class="back-link">← დაბრუნება ჩატში</a>
+
+    <div class="comment-section">
+        <h4 style="margin-top:0">კომენტარები</h4>
+        <textarea id="comInput" class="comment-input" placeholder="დაწერე კომენტარი..."></textarea>
+        <button class="save-btn" onclick="postComment()">გაგზავნა</button>
+        <div id="commentList" class="comment-list"></div>
+    </div>
 </div>
 
 <script>
     const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
     const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-    let userId = "";
 
-    async function loadProfile() {
-        try {
-            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-            if (authError || !user) return window.location.href = "index.html";
-            userId = user.id;
+    const urlParams = new URLSearchParams(window.location.search);
+    let viewId = urlParams.get('id'); // ვის პროფილს ვუყურებთ
+    let myId = "";
+    let myRole = "user";
+    let isBlocked = false;
 
-            // ვცდილობთ პროფილის წამოღებას
-            let { data: profile, error: profError } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
-            
-            // თუ პროფილი საერთოდ არ არსებობს ბაზაში, ვქმნით დროებით მონაცემებს
-            if (!profile) {
-                const isOwner = (user.email === 'to222ji@gmail.com');
-                const initialNick = isOwner ? 'abu007' : user.email.split('@')[0];
-                profile = { 
-                    username: initialNick, 
-                    role: isOwner ? 'owner' : 'user',
-                    avatar_url: null,
-                    status: ""
-                };
-            }
+    async function init() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return window.location.href = "index.html";
+        myId = user.id;
+        
+        // თუ ID ლინკში არაა, ვხსნით ჩვენს პროფილს
+        if (!viewId) viewId = myId;
 
-            // მონაცემების გამოჩენა
-            document.getElementById('displayNick').innerHTML = (profile.role === 'owner' ? '👑 ' : '') + profile.username;
-            document.getElementById('newNick').value = profile.username;
-            document.getElementById('userAvatar').src = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${profile.username}`;
-            document.getElementById('displayRole').innerText = profile.role.toUpperCase();
-            document.getElementById('userStatus').value = profile.status || "";
+        // ჩემი როლის გაგება
+        const { data: myProf } = await supabaseClient.from('profiles').select('role').eq('id', myId).maybeSingle();
+        myRole = myProf?.role || "user";
 
-        } catch (err) {
-            console.error("შეცდომა ჩატვირთვისას:", err);
-            document.getElementById('displayNick').innerText = "შეცდომა";
+        loadUserContent();
+        loadComments();
+    }
+
+    async function loadUserContent() {
+        const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', viewId).maybeSingle();
+        if (!p) return;
+
+        isBlocked = p.banned || false;
+        const roleNames = { owner: "დამფუძნებელი", admin: "ადმინისტრატორი", user: "მომხმარებელი" };
+
+        document.getElementById('displayNick').innerText = (p.role === 'owner' ? '👑 ' : '') + p.username;
+        document.getElementById('displayRole').innerText = roleNames[p.role] || "მომხმარებელი";
+        document.getElementById('displayStatus').innerText = p.status || "სტატუსი არ არის";
+        document.getElementById('userAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username}`;
+
+        // თუ ჩემი პროფილია
+        if (viewId === myId) {
+            document.getElementById('editArea').style.display = 'block';
+            document.getElementById('cameraBtn').style.display = 'flex';
+            document.getElementById('editNick').value = p.username;
+            document.getElementById('editStatus').value = p.status || "";
+        }
+
+        // თუ მე Owner ვარ და სხვას ვუყურებ
+        if (myRole === 'owner' && viewId !== myId) {
+            document.getElementById('adminPanel').style.display = 'flex';
+            document.getElementById('blockBtn').innerText = isBlocked ? "განბლოკვა" : "დაბლოკვა";
         }
     }
 
-    async function updateProfile() {
-        const nick = document.getElementById('newNick').value.trim();
-        const status = document.getElementById('userStatus').value.trim();
+    async function saveProfile() {
+        const n = document.getElementById('editNick').value;
+        const s = document.getElementById('editStatus').value;
+        await supabaseClient.from('profiles').update({ username: n, status: s }).eq('id', myId);
+        location.reload();
+    }
+
+    async function setRole(newRole) {
+        await supabaseClient.from('profiles').update({ role: newRole }).eq('id', viewId);
+        alert("როლი შეიცვალა!");
+        location.reload();
+    }
+
+    async function toggleBlock() {
+        await supabaseClient.from('profiles').update({ banned: !isBlocked }).eq('id', viewId);
+        alert(isBlocked ? "განბლოკილია!" : "დაბლოკილია!");
+        location.reload();
+    }
+
+    async function postComment() {
+        const txt = document.getElementById('comInput').value;
+        if(!txt) return;
+        const { data: me } = await supabaseClient.from('profiles').select('username').eq('id', myId).single();
         
-        if (!nick) return alert("ნიკი არ შეიძლება იყოს ცარიელი!");
+        await supabaseClient.from('comments').insert([{
+            profile_id: viewId,
+            author_id: myId,
+            author_name: me.username,
+            text: txt
+        }]);
+        document.getElementById('comInput').value = "";
+        loadComments();
+    }
 
-        const { error } = await supabaseClient.from('profiles').upsert({ 
-            id: userId, 
-            username: nick, 
-            status: status 
-        });
-
-        if (error) {
-            alert("ვერ შეინახა: " + error.message);
-        } else {
-            alert("მონაცემები განახლდა!");
-            location.reload();
-        }
+    async function loadComments() {
+        const { data } = await supabaseClient.from('comments').select('*').eq('profile_id', viewId).order('created_at', {ascending: false});
+        const list = document.getElementById('commentList');
+        list.innerHTML = data?.map(c => `
+            <div class="comment-item">
+                <span class="comment-user">${c.author_name}:</span> ${c.text}
+            </div>
+        `).join('') || "კომენტარები არ არის";
     }
 
     async function uploadPhoto() {
-        const fileInput = document.getElementById('fileInput');
-        const file = fileInput.files[0];
-        if (!file) return;
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${userId}-${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabaseClient.storage
-            .from('avatars')
-            .upload(filePath, file);
-
-        if (uploadError) return alert("ვერ აიტვირთა: " + uploadError.message);
-
-        const { data: { publicUrl } } = supabaseClient.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-
-        const { error: updateError } = await supabaseClient
-            .from('profiles')
-            .update({ avatar_url: publicUrl })
-            .eq('id', userId);
-
-        if (updateError) alert("ლინკი ვერ განახლდა: " + updateError.message);
-        else location.reload();
+        const file = document.getElementById('fileInput').files[0];
+        const path = `avatars/${myId}-${Date.now()}`;
+        await supabaseClient.storage.from('avatars').upload(path, file);
+        const { data } = supabaseClient.storage.from('avatars').getPublicUrl(path);
+        await supabaseClient.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', myId);
+        location.reload();
     }
 
-    loadProfile();
+    init();
 </script>
 </body>
 </html>
