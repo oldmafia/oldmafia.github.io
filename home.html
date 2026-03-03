@@ -12,7 +12,8 @@
         
         .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow-y: auto; }
         .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
-        .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; }
+        .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; transition: 0.2s; }
+        .menu-item:hover { background: #111; color: #fff; }
         .menu-item.active { background: #111; color: var(--main-red); border-left: 3px solid var(--main-red); }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
@@ -47,4 +48,127 @@
             <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 შიფროგრამა</div>
             <div class="menu-item" onclick="changeRoom('ვიქტორინა', '🧠')">🧠 ვიქტორინა</div>
             <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '💀')">💀 ჩამოხრჩობანა</div>
-            <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">
+            <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">🕵️‍♂️ მაფიის ღამე</div>
+            <div class="menu-item" onclick="changeRoom('ჯოკერი', '🃏')">🃏 ჯოკერი</div>
+            <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 ნარდი</div>
+            <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 მუსიკა</div>
+            <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 იუმორი</div>
+            <div class="menu-item" style="color: gold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
+            <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 დახმარება</div>
+            <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ ფორუმი</div>
+            <div class="menu-item" style="color: #44aa44;" onclick="window.location.href='user.html'">👤 ჩემი პროფილი</div>
+            <div class="menu-item" style="color: #ff4444;" onclick="logout()">🚪 გასვლა</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-nav">
+            <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
+            <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
+        </div>
+        <div id="messageList"></div>
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">გაგზავნა</button>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentRoom = 'ზოგადი ჩატი';
+        let myNick = ''; 
+        let myRole = 'user';
+
+        async function init() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return window.location.href = "index.html";
+
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            
+            if (profile) {
+                myNick = profile.username;
+                myRole = profile.role || 'user';
+            } else {
+                myNick = user.user_metadata.nickname || 'Guest';
+            }
+
+            if (user.email && user.email.toLowerCase() === 'to222ji@gmail.com') {
+                myNick = 'abu007';
+                myRole = 'owner';
+            }
+
+            const display = document.getElementById('userDisplay');
+            display.innerHTML = (myRole === 'owner') ? `👑 ${myNick}` : myNick;
+            
+            loadMsgs();
+            supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
+        }
+
+        async function loadMsgs() {
+            const { data: msgs, error } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+            
+            if (error) return;
+
+            const list = document.getElementById('messageList');
+            list.innerHTML = '';
+
+            msgs?.forEach(msg => {
+                const isOwner = (msg.username === 'abu007');
+                const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const canDelete = (myRole === 'owner');
+                const delBtn = canDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
+
+                const div = document.createElement('div');
+                div.className = 'msg-box';
+                div.innerHTML = `
+                    <div class="msg-header">
+                        <span class="username">${isOwner ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
+                        <span class="msg-time">${time} ${delBtn}</span>
+                    </div>
+                    <div class="msg-text">${msg.text}</div>
+                `;
+                list.appendChild(div);
+            });
+            list.scrollTop = list.scrollHeight;
+        }
+
+        async function send() {
+            const input = document.getElementById('msgInput');
+            if (!input.value.trim() || !myNick) return;
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            await supabaseClient.from('messages').insert([{ 
+                username: myNick, 
+                text: input.value, 
+                room_name: currentRoom, 
+                user_id: user.id 
+            }]);
+            input.value = '';
+        }
+
+        async function del(id) {
+            if (!confirm("წავშალოთ შეტყობინება?")) return;
+            await supabaseClient.from('messages').delete().eq('id', id);
+        }
+
+        function changeRoom(name, icon) {
+            currentRoom = name;
+            document.getElementById('roomTitle').innerText = `${icon} ${name}`;
+            
+            const items = document.querySelectorAll('.menu-item');
+            items.forEach(item => {
+                item.classList.remove('active');
+                if(item.innerText.includes(name)) item.classList.add('active');
+            });
+            loadMsgs();
+        }
+
+        async function logout() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+        init();
+    </script>
+</body>
+</html>
