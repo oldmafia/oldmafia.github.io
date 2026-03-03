@@ -5,35 +5,34 @@
     <title>პროფილი - კაიფმანია</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #080808; color: #ccc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: #121212; border: 1px solid #cc0000; padding: 30px; border-radius: 15px; text-align: center; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(204,0,0,0.2); }
+        body { background: #080808; color: #ccc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #121212; border: 1px solid #cc0000; padding: 30px; border-radius: 15px; text-align: center; width: 350px; box-shadow: 0 0 20px rgba(204,0,0,0.4); }
         .avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #cc0000; margin-bottom: 15px; object-fit: cover; background: #000; }
-        .nick { color: #cc0000; font-size: 26px; font-weight: bold; margin: 5px 0; }
-        .role { color: gold; font-weight: bold; margin-bottom: 15px; font-size: 14px; text-transform: uppercase; }
-        .status { background: #000; padding: 15px; border-radius: 10px; font-style: italic; color: #888; margin-bottom: 20px; border: 1px solid #1a1a1a; min-height: 20px; }
+        .nick { color: #cc0000; font-size: 26px; font-weight: bold; margin-bottom: 5px; }
+        .role { color: gold; font-size: 14px; text-transform: uppercase; margin-bottom: 15px; font-weight: bold; }
+        .status { background: #000; padding: 15px; border-radius: 10px; font-style: italic; color: #aaa; margin-bottom: 20px; border: 1px solid #1a1a1a; min-height: 20px; }
         .btn { background: #cc0000; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; transition: 0.3s; }
-        .btn:hover { background: #ff0000; }
+        .btn:hover { background: #ff0000; transform: scale(1.02); }
         .back-btn { background: #333; }
         .admin-panel { border-top: 1px dashed #444; margin-top: 15px; padding-top: 15px; display: none; }
-        .admin-btn { background: #444; font-size: 12px; margin-bottom: 5px; }
+        .admin-btn { background: #444; font-size: 11px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img id="uAvatar" class="avatar" src="https://via.placeholder.com/120">
+        <img id="uAvatar" class="avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
         <div id="uNick" class="nick">იტვირთება...</div>
         <div id="uRole" class="role"></div>
-        <div id="uStatus" class="status"></div>
+        <div id="uStatus" class="status">მონაცემები მუშავდება...</div>
         
         <div id="ownerButtons" style="display:none;">
-            <button class="btn" onclick="uploadAvatar()">📷 ფოტოს შეცვლა (გალერეა)</button>
-            <button class="btn" onclick="editStatus()">✍️ სტატუსის შეცვლა</button>
+            <button class="btn" onclick="uploadAvatar()">📷 ფოტოს შეცვლა</button>
+            <button class="btn" style="background:#222;" onclick="editStatus()">✍️ სტატუსის შეცვლა</button>
         </div>
 
         <div id="adminPanel" class="admin-panel">
-            <div style="color:gold; margin-bottom:10px; font-size:12px;">🛡️ ადმინ პანელი</div>
-            <button class="btn admin-btn" onclick="setRole('admin')">ადმინის მიცემა</button>
-            <button class="btn admin-btn" onclick="setRole('user')">როლის ჩამორთმევა</button>
+            <div style="color:gold; margin-bottom:10px; font-size:12px;">🛡️ ადმინ პანელი (მხოლოდ შენთვის)</div>
+            <button class="btn admin-btn" onclick="setRole('admin')">ადმინის როლი</button>
             <button class="btn admin-btn" style="background:black;" onclick="banUser(true)">🚫 დაბლოკვა</button>
             <button class="btn admin-btn" style="background:green;" onclick="banUser(false)">✅ განბლოკვა</button>
         </div>
@@ -51,10 +50,11 @@
             let userId = params.get('id');
             const { data: { user: currentUser } } = await supabase.auth.getUser();
 
+            // თუ ID არაა, ვხსნით საკუთარ პროფილს
             if (!userId && currentUser) userId = currentUser.id;
             if (!userId) return window.location.href = 'index.html';
 
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+            const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
             
             if (profile) {
                 document.getElementById('uNick').innerText = profile.username;
@@ -66,49 +66,39 @@
                 else if(profile.role === 'admin') roleText = "🛡️ ადმინისტრატორი";
                 document.getElementById('uRole').innerText = roleText;
 
+                // ვამოწმებთ, არის თუ არა ეს იუზერი საკუთარ გვერდზე
                 if (currentUser && currentUser.id === userId) {
                     document.getElementById('ownerButtons').style.display = 'block';
                 }
 
+                // ადმინ პანელი მხოლოდ შენთვის (შენი მეილით)
                 if (currentUser && currentUser.email === 'to222ji@gmail.com') {
                     document.getElementById('adminPanel').style.display = 'block';
                 }
+            } else {
+                document.getElementById('uStatus').innerText = "იუზერი ვერ მოიძებნა.";
             }
         }
 
-        // --- ფოტოს ატვირთვა გალერეიდან ---
+        // ფოტოს ატვირთვა გალერეიდან
         async function uploadAvatar() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
-            
             input.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
 
                 const { data: { user } } = await supabase.auth.getUser();
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+                const path = `${user.id}-${Date.now()}.png`;
 
-                // ატვირთვა Storage-ში
-                const { data, error } = await supabase.storage
-                    .from('avatars')
-                    .upload(fileName, file);
+                const { error } = await supabase.storage.from('user_pics').upload(path, file);
+                if (error) return alert("ატვირთვის შეცდომა: " + error.message);
 
-                if (error) {
-                    alert("შეცდომა: " + error.message);
-                    return;
-                }
-
-                const { data: urlData } = supabase.storage
-                    .from('avatars')
-                    .getPublicUrl(fileName);
-
-                await supabase.from('profiles')
-                    .update({ avatar_url: urlData.publicUrl })
-                    .eq('id', user.id);
-
-                alert("ფოტო განახლდა!");
+                const { data: urlData } = supabase.storage.from('user_pics').getPublicUrl(path);
+                await supabase.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
+                
+                alert("ფოტო წარმატებით განახლდა!");
                 location.reload();
             };
             input.click();
@@ -123,20 +113,18 @@
             }
         }
 
-        async function setRole(newRole) {
-            const params = new URLSearchParams(window.location.search);
-            const targetId = params.get('id');
-            if(!targetId) return;
-            await supabase.from('profiles').update({ role: newRole }).eq('id', targetId);
+        async function setRole(role) {
+            const id = new URLSearchParams(window.location.search).get('id');
+            if(!id) return;
+            await supabase.from('profiles').update({ role: role }).eq('id', id);
             alert("როლი განახლდა!");
             location.reload();
         }
 
         async function banUser(status) {
-            const params = new URLSearchParams(window.location.search);
-            const targetId = params.get('id');
-            if(!targetId) return;
-            await supabase.from('profiles').update({ is_banned: status }).eq('id', targetId);
+            const id = new URLSearchParams(window.location.search).get('id');
+            if(!id) return;
+            await supabase.from('profiles').update({ is_banned: status }).eq('id', id);
             alert(status ? "დაიბლოკა!" : "განიბლოკა!");
         }
 
