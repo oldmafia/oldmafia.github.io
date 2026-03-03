@@ -2,31 +2,118 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ჩემი პროფილი 👤</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #080808; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .profile-card { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .avatar-preview { width: 120px; height: 120px; background: #222; border-radius: 50%; margin: 0 auto 20px; border: 2px solid var(--main-red, #cc0000); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+        h2 { margin: 10px 0; color: #fff; }
+        .status-text { color: #888; font-style: italic; margin-bottom: 20px; display: block; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; outline: none; box-sizing: border-box; }
+        input[type="file"] { margin: 15px 0; font-size: 13px; color: #888; }
+        .btn-save { background: #cc0000; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn-save:hover { background: #ff0000; }
+        #msg { font-size: 13px; margin-top: 10px; color: gold; }
+        .back-link { display: block; margin-top: 20px; color: #555; text-decoration: none; font-size: 14px; }
+    </style>
 </head>
-<body style="background: #080808; color: white; font-family: sans-serif; padding: 20px;">
+<body>
 
-    <h2>მოგესალმები, <span id="myNick" style="color: red;">...</span></h2>
-    <p>კავშირი მყარდება...</p>
+    <div class="profile-card">
+        <div class="avatar-preview" id="avatarBox">
+            <img id="currentAvatar" src="https://via.placeholder.com/120?text=👤" alt="Avatar">
+        </div>
+        
+        <h2 id="displayNick">იტვირთება...</h2>
+        <span id="displayStatus" class="status-text">სტატუსი არ არის</span>
+
+        <hr style="border: 0; border-top: 1px solid #222; margin: 20px 0;">
+
+        <label style="font-size: 13px; color: #666; float: left;">შეცვალე ფოტო გალერეიდან:</label>
+        <input type="file" id="fileInput" accept="image/*">
+
+        <label style="font-size: 13px; color: #666; float: left;">შეცვალე სტატუსი:</label>
+        <input type="text" id="statusInput" placeholder="რას ფიქრობ?">
+
+        <button class="btn-save" onclick="saveProfile()">მონაცემების განახლება</button>
+        <p id="msg"></p>
+
+        <a href="home.html" class="back-link">⬅️ ჩატში დაბრუნება</a>
+    </div>
 
     <script>
         const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
         const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        async function checkMe() {
+        let currentUser = null;
+
+        // 1. მონაცემების ჩატვირთვა
+        async function loadProfile() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) {
-                document.body.innerHTML = "შესვლა საჭიროა!";
+                window.location.href = "index.html";
                 return;
             }
+            currentUser = user;
 
-            const { data: profile } = await supabaseClient.from('profiles').select('username').eq('id', user.id).single();
-            document.getElementById('myNick').innerText = profile ? profile.username : "უცნობი";
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            
+            if (profile) {
+                document.getElementById('displayNick').innerText = profile.username || "მომხმარებელი";
+                document.getElementById('displayStatus').innerText = profile.status || "სტატუსი ცარიელია";
+                if (profile.avatar_url) {
+                    document.getElementById('currentAvatar').src = profile.avatar_url;
+                }
+            }
         }
 
-        checkMe();
+        // 2. შენახვა (ფოტო + სტატუსი)
+        async function saveProfile() {
+            const file = document.getElementById('fileInput').files[0];
+            const newStatus = document.getElementById('statusInput').value;
+            const msg = document.getElementById('msg');
+            msg.innerText = "მიმდინარეობს განახლება...";
+
+            let avatarUrl = null;
+
+            // თუ ფოტო აირჩია - ატვირთოს
+            if (file) {
+                const filePath = `avatars/${currentUser.id}_${Date.now()}.png`;
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('avatars')
+                    .upload(filePath, file, { upsert: true });
+
+                if (uploadError) {
+                    msg.innerText = "ფოტოს ატვირთვა ვერ მოხერხდა";
+                    return;
+                }
+                const { data } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
+                avatarUrl = data.publicUrl;
+            }
+
+            // მონაცემების განახლება ბაზაში
+            const updates = {
+                id: currentUser.id,
+                status: newStatus || document.getElementById('displayStatus').innerText,
+                updated_at: new Date()
+            };
+            if (avatarUrl) updates.avatar_url = avatarUrl;
+
+            const { error } = await supabaseClient.from('profiles').upsert(updates);
+
+            if (error) {
+                msg.innerText = "შეცდომა შენახვისას";
+            } else {
+                msg.innerText = "წარმატებით განახლდა! ✅";
+                setTimeout(() => location.reload(), 1500);
+            }
+        }
+
+        loadProfile();
     </script>
 </body>
 </html>
