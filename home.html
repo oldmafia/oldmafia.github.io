@@ -10,38 +10,45 @@
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #ccc; overflow: hidden; }
         
-        .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow-y: auto; }
+        /* Sidebar სტილი - მობილურზე დამალული */
+        .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s; }
         .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
         .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; }
         .menu-item.active { background: #111; color: var(--main-red); border-left: 3px solid var(--main-red); }
-        .menu-item:hover { background: #080808; color: #fff; }
+
+        /* მობილურის ვერსია */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -280px; top: 0; height: 100%; z-index: 1000; }
+            .sidebar.open { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.8); }
+            .menu-btn { display: block !important; }
+        }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .top-nav { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .top-nav { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
         
-        .user-profile-nav { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; }
+        .menu-btn { display: none; font-size: 24px; background: none; border: none; color: var(--main-red); cursor: pointer; }
+
+        .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .nav-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--main-red); object-fit: cover; }
 
-        #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg-box { background: var(--panel-bg); padding: 10px 15px; border-radius: 12px; border: 1px solid #1a1a1a; max-width: 85%; align-self: flex-start; }
-        .msg-header { display: flex; align-items: center; margin-bottom: 4px; gap: 8px; }
-        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        /* მესიჯების სტილი */
+        #messageList { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg-box { background: var(--panel-bg); padding: 10px; border-radius: 12px; border: 1px solid #1a1a1a; max-width: 85%; align-self: flex-start; }
+        .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .msg-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
         .username { color: var(--main-red); font-weight: bold; font-size: 13px; cursor: pointer; }
-        .msg-time { color: #444; font-size: 10px; margin-left: auto; }
-        .msg-text { font-size: 14px; color: #eee; word-break: break-word; }
-        
+        .msg-text { font-size: 14px; color: #eee; padding-left: 34px; }
+
         .input-area { padding: 15px; background: #000; border-top: 1px solid #1a1a1a; display: flex; gap: 10px; }
         input { flex-grow: 1; padding: 12px; background: #050505; border: 1px solid #222; color: #fff; border-radius: 8px; outline: none; }
         .send-btn { background: var(--main-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        @media (max-width: 768px) { .sidebar { display: none; } }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <div class="sidebar-header">კაიფმანია 🕶️</div>
-        <div id="roomsContainer">
+        <div id="rooms">
             <div class="menu-item active" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
             <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 ვიპ საუბრები</div>
             <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
@@ -62,16 +69,17 @@
 
     <div class="main-content">
         <div class="top-nav">
+            <button class="menu-btn" onclick="toggleMenu()">☰</button>
             <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
-            <div class="user-profile-nav" onclick="window.location.href='user.html'">
+            <div class="user-info" onclick="window.location.href='user.html'">
                 <img id="navAvatar" class="nav-avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
-                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
+                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">...</div>
             </div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
-            <button class="send-btn" onclick="send()">გაგზავნა</button>
+            <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">✈️</button>
         </div>
     </div>
 
@@ -81,40 +89,36 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let myNick = ''; 
+        let myData = { id: '', nick: 'Guest', avatar: '' };
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            myNick = profile ? profile.username : (user.user_metadata.nickname || 'Guest');
-            
-            document.getElementById('userDisplay').innerText = myNick;
-            if (profile?.avatar_url) document.getElementById('navAvatar').src = profile.avatar_url;
+            myData.id = user.id;
+            myData.nick = profile?.username || user.user_metadata?.nickname || 'Guest';
+            myData.avatar = profile?.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${myData.nick}`;
+
+            document.getElementById('userDisplay').innerText = myData.nick;
+            document.getElementById('navAvatar').src = myData.avatar;
 
             loadMsgs();
             supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
         }
 
         async function loadMsgs() {
-            const { data: msgs, error } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-            if(error) return console.error(error);
-
+            const { data: msgs } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
             const list = document.getElementById('messageList');
             list.innerHTML = '';
-
             msgs?.forEach(msg => {
-                const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const avatar = msg.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.username}`;
-                
                 const div = document.createElement('div');
                 div.className = 'msg-box';
                 div.innerHTML = `
                     <div class="msg-header">
                         <img src="${avatar}" class="msg-avatar">
                         <span class="username" onclick="window.location.href='user.html?id=${msg.user_id}'">${msg.username}</span>
-                        <span class="msg-time">${time}</span>
                     </div>
                     <div class="msg-text">${msg.text}</div>
                 `;
@@ -126,27 +130,20 @@
         async function send() {
             const input = document.getElementById('msgInput');
             if (!input.value.trim()) return;
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            
-            const { data: profile } = await supabaseClient.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle();
-
             await supabaseClient.from('messages').insert([{ 
-                username: myNick, 
-                text: input.value, 
-                room_name: currentRoom, 
-                user_id: user.id,
-                avatar_url: profile?.avatar_url || null
+                username: myData.nick, text: input.value, room_name: currentRoom, user_id: myData.id, avatar_url: myData.avatar 
             }]);
             input.value = '';
         }
 
+        function toggleMenu() { document.querySelector('.sidebar').classList.toggle('open'); }
+
         function changeRoom(name, icon) {
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
-            document.querySelectorAll('.menu-item').forEach(m => {
-                m.classList.remove('active');
-                if(m.innerText.includes(name)) m.classList.add('active');
-            });
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            if(window.innerWidth <= 768) toggleMenu();
             loadMsgs();
         }
 
