@@ -3,31 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - შესვლა</title>
+    <title>კაიფმანია - ჩატი</title>
     <style>
-        body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; font-family: 'Segoe UI', sans-serif; }
-        .login-card { background: #0a0a0a; padding: 40px; border-radius: 25px; border: 2px solid #ff0000; box-shadow: 0 0 40px rgba(255, 0, 0, 0.5); text-align: center; width: 320px; }
-        h1 { color: white; margin-bottom: 25px; font-size: 28px; }
-        .btn { width: 100%; padding: 15px; background: #ff0000; border: none; color: white; font-weight: bold; border-radius: 12px; cursor: pointer; font-size: 16px; margin-top: 10px; transition: 0.3s; }
-        .btn:hover { transform: scale(1.05); box-shadow: 0 0 20px #ff0000; }
-        input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #333; color: white; border-radius: 10px; outline: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+
+        /* --- შენი დახრილი მენიუ --- */
+        #sidebar {
+            width: 300px;
+            background: #080808;
+            border-right: 3px solid #ff0000;
+            box-shadow: 10px 0 20px rgba(255, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            transform: skewX(-1deg); /* შენი სტილის დახრა */
+        }
+
+        .profile-area {
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 2px solid #1a1a1a;
+        }
+
+        .profile-area h2 {
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+            font-size: 28px;
+        }
+
+        .rooms {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .room-btn {
+            padding: 15px;
+            margin: 10px 0;
+            background: #111;
+            border: 1px solid #ff0000;
+            color: white;
+            cursor: pointer;
+            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); /* დახრილი ღილაკი */
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .room-btn:hover {
+            background: #ff0000;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        /* --- ჩატის ზონა --- */
+        .main-chat {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            padding: 20px;
+        }
+
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 15px 20px;
+            background: #111;
+            border-left: 5px solid #ff0000;
+            font-size: 20px;
+            clip-path: polygon(2% 0, 100% 0, 98% 100%, 0% 100%); /* დახრილი მესიჯი */
+        }
+
+        .msg b { color: #ff0000; display: block; font-size: 14px; margin-bottom: 5px; }
+
+        /* შეყვანის პანელი */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding-top: 20px;
+        }
+
+        input {
+            flex-grow: 1;
+            padding: 18px;
+            background: #0a0a0a;
+            border: 2px solid #333;
+            color: white;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+
+        .send-btn {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 0 30px;
+            font-weight: bold;
+            cursor: pointer;
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+        }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h1>კაიფმანია 😎🔥</h1>
-        <input type="text" id="userNick" placeholder="შეიყვანე შენი ნიკი">
-        <button class="btn" onclick="goToChat()">შესვლა</button>
+
+    <div id="sidebar">
+        <div class="profile-area">
+            <h2 id="userName">...</h2>
+        </div>
+        <div class="rooms">
+            <div class="room-btn">ზოგადი ჩატი</div>
+            <div class="room-btn">მაფია</div>
+            <div class="room-btn">ჯოკერი</div>
+            <div class="room-btn" style="margin-top: 30px; border-color: #444;" onclick="location.href='index.html'">გასვლა</div>
+        </div>
+    </div>
+
+    <div class="main-chat">
+        <div id="messages">
+            <div class="msg"><b>სისტემა</b>მოგესალმებით, თქვენი დაფა აღდგენილია!</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">გაგზავნა</button>
+        </div>
     </div>
 
     <script>
-        function goToChat() {
-            const nick = document.getElementById('userNick').value;
-            if(nick.trim() !== "") {
-                localStorage.setItem('userName', nick);
-                window.location.href = 'home.html';
-            } else {
-                alert("გთხოვთ შეიყვანოთ ნიკი!");
+        // ნიკის გამოჩენა
+        const nick = localStorage.getItem('userName') || "Tojina";
+        document.getElementById('userName').innerText = nick;
+
+        function send() {
+            const inp = document.getElementById('msgInput');
+            if(inp.value.trim() !== "") {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg';
+                msgDiv.style.alignSelf = 'flex-end';
+                msgDiv.innerHTML = `<b>${nick}</b>${inp.value}`;
+                document.getElementById('messages').appendChild(msgDiv);
+                inp.value = "";
+                const win = document.getElementById('messages');
+                win.scrollTop = win.scrollHeight;
             }
         }
     </script>
