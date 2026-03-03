@@ -2,41 +2,41 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>პროფილი - კაიფმანია</title>
+    <title>ჩემი პროფილი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #161616; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 350px; text-align: center; }
-        .avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #cc0000; object-fit: cover; margin-bottom: 15px; }
-        .name { font-size: 24px; font-weight: bold; color: #cc0000; }
-        .role { font-size: 14px; color: gold; margin-bottom: 10px; }
-        .status { font-style: italic; color: #999; margin-bottom: 20px; }
-        input { width: 100%; padding: 10px; margin: 5px 0; background: #111; border: 1px solid #333; color: white; border-radius: 8px; }
-        .btn { background: #cc0000; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
-        .admin-panel { margin-top: 20px; border-top: 1px solid #333; padding-top: 15px; display: none; }
+        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #161616; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 100%; max-width: 400px; text-align: center; }
+        .avatar-wrapper { position: relative; width: 120px; height: 120px; margin: 0 auto 15px; }
+        .avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #cc0000; object-fit: cover; }
+        .upload-label { position: absolute; bottom: 0; right: 0; background: #cc0000; padding: 8px; border-radius: 50%; cursor: pointer; font-size: 12px; }
+        .name { font-size: 24px; font-weight: bold; color: #cc0000; margin-bottom: 5px; }
+        .status-text { color: #999; margin-bottom: 20px; display: block; }
+        input[type="text"] { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
+        .btn-save { background: #cc0000; color: white; }
+        .btn-back { background: #333; color: white; }
+        #fileInput { display: none; }
+        .loading-overlay { display: none; color: gold; font-size: 12px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img id="uAvatar" class="avatar" src="">
+        <div class="avatar-wrapper">
+            <img id="uAvatar" class="avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=user">
+            <label for="fileInput" class="upload-label">📷</label>
+            <input type="file" id="fileInput" accept="image/*" onchange="uploadImage()">
+        </div>
+        
+        <div id="uploadStatus" class="loading-overlay">იტვირთება ფოტო...</div>
+        
         <div id="uName" class="name">იტვირთება...</div>
-        <div id="uRole" class="role"></div>
-        <div id="uStatus" class="status"></div>
+        <div id="uRole" style="color: gold; font-size: 13px; margin-bottom: 10px;"></div>
+        <span id="uStatus" class="status-text"></span>
 
-        <div id="editBox">
-            <input type="text" id="newStatus" placeholder="ახალი სტატუსი...">
-            <input type="text" id="newAvatar" placeholder="ფოტოს ლინკი (URL)...">
-            <button class="btn" onclick="updateProfile()">განახლება</button>
-        </div>
-
-        <div id="adminPanel" class="admin-panel">
-            <h4 style="color: gold;">🛡️ ადმინ პანელი</h4>
-            <input type="text" id="targetUserId" placeholder="მომხმარებლის ID">
-            <button class="btn" style="background:orange;" onclick="setRole('admin')">ადმინის მიცემა</button>
-            <button class="btn" style="background:gray;" onclick="setRole('user')">როლის ჩახსნა</button>
-        </div>
-
-        <button class="btn" style="background:#333;" onclick="window.location.href='home.html'">← უკან ჩატში</button>
+        <input type="text" id="newStatus" placeholder="შეცვალე სტატუსი...">
+        <button class="btn btn-save" onclick="updateStatus()">სტატუსის შენახვა</button>
+        <button class="btn btn-back" onclick="window.location.href='home.html'">უკან ჩატში</button>
     </div>
 
     <script>
@@ -45,7 +45,6 @@
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         let myId = "";
-        let myRole = "";
 
         async function init() {
             const { data: { user } } = await supabase.auth.getUser();
@@ -54,37 +53,53 @@
 
             const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
             if (p) {
-                myRole = p.role;
                 document.getElementById('uName').innerText = p.username || "მომხმარებელი";
                 document.getElementById('uStatus').innerText = p.status || "სტატუსი არ არის";
-                document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : (p.role === 'admin' ? '🛡️ ადმინისტრატორი' : '👤 წევრი');
-                document.getElementById('uAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username}`;
-                
-                if (p.role === 'owner') {
-                    document.getElementById('adminPanel').style.display = 'block';
-                }
+                document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : '👤 წევრი';
+                if (p.avatar_url) document.getElementById('uAvatar').src = p.avatar_url;
             }
         }
 
-        async function updateProfile() {
-            const status = document.getElementById('newStatus').value;
-            const avatar = document.getElementById('newAvatar').value;
-            const updates = {};
-            if (status) updates.status = status;
-            if (avatar) updates.avatar_url = avatar;
+        async function uploadImage() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) return;
 
-            const { error } = await supabase.from('profiles').update(updates).eq('id', myId);
-            if (!error) location.reload();
-            else alert("შეცდომა!");
+            document.getElementById('uploadStatus').style.display = 'block';
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${myId}-${Math.random()}.${fileExt}`;
+            const filePath = `public/${fileName}`;
+
+            // 1. ფოტოს ატვირთვა Storage-ში
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                alert("ატვირთვის შეცდომა: " + uploadError.message);
+                return;
+            }
+
+            // 2. ფოტოს საჯარო ლინკის აღება
+            const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const publicUrl = data.publicUrl;
+
+            // 3. პროფილის განახლება ბაზაში
+            await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', myId);
+            
+            document.getElementById('uAvatar').src = publicUrl;
+            document.getElementById('uploadStatus').style.display = 'none';
+            alert("ფოტო განახლდა!");
         }
 
-        async function setRole(newRole) {
-            const targetId = document.getElementById('targetUserId').value;
-            if (!targetId) return alert("შეიყვანე იუზერის ID!");
-            
-            const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', targetId);
-            if (!error) alert("როლი შეიცვალა!");
-            else alert("შეცდომა!");
+        async function updateStatus() {
+            const status = document.getElementById('newStatus').value;
+            if (!status) return;
+            const { error } = await supabase.from('profiles').update({ status: status }).eq('id', myId);
+            if (!error) {
+                document.getElementById('uStatus').innerText = status;
+                alert("სტატუსი შეიცვალა!");
+            }
         }
 
         init();
