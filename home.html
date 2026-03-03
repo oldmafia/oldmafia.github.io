@@ -93,9 +93,8 @@
                 myNick = user.user_metadata.nickname || 'Guest';
             }
 
-            // აი აქ არის შენი "ჯადოსნური" ხაზი!
-            // თუ შენი მეილია, სახელი ავტომატურად ხდება აბუ და როლი - Owner
-            if (user.email === 'tojina@gmail.com') {
+            // შენი პრივილეგია:
+            if (user.email && user.email.toLowerCase() === 'to222ji@gmail.com') {
                 myNick = 'abu007';
                 myRole = 'owner';
             }
@@ -113,11 +112,10 @@
             list.innerHTML = '';
 
             msgs?.forEach(msg => {
-                // მესიჯებშიც რომ გამოჩნდეს გვირგვინი აბუსთვის
                 const isOwner = (msg.username === 'abu007');
                 const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
-                // წაშლის უფლება მხოლოდ შენ გაქვს (რადგან myRole === 'owner')
+                // მხოლოდ შენ (owner-ს) გიჩანს წაშლის ღილაკი
                 const canDelete = (myRole === 'owner');
                 const delBtn = canDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
 
@@ -150,9 +148,8 @@
         }
 
         async function del(id) {
-            if (!confirm("წავშალოთ?")) return;
+            if (!confirm("წავშალოთ შეტყობინება?")) return;
             await supabaseClient.from('messages').delete().eq('id', id);
-            loadMsgs();
         }
 
         function changeRoom(name, icon) {
