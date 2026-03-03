@@ -7,94 +7,73 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root { --main-red: #cc0000; --dark-bg: #000; --panel-bg: #0b0b0b; }
-        body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; }
-        .card { background: var(--panel-bg); padding: 40px; border-radius: 25px; border: 1px solid #1a1a1a; width: 320px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.9); position: relative; }
-        .avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--main-red); margin-bottom: 15px; object-fit: cover; background: #111; }
-        .username { font-size: 22px; font-weight: bold; color: white; margin-bottom: 10px; }
-        .role { color: gold; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; }
-        .status { color: #777; font-style: italic; margin-bottom: 25px; font-size: 14px; }
-        .back-btn { display: inline-block; color: #444; text-decoration: none; font-size: 13px; margin-top: 20px; }
-        #debug { color: #ff4444; font-size: 10px; margin-top: 10px; opacity: 0.5; }
-        #editSection { display: none; border-top: 1px solid #1a1a1a; padding-top: 20px; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; background: #000; border: 1px solid #222; color: white; border-radius: 10px; }
-        .save-btn { width: 100%; padding: 10px; background: var(--main-red); color: white; border: none; border-radius: 10px; cursor: pointer; }
+        body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: var(--panel-bg); padding: 40px; border-radius: 25px; border: 1px solid #1a1a1a; width: 320px; text-align: center; }
+        .avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--main-red); margin-bottom: 15px; }
+        .username { font-size: 22px; font-weight: bold; color: white; margin-bottom: 5px; }
+        .role { color: gold; font-size: 11px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
+        .status { color: #888; font-style: italic; margin-bottom: 25px; }
+        #editBox { display: none; border-top: 1px solid #222; padding-top: 20px; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; }
+        .btn { width: 100%; padding: 10px; background: var(--main-red); color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .back { display: block; margin-top: 20px; color: #555; text-decoration: none; font-size: 13px; }
     </style>
 </head>
 <body>
-
-<div class="card">
-    <img id="uAvatar" class="avatar" src="">
-    <div id="uName" class="username">იტვირთება...</div>
-    <div id="uRole" class="role">იტვირთება...</div>
-    <div id="uStatus" class="status"></div>
-
-    <div id="editSection">
-        <input type="text" id="newNick" placeholder="ნიკი">
-        <input type="text" id="newStatus" placeholder="სტატუსი">
-        <button class="save-btn" onclick="save()">შენახვა</button>
+    <div class="card">
+        <img id="uAvatar" class="avatar" src="">
+        <div id="uName" class="username">იტვირთება...</div>
+        <div id="uRole" class="role"></div>
+        <div id="uStatus" class="status"></div>
+        <div id="editBox">
+            <input type="text" id="inNick" placeholder="ახალი ნიკი">
+            <input type="text" id="inStatus" placeholder="ახალი სტატუსი">
+            <button class="btn" onclick="save()">განახლება</button>
+        </div>
+        <a href="home.html" class="back">← უკან</a>
     </div>
 
-    <a href="home.html" class="back-btn">← უკან ჩატში</a>
-    <div id="debug"></div>
-</div>
+    <script>
+        const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-<script>
-    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
-    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    async function init() {
-        const debug = document.getElementById('debug');
-        try {
+        async function init() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
             const params = new URLSearchParams(window.location.search);
-            let tid = params.get('id');
+            let tid = params.get('id') || user.id;
 
-            debug.innerText = "ვეძებ ID-ს: " + (tid || "ჩემი პროფილი");
-
-            // თუ ID არ არის, ვიყენებთ შესული იუზერის ID-ს
-            if (!tid || tid === "null" || tid === "undefined") {
-                tid = user.id;
+            let { data: p } = await supabase.from('profiles').select('*').eq('id', tid).maybeSingle();
+            
+            if (!p && tid === user.id) {
+                const { data: newP } = await supabase.from('profiles').insert([{ id: user.id, username: user.email.split('@')[0], role: 'user' }]).select().single();
+                p = newP;
             }
 
-            const { data: p, error } = await supabase.from('profiles').select('*').eq('id', tid).maybeSingle();
+            if (!p) { document.getElementById('uName').innerText = "არ მოიძებნა"; return; }
 
-            if (error) throw error;
-
-            if (!p) {
-                document.getElementById('uName').innerText = "არ მოიძებნა";
-                document.getElementById('uRole').innerText = "";
-                debug.innerText += " | ბაზაში ვერ ვიპოვე ეს ID";
-                return;
-            }
-
-            // მონაცემების გამოტანა
-            document.getElementById('uName').innerText = p.username || "უცნობი";
+            document.getElementById('uName').innerText = p.username;
             document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : '👤 მომხმარებელი';
-            document.getElementById('uStatus').innerText = p.status || "";
-            document.getElementById('uAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username || 'user'}`;
+            document.getElementById('uStatus').innerText = p.status || "სტატუსი ცარიელია";
+            document.getElementById('uAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username}`;
 
             if (tid === user.id) {
-                document.getElementById('editSection').style.display = 'block';
-                document.getElementById('newNick').value = p.username || "";
-                document.getElementById('newStatus').value = p.status || "";
+                document.getElementById('editBox').style.display = 'block';
+                document.getElementById('inNick').value = p.username;
+                document.getElementById('inStatus').value = p.status || "";
             }
-        } catch (err) {
-            debug.innerText = "შეცდომა: " + err.message;
         }
-    }
 
-    async function save() {
-        const { data: { user } } = await supabase.auth.getUser();
-        const nick = document.getElementById('newNick').value;
-        const stat = document.getElementById('newStatus').value;
-        await supabase.from('profiles').update({ username: nick, status: stat }).eq('id', user.id);
-        location.reload();
-    }
-
-    init();
-</script>
+        async function save() {
+            const { data: { user } } = await supabase.auth.getUser();
+            const nick = document.getElementById('inNick').value;
+            const stat = document.getElementById('inStatus').value;
+            await supabase.from('profiles').update({ username: nick, status: stat }).eq('id', user.id);
+            location.reload();
+        }
+        init();
+    </script>
 </body>
 </html>
