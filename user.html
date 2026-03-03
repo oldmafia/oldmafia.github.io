@@ -26,7 +26,7 @@
         <div id="uStatus" class="status"></div>
         
         <div id="ownerButtons" style="display:none;">
-            <button class="btn" onclick="alert('მალე დაემატება ფოტოს ატვირთვა!')">📷 ფოტოს შეცვლა</button>
+            <button class="btn" onclick="uploadAvatar()">📷 ფოტოს შეცვლა (გალერეა)</button>
             <button class="btn" onclick="editStatus()">✍️ სტატუსის შეცვლა</button>
         </div>
 
@@ -35,6 +35,7 @@
             <button class="btn admin-btn" onclick="setRole('admin')">ადმინის მიცემა</button>
             <button class="btn admin-btn" onclick="setRole('user')">როლის ჩამორთმევა</button>
             <button class="btn admin-btn" style="background:black;" onclick="banUser(true)">🚫 დაბლოკვა</button>
+            <button class="btn admin-btn" style="background:green;" onclick="banUser(false)">✅ განბლოკვა</button>
         </div>
 
         <button class="btn back-btn" onclick="window.location.href='home.html'">🔙 უკან ჩატში</button>
@@ -65,28 +66,63 @@
                 else if(profile.role === 'admin') roleText = "🛡️ ადმინისტრატორი";
                 document.getElementById('uRole').innerText = roleText;
 
-                // ვამოწმებთ, საკუთარ პროფილზეა თუ სხვისაზე
                 if (currentUser && currentUser.id === userId) {
                     document.getElementById('ownerButtons').style.display = 'block';
                 }
 
-                // ადმინ პანელი მხოლოდ აბუსთვის (შენი მეილით)
                 if (currentUser && currentUser.email === 'to222ji@gmail.com') {
                     document.getElementById('adminPanel').style.display = 'block';
                 }
             }
         }
 
+        // --- ფოტოს ატვირთვა გალერეიდან ---
+        async function uploadAvatar() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const { data: { user } } = await supabase.auth.getUser();
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+                // ატვირთვა Storage-ში
+                const { data, error } = await supabase.storage
+                    .from('avatars')
+                    .upload(fileName, file);
+
+                if (error) {
+                    alert("შეცდომა: " + error.message);
+                    return;
+                }
+
+                const { data: urlData } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(fileName);
+
+                await supabase.from('profiles')
+                    .update({ avatar_url: urlData.publicUrl })
+                    .eq('id', user.id);
+
+                alert("ფოტო განახლდა!");
+                location.reload();
+            };
+            input.click();
+        }
+
         async function editStatus() {
             const newStatus = prompt("ჩაწერე ახალი სტატუსი:");
-            if (newStatus) {
+            if (newStatus !== null) {
                 const { data: { user } } = await supabase.auth.getUser();
                 await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
                 location.reload();
             }
         }
 
-        // ადმინ ფუნქციები
         async function setRole(newRole) {
             const params = new URLSearchParams(window.location.search);
             const targetId = params.get('id');
@@ -101,7 +137,7 @@
             const targetId = params.get('id');
             if(!targetId) return;
             await supabase.from('profiles').update({ is_banned: status }).eq('id', targetId);
-            alert(status ? "მომხმარებელი დაიბლოკა!" : "მომხმარებელი განიბლოკა!");
+            alert(status ? "დაიბლოკა!" : "განიბლოკა!");
         }
 
         loadProfile();
