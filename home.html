@@ -29,7 +29,11 @@
         .msg-box { background: var(--panel-bg); padding: 12px 16px; border-radius: 15px; border: 1px solid #222; max-width: 85%; align-self: flex-start; }
         .msg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
         .msg-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
-        .username { font-weight: bold; font-size: 13px; }
+        
+        /* ნიკის სტილი - დაჭერადი */
+        .username { font-weight: bold; font-size: 13px; cursor: pointer; }
+        .username:hover { text-decoration: underline; }
+        
         .del-btn { color: #444; background: none; border: none; margin-left: auto; cursor: pointer; }
 
         .input-area { padding: 20px; background: #000; border-top: 1px solid #222; display: flex; gap: 12px; }
@@ -66,7 +70,7 @@
             <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
             <div class="user-info" onclick="window.location.href='user.html'">
                 <img id="navAvatar" class="nav-avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
-                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">ჩამოსვლა...</div>
+                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
             </div>
         </div>
         <div id="messageList"></div>
@@ -90,7 +94,6 @@
 
             myData.id = user.id;
 
-            // პროფილის წამოღება (ცალკე Profiles ცხრილიდან)
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             
             if (profile) {
@@ -98,7 +101,6 @@
                 myData.role = profile.role;
                 myData.avatar = profile.avatar_url;
             } else {
-                // თუ პროფილი არ არსებობს, დროებით მეილს ვიყენებთ
                 myData.nick = user.email.split('@')[0];
                 if(user.email === 'to222ji@gmail.com') { myData.nick = 'abu007'; myData.role = 'owner'; }
             }
@@ -108,7 +110,6 @@
 
             loadMsgs();
             
-            // რეალურ დროში განახლება
             supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
         }
 
@@ -120,7 +121,8 @@
 
             if (msgs) {
                 msgs.forEach(msg => {
-                    const isOwner = (msg.username === 'abu007');
+                    // ვამოწმებთ არის თუ არა ავტორი მფლობელი (ან ნიკით, ან როლით თუ გვაქვს ბაზაში)
+                    const isOwner = (msg.username === 'abu007'); 
                     const div = document.createElement('div');
                     div.className = 'msg-box';
                     if(isOwner) div.style.borderLeft = '3px solid gold';
@@ -128,7 +130,11 @@
                     div.innerHTML = `
                         <div class="msg-header">
                             <img src="${msg.avatar_url || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + msg.username}" class="msg-avatar">
-                            <span class="username" style="color:${isOwner ? 'gold' : 'var(--main-red)'}">${isOwner ? '👑' : ''} ${msg.username}</span>
+                            <span class="username" 
+                                  style="color:${isOwner ? 'gold' : 'var(--main-red)'}" 
+                                  onclick="window.location.href='user.html?id=${msg.user_id}'">
+                                ${isOwner ? '👑' : ''} ${msg.username}
+                            </span>
                             ${myData.role === 'owner' ? `<button class="del-btn" onclick="deleteMessage(${msg.id})">✖</button>` : ''}
                         </div>
                         <div class="msg-text">${msg.text}</div>
