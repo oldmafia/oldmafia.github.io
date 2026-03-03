@@ -2,53 +2,51 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>კაიფმანია 🕶️</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --neon-red: #ff0000; --bg: #050505; }
+        :root { --main-red: #cc0000; --dark-bg: #080808; --panel-bg: #121212; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; height: 100vh; display: flex; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #e0e0e0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow: hidden; }
         
-        /* გვერდითა მენიუ */
-        .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s ease; z-index: 1000; }
-        .sidebar-header { padding: 25px; font-size: 24px; font-weight: bold; text-align: center; color: var(--neon-red); border-bottom: 1px solid #1a1a1a; }
-        
-        .menu-items { flex-grow: 1; overflow-y: auto; padding: 10px; scrollbar-width: thin; scrollbar-color: #222 transparent; }
-        .menu-item { padding: 12px 18px; margin: 4px 0; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #888; transition: 0.3s; font-size: 14px; }
-        .menu-item:hover { background: rgba(255, 0, 0, 0.05); color: #fff; transform: translateX(5px); }
-        .menu-item.active { background: rgba(255, 0, 0, 0.1); color: #fff; border-left: 3px solid var(--neon-red); }
+        /* მენიუს დიზაინი */
+        .sidebar { width: 260px; min-width: 260px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
+        .sidebar-header { padding: 20px; font-size: 20px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
+        .menu-items { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .menu-item { padding: 10px 15px; margin: 2px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #999; font-size: 14px; transition: 0.2s; }
+        .menu-item:hover { background: #111; color: #fff; }
+        .menu-item.active { background: #1a1a1a; color: var(--main-red); font-weight: bold; }
 
-        /* მობილურის ადაპტაცია */
+        /* მობილურზე მენიუს დამალვა */
         @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -280px; height: 100%; }
-            .sidebar.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.7); }
+            .sidebar { position: fixed; left: -260px; height: 100%; }
+            .sidebar.open { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
         }
 
-        /* მთავარი კონტენტი */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
-        .top-nav { height: 65px; background: rgba(10, 10, 10, 0.9); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #1a1a1a; backdrop-filter: blur(10px); }
+        /* მთავარი არე */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--dark-bg); }
+        .top-nav { height: 55px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #1a1a1a; }
+        .menu-btn { background: none; border: 1px solid #333; color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; display: none; }
+        @media (max-width: 768px) { .menu-btn { display: block; } }
+
+        /* მესიჯების სტილი */
+        #messageList { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg-container { display: flex; gap: 10px; max-width: 95%; align-items: flex-start; }
+        .avatar { width: 32px; height: 32px; border-radius: 8px; background: #1a1a1a; border: 1px solid #222; flex-shrink: 0; }
+        .msg-info { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+        .username { color: var(--main-red); font-weight: bold; font-size: 13px; }
+        .owner-tag { color: #888; font-size: 10px; font-weight: normal; }
+        .timestamp { color: #444; font-size: 10px; }
+        .msg-bubble { background: var(--panel-bg); padding: 10px 14px; border-radius: 0 12px 12px 12px; font-size: 14px; color: #ccc; border: 1px solid #1a1a1a; line-height: 1.4; word-break: break-word; }
         
-        .nav-left { display: flex; align-items: center; gap: 15px; }
-        .menu-toggle { display: none; background: none; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
-        @media (max-width: 768px) { .menu-toggle { display: block; } }
+        .delete-btn { color: #444; font-size: 10px; cursor: pointer; margin-left: 10px; }
+        .delete-btn:hover { color: #ff0000; }
 
-        #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg-container { display: flex; gap: 12px; max-width: 90%; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .username { color: var(--neon-red); font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 8px; }
-        .timestamp { color: #444; font-size: 10px; font-weight: normal; }
-        .msg-bubble { background: #0d0d0d; padding: 12px 16px; border-radius: 0 18px 18px 18px; border: 1px solid #1a1a1a; margin-top: 5px; font-size: 14px; line-height: 1.5; color: #ddd; }
-        
-        .delete-btn { color: #ff4444; font-size: 11px; cursor: pointer; margin-left: 10px; font-weight: bold; visibility: hidden; }
-        .msg-container:hover .delete-btn { visibility: visible; }
-
-        /* წერის ზოლი */
-        .input-area { padding: 20px; background: #080808; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
-        input { flex-grow: 1; padding: 14px; background: #111; border: 1px solid #222; color: white; border-radius: 12px; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--neon-red); }
-        .send-btn { background: var(--neon-red); color: white; border: none; padding: 0 25px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        /* ინპუტი */
+        .input-area { padding: 15px; background: #000; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
+        input { flex-grow: 1; padding: 12px; background: #0a0a0a; border: 1px solid #222; color: #fff; border-radius: 8px; outline: none; font-size: 14px; }
+        .send-btn { background: var(--main-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -56,7 +54,7 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">კაიფმანია 🕶️</div>
         <div class="menu-items">
-            <div class="menu-item active" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
+            <div class="menu-item" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
             <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 ვიპ საუბრები</div>
             <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
             <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 შიფროგრამა</div>
@@ -67,25 +65,23 @@
             <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 ნარდი</div>
             <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 მუსიკა</div>
             <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 იუმორი</div>
-            <div class="menu-item" style="color: gold; font-weight: bold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
+            <div class="menu-item" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
             <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 დახმარება</div>
             <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ ფორუმი</div>
-            <div class="menu-item" style="color: #ff4444; border-top: 1px solid #1a1a1a; margin-top: 15px; font-weight: bold;" onclick="logout()">🚪 გასვლა</div>
+            <div class="menu-item" style="color: #ff4444; border-top: 1px solid #1a1a1a; margin-top: 10px;" onclick="logout()">🚪 გასვლა</div>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-nav">
-            <div class="nav-left">
-                <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-                <div id="roomTitle" style="font-weight: bold; font-size: 15px;">💬 ზოგადი ჩატი</div>
-            </div>
-            <div id="userDisplay" style="color:var(--neon-red); font-weight:bold; font-size: 14px;">...</div>
+            <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+            <div id="roomTitle" style="font-size: 14px;">💬 ზოგადი ჩატი</div>
+            <div id="userDisplay" style="color:var(--main-red); font-size: 13px; font-weight: bold;">...</div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button class="send-btn" onclick="sendMessage()">გაგზავნა</button>
+            <input type="text" id="msgInput" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
     </div>
 
@@ -96,7 +92,7 @@
 
         let currentRoom = 'ზოგადი ჩატი';
         let currentUser = null;
-        let myNick = "";
+        let myNick = "abu007";
         let myRole = "user";
 
         async function init() {
@@ -105,12 +101,9 @@
             currentUser = user;
 
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            myNick = profile?.username || "abu007";
-            myRole = profile?.role || 'user';
+            if(profile) { myNick = profile.username; myRole = profile.role; }
             
-            const displayArea = document.getElementById('userDisplay');
-            displayArea.innerHTML = (myRole === 'owner') ? `<span style="color: gold;">👑 დამფუძნებელი:</span> ${myNick}` : myNick;
-
+            document.getElementById('userDisplay').innerHTML = (myRole === 'owner') ? `👑 ${myNick}` : myNick;
             loadMessages();
             subscribeToMessages();
         }
@@ -126,17 +119,18 @@
         function renderMessage(msg) {
             const list = document.getElementById('messageList');
             const time = new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'});
-            const isOwner = (msg.username === 'abu007');
+            const isMe = (msg.username === 'abu007');
             const canDelete = (myRole === 'owner' || msg.user_id === currentUser.id);
 
             const div = document.createElement('div');
             div.className = 'msg-container';
             div.id = `msg-${msg.id}`;
             div.innerHTML = `
-                <div style="width:38px; height:38px; border-radius:12px; border:1px solid ${isOwner ? 'gold' : '#222'}; background:#111; flex-shrink:0;"></div>
-                <div style="flex-grow: 1;">
-                    <div class="username">
-                        ${msg.username} ${isOwner ? '<span style="color: gold; font-size:9px;">[დამფუძნებელი]</span>' : ''}
+                <div class="avatar"></div>
+                <div>
+                    <div class="msg-info">
+                        <span class="username">${msg.username}</span>
+                        ${isMe ? '<span class="owner-tag">👑</span>' : ''}
                         <span class="timestamp">${time}</span>
                         ${canDelete ? `<span class="delete-btn" onclick="deleteMsg(${msg.id})">წაშლა</span>` : ''}
                     </div>
@@ -149,20 +143,20 @@
 
         async function deleteMsg(id) {
             const { error } = await supabaseClient.from('messages').delete().eq('id', id);
-            if (error) {
-                alert("წაშლა ვერ მოხერხდა. დარწმუნდი რომ SQL გაუშვი Supabase-ში.");
-            }
+            if(error) alert("ვერ წაიშალა. SQL-ში Policy შეამოწმე.");
         }
 
         async function sendMessage() {
             const input = document.getElementById('msgInput');
-            if (!input.value.trim()) return;
-            await supabaseClient.from('messages').insert([{
+            const val = input.value.trim();
+            if (!val) return;
+            const { error } = await supabaseClient.from('messages').insert([{
                 user_id: currentUser.id,
                 username: myNick,
-                text: input.value,
+                text: val,
                 room_name: currentRoom
             }]);
+            if(error) console.error(error);
             input.value = '';
         }
 
@@ -180,9 +174,7 @@
 
         async function changeRoom(name, icon) {
             currentRoom = name;
-            document.getElementById('roomTitle').innerHTML = `${icon} ${name}`;
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            document.getElementById('roomTitle').innerText = `${icon} ${name}`;
             if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
             loadMessages();
         }
