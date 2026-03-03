@@ -2,68 +2,80 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Old Mafia - Full Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Old Mafia - Final</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff4d4d; --dark: #050505; }
-        body { margin: 0; background: var(--dark); color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: #111; padding: 15px; border-bottom: 2px solid var(--red); display: flex; justify-content: space-between; align-items: center; cursor: pointer; z-index: 2000; }
+        :root { --red: #ff4d4d; --dark: #050505; --gray: #1a1a1a; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--dark); color: white; font-family: sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* ჩამოსაშლელი მენიუ - 2 სვეტად */
+        header { background: #111; padding: 12px 15px; border-bottom: 2px solid var(--red); display: flex; align-items: center; justify-content: space-between; z-index: 2000; }
+        .menu-btn { background: var(--gray); border: 1px solid #333; color: #fff; padding: 8px 15px; border-radius: 20px; font-size: 13px; cursor: pointer; }
+
+        /* მარცხენა მენიუ */
         #menu { 
-            position: absolute; top: -100%; left: 0; width: 100%;
-            background: #0c0c0c; padding: 15px; display: grid; 
-            grid-template-columns: 1fr 1fr; gap: 10px; 
-            border-bottom: 2px solid var(--red); transition: 0.4s; z-index: 1500;
+            position: absolute; top: -1000px; left: 10px; width: 230px; 
+            background: rgba(10, 10, 10, 0.98); border: 1px solid var(--red); 
+            border-radius: 0 0 15px 15px; padding: 10px; transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1500; display: flex; flex-direction: column; gap: 2px;
         }
-        #menu.active { top: 60px; }
+        #menu.open { top: 55px; }
+
         .room-btn { 
-            background: #1a1a1a; padding: 12px; text-align: left; 
-            border-radius: 8px; font-size: 13px; border: 1px solid #333; color: #ccc;
+            background: transparent; padding: 10px 12px; text-align: left; 
+            border-radius: 8px; font-size: 13px; color: #ccc; border: none; 
+            cursor: pointer; width: 100%;
         }
+        .room-btn:active { background: rgba(255, 77, 77, 0.2); color: var(--red); }
+        .sep { height: 1px; background: #222; margin: 5px 0; }
 
+        /* ჩატი */
         #chatBox { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px; border-radius: 15px; background: #1a1a1a; max-width: 85%; }
+        .msg { padding: 10px 14px; border-radius: 18px; background: #1a1a1a; max-width: 85%; align-self: flex-start; }
+        .msg.me { align-self: flex-end; background: var(--red); }
+        .u-name { color: gold; font-size: 10px; display: block; margin-bottom: 3px; }
 
-        .input-bar { padding: 15px; display: flex; gap: 10px; background: #000; }
-        input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #151515; color: white; outline: none; }
+        .input-bar { padding: 12px; display: flex; gap: 10px; background: #0c0c0c; border-top: 1px solid #1a1a1a; }
+        input { flex: 1; padding: 12px 18px; border-radius: 25px; border: 1px solid #333; background: #151515; color: white; outline: none; }
     </style>
 </head>
 <body>
 
-    <header onclick="toggleMenu()">
-        <div style="width: 40px;"></div> <b id="roomName">💬 ზოგადი ჩატი ▾</b>
-        <div style="color:var(--red); font-weight:bold;">OM</div>
+    <header>
+        <div class="menu-btn" onclick="toggleMenu()">🔍 <span id="rTitle">ზოგადი ჩატი</span> ▾</div>
+        <div style="color:var(--red); font-weight:bold;">OLD MAFIA</div>
     </header>
 
     <div id="menu">
-        <div class="room-btn" onclick="setRoom('💬 ზოგადი ჩატი')">💬 ზოგადი</div>
-        <div class="room-btn" onclick="setRoom('💎 VIP საუბრები')">💎 VIP</div>
-        <div class="room-btn" onclick="setRoom('🔍 გამოძიება')">🔍 გამოძიება</div>
-        <div class="room-btn" onclick="setRoom('🔐 შიფროგრამა')">🔐 შიფროგრამა</div>
-        <div class="room-btn" onclick="setRoom('🧩 ვიქტორინა')">🧩 ვიქტორინა</div>
-        <div class="room-btn" onclick="setRoom('⛓️ ჩამოხრჩობანა')">⛓️ ჩამოხრჩობანა</div>
-        <div class="room-btn" onclick="setRoom('🌑 მაფიის ღამე')">🌑 მაფია</div>
-        <div class="room-btn" onclick="setRoom('🎵 მუსიკა')">🎵 მუსიკა</div>
-        <div class="room-btn" onclick="setRoom('😂 იუმორი')">😂 იუმორი</div>
-        <div class="room-btn" onclick="setRoom('🎲 ნარდი')">🎲 ნარდი</div>
-        <div class="room-btn" onclick="setRoom('🃏 ჯოკერი')">🃏 ჯოკერი</div>
-        <div class="room-btn" onclick="setRoom('🛡️ ადმინისტრაცია')">🛡️ ადმინი</div>
-        <div class="room-btn" onclick="alert('დახმარება მალე!')" style="color: #4da6ff;">❓ დახმარება</div>
-        <div class="room-btn" onclick="logout()" style="color: #ff4d4d;">🚪 გასვლა</div>
+        <button class="room-btn" onclick="setR('💬 ზოგადი ჩატი')">💬 ზოგადი ჩატი</button>
+        <button class="room-btn" onclick="setR('💎 VIP საუბრები')">💎 VIP საუბრები</button>
+        <button class="room-btn" onclick="setR('🏛️ ფორუმი')">🏛️ ფორუმი</button>
+        <button class="room-btn" onclick="setR('🔍 გამოძიება')">🔍 გამოძიება</button>
+        <button class="room-btn" onclick="setR('🔐 შიფროგრამა')">🔐 შიფროგრამა</button>
+        <button class="room-btn" onclick="setR('🧩 ვიქტორინა')">🧩 ვიქტორინა</button>
+        <button class="room-btn" onclick="setR('⛓️ ჩამოხრჩობანა')">⛓️ ჩამოხრჩობანა</button>
+        <button class="room-btn" onclick="setR('🌑 მაფიის ღამე')">🌑 მაფიის ღამე</button>
+        <button class="room-btn" onclick="setR('🃏 ჯოკერი')">🃏 ჯოკერი</button>
+        <button class="room-btn" onclick="setR('🎲 ნარდი')">🎲 ნარდი</button>
+        <button class="room-btn" onclick="setR('🎵 მუსიკა')">🎵 მუსიკა</button>
+        <button class="room-btn" onclick="setR('😂 იუმორი')">😂 იუმორი</button>
+        <button class="room-btn" onclick="setR('🛡️ ადმინისტრაცია')">🛡️ ადმინისტრაცია</button>
+        <div class="sep"></div>
+        <button class="room-btn" onclick="alert('დახმარება')" style="color:#4da6ff">❓ დახმარება</button>
+        <button class="room-btn" onclick="logout()" style="color:var(--red)">🚪 გასვლა</button>
     </div>
 
     <div id="chatBox"></div>
 
     <div class="input-bar">
-        <input type="text" id="mIn" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') send()">
-        <button onclick="send()" style="background:var(--red); border:none; color:white; width:45px; height:45px; border-radius:50%;">➤</button>
+        <input type="text" id="mIn" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+        <button onclick="send()" style="background:var(--red); border:none; color:white; width:44px; height:44px; border-radius:50%;">➤</button>
     </div>
 
 <script>
     const sb = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    let room = '💬 ზოგადი ჩატი', myNick = 'User';
+    let room = '💬 ზოგადი ჩატი', myNick = '...';
 
     async function init() {
         const { data: { user } } = await sb.auth.getUser();
@@ -72,21 +84,34 @@
         sb.channel('chat').on('postgres_changes',{event:'*',schema:'public',table:'messages'},()=>load()).subscribe();
     }
 
-    function toggleMenu() { document.getElementById('menu').classList.toggle('active'); }
-
     async function load() {
         const { data } = await sb.from('messages').select('*').eq('room', room).order('created_at', { ascending: true });
-        document.getElementById('chatBox').innerHTML = (data || []).map(m => `<div class="msg"><b>${m.username}:</b> ${m.text}</div>`).join('');
-        document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+        const box = document.getElementById('chatBox');
+        box.innerHTML = (data || []).map(m => `
+            <div class="msg ${m.username === myNick ? 'me' : ''}">
+                <small class="u-name">${m.username}</small>
+                ${m.text}
+            </div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
     }
 
     async function send() {
         const i = document.getElementById('mIn'); if(!i.value.trim()) return;
-        await sb.from('messages').insert([{ text: i.value, room: room, username: myNick }]);
+        const { data: { user } } = await sb.auth.getUser();
+        await sb.from('messages').insert([{ text: i.value, room: room, username: myNick, user_id: user?.id }]);
         i.value = "";
     }
 
-    function setRoom(n) { room = n; document.getElementById('roomName').innerText = n + ' ▾'; toggleMenu(); load(); }
+    function toggleMenu() { document.getElementById('menu').classList.toggle('open'); }
+
+    function setR(n) {
+        room = n;
+        document.getElementById('rTitle').innerText = n;
+        toggleMenu(); // არჩევისას იკეცება
+        load();
+    }
+
     async function logout() { await sb.auth.signOut(); location.href="index.html"; }
     init();
 </script>
