@@ -7,19 +7,18 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root { --main-red: #cc0000; --dark-bg: #0b0b0b; --panel-bg: #161616; --text-gray: #999; }
-        * { box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        * { box-sizing: border-box; font-family: sans-serif; }
         body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #ddd; overflow: hidden; }
         
         /* Sidebar */
         .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s; }
-        .sidebar-header { padding: 25px; font-size: 20px; font-weight: bold; text-align: center; color: var(--main-red); letter-spacing: 1px; }
-        .menu-item { padding: 12px 20px; margin: 2px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-gray); font-size: 14px; transition: 0.2s; }
-        .menu-item:hover { background: #111; color: #fff; }
+        .sidebar-header { padding: 25px; font-size: 20px; font-weight: bold; text-align: center; color: var(--main-red); }
+        .menu-item { padding: 12px 20px; margin: 2px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-gray); font-size: 14px; }
         .menu-item.active { background: #1a1a1a; color: var(--main-red); font-weight: bold; border-left: 3px solid var(--main-red); }
 
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -280px; top: 0; height: 100%; z-index: 1000; }
-            .sidebar.open { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+            .sidebar.open { left: 0; }
         }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--dark-bg); }
@@ -27,23 +26,19 @@
         .menu-btn { font-size: 22px; background: none; border: none; color: var(--main-red); cursor: pointer; display: none; }
         @media (max-width: 768px) { .menu-btn { display: block; } }
 
-        .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; }
+        .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .nav-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #333; object-fit: cover; }
 
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg-box { background: var(--panel-bg); padding: 12px 16px; border-radius: 15px; border: 1px solid #222; max-width: 85%; align-self: flex-start; }
         .msg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #222; }
+        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
         .username { color: var(--main-red); font-weight: bold; font-size: 13px; }
-        
-        .del-btn { color: #444; font-size: 16px; background: none; border: none; margin-left: auto; cursor: pointer; }
-        .del-btn:hover { color: #ff4444; }
-
-        .msg-text { font-size: 15px; color: #eee; line-height: 1.4; word-break: break-word; }
+        .del-btn { color: #444; background: none; border: none; margin-left: auto; cursor: pointer; }
 
         .input-area { padding: 20px; background: #000; border-top: 1px solid #222; display: flex; gap: 12px; }
         input { flex-grow: 1; padding: 14px 20px; background: #111; border: 1px solid #333; color: #fff; border-radius: 25px; outline: none; }
-        .send-btn { background: var(--main-red); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+        .send-btn { background: var(--main-red); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -73,9 +68,9 @@
         <div class="top-nav">
             <button class="menu-btn" onclick="toggleMenu()">☰</button>
             <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
-            <div class="user-info" onclick="window.location.href='user.html'" style="cursor: pointer;">
-                <img id="navAvatar" class="nav-avatar" src="">
-                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">...</div>
+            <div class="user-info" onclick="window.location.href='user.html'">
+                <img id="navAvatar" class="nav-avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
+                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
             </div>
         </div>
         <div id="messageList"></div>
@@ -91,26 +86,24 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let myData = { id: '', nick: '', avatar: '', role: 'user' };
+        let myData = { id: '', nick: 'Guest', avatar: '', role: 'user' };
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
+            myData.id = user.id;
 
             let { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             
             if (!profile) {
                 const isOwner = (user.email === 'to222ji@gmail.com');
                 const autoNick = isOwner ? 'abu007' : user.email.split('@')[0];
-                const { data: newProf } = await supabaseClient.from('profiles').insert([
-                    { id: user.id, username: autoNick, role: isOwner ? 'owner' : 'user' }
-                ]).select().single();
+                const { data: newProf } = await supabaseClient.from('profiles').upsert([{ id: user.id, username: autoNick, role: isOwner ? 'owner' : 'user' }]).select().single();
                 profile = newProf;
             }
 
-            myData.id = user.id;
-            myData.role = profile.role;
             myData.nick = profile.username;
+            myData.role = profile.role;
             myData.avatar = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${myData.nick}`;
 
             document.getElementById('userDisplay').innerHTML = (myData.role === 'owner') ? `👑 ${myData.nick}` : myData.nick;
@@ -121,29 +114,24 @@
         }
 
         async function loadMsgs() {
-            const { data: msgs } = await supabaseClient
-                .from('messages')
-                .select('*, profiles:user_id(username, avatar_url, role)')
-                .eq('room_name', currentRoom)
-                .order('created_at', { ascending: true });
+            // მარტივი წამოღება Profiles-ის გარეშე, რომ არ გაიჭედოს
+            const { data: msgs, error } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+            if (error) return;
 
             const list = document.getElementById('messageList');
             list.innerHTML = '';
 
-            msgs?.forEach(msg => {
-                // აქ გავასწორე: თუ პროფილის მონაცემები არ არის, ძველ მესიჯებში რაც წერია იმას იღებს
-                const nick = msg.profiles?.username || msg.username || 'Guest';
-                const ava = msg.profiles?.avatar_url || msg.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${nick}`;
-                const isOwner = (msg.profiles?.role === 'owner' || nick === 'abu007');
+            msgs.forEach(msg => {
+                const isOwner = (msg.username === 'abu007');
+                const ava = msg.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.username}`;
 
                 const div = document.createElement('div');
                 div.className = 'msg-box';
                 if(isOwner) div.style.borderLeft = '3px solid gold';
-                
                 div.innerHTML = `
                     <div class="msg-header">
                         <img src="${ava}" class="msg-avatar">
-                        <span class="username" style="color:${isOwner ? 'gold' : 'var(--main-red)'}">${isOwner ? '👑' : ''} ${nick}</span>
+                        <span class="username">${isOwner ? '👑' : ''} ${msg.username}</span>
                         ${myData.role === 'owner' ? `<button class="del-btn" onclick="deleteMessage(${msg.id})">✖</button>` : ''}
                     </div>
                     <div class="msg-text">${msg.text}</div>
@@ -153,24 +141,26 @@
             list.scrollTop = list.scrollHeight;
         }
 
-        async function deleteMessage(id) {
-            if(!confirm("წაშლა?")) return;
-            await supabaseClient.from('messages').delete().eq('id', id);
-        }
-
         async function send() {
             const input = document.getElementById('msgInput');
             const val = input.value.trim();
             if (!val) return;
 
-            await supabaseClient.from('messages').insert([{ 
+            const { error } = await supabaseClient.from('messages').insert([{ 
                 user_id: myData.id, 
                 username: myData.nick, 
                 text: val, 
                 room_name: currentRoom, 
                 avatar_url: myData.avatar 
             }]);
+            
+            if (error) alert("ვერ გაიგზავნა: " + error.message);
             input.value = '';
+        }
+
+        async function deleteMessage(id) {
+            await supabaseClient.from('messages').delete().eq('id', id);
+            loadMsgs();
         }
 
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
@@ -179,7 +169,8 @@
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            const items = document.querySelectorAll('.menu-item');
+            for (let item of items) { if(item.innerText.includes(name)) item.classList.add('active'); }
             if(window.innerWidth <= 768) toggleMenu();
             loadMsgs();
         }
