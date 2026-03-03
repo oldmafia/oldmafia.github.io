@@ -6,42 +6,42 @@
     <title>ჩემი პროფილი 👤</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #080808; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .profile-card { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .avatar-preview { width: 120px; height: 120px; background: #222; border-radius: 50%; margin: 0 auto 20px; border: 2px solid var(--main-red, #cc0000); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        body { background: #050505; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .profile-card { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .avatar-preview { width: 110px; height: 110px; background: #222; border-radius: 50%; margin: 0 auto 15px; border: 3px solid #cc0000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
-        h2 { margin: 10px 0; color: #fff; }
-        .status-text { color: #888; font-style: italic; margin-bottom: 20px; display: block; }
-        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; outline: none; box-sizing: border-box; }
-        input[type="file"] { margin: 15px 0; font-size: 13px; color: #888; }
-        .btn-save { background: #cc0000; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        h2 { margin: 10px 0; font-size: 22px; color: #fff; }
+        .status-text { color: #888; font-size: 14px; margin-bottom: 20px; display: block; min-height: 18px; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
+        input[type="file"] { margin: 15px 0; font-size: 12px; color: #666; width: 100%; }
+        .btn-save { background: #cc0000; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
         .btn-save:hover { background: #ff0000; }
-        #msg { font-size: 13px; margin-top: 10px; color: gold; }
-        .back-link { display: block; margin-top: 20px; color: #555; text-decoration: none; font-size: 14px; }
+        #msg { font-size: 12px; margin-top: 12px; color: gold; }
+        .back-btn { display: block; margin-top: 20px; color: #666; text-decoration: none; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div class="profile-card">
-        <div class="avatar-preview" id="avatarBox">
-            <img id="currentAvatar" src="https://via.placeholder.com/120?text=👤" alt="Avatar">
+        <div class="avatar-preview">
+            <img id="currentAvatar" src="https://via.placeholder.com/110?text=👤" alt="Avatar">
         </div>
         
         <h2 id="displayNick">იტვირთება...</h2>
-        <span id="displayStatus" class="status-text">სტატუსი არ არის</span>
+        <span id="displayStatus" class="status-text">...</span>
 
-        <hr style="border: 0; border-top: 1px solid #222; margin: 20px 0;">
+        <div style="text-align: left; margin-top: 20px;">
+            <label style="font-size: 12px; color: #555;">აირჩიე ფოტო გალერეიდან:</label>
+            <input type="file" id="fileInput" accept="image/*">
 
-        <label style="font-size: 13px; color: #666; float: left;">შეცვალე ფოტო გალერეიდან:</label>
-        <input type="file" id="fileInput" accept="image/*">
+            <label style="font-size: 12px; color: #555;">შენი სტატუსი:</label>
+            <input type="text" id="statusInput" placeholder="რას ფიქრობ?">
+        </div>
 
-        <label style="font-size: 13px; color: #666; float: left;">შეცვალე სტატუსი:</label>
-        <input type="text" id="statusInput" placeholder="რას ფიქრობ?">
-
-        <button class="btn-save" onclick="saveProfile()">მონაცემების განახლება</button>
+        <button class="btn-save" onclick="saveProfile()">განახლება ✅</button>
         <p id="msg"></p>
 
-        <a href="home.html" class="back-link">⬅️ ჩატში დაბრუნება</a>
+        <a href="home.html" class="back-btn">⬅️ ჩატში დაბრუნება</a>
     </div>
 
     <script>
@@ -51,7 +51,6 @@
 
         let currentUser = null;
 
-        // 1. მონაცემების ჩატვირთვა
         async function loadProfile() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) {
@@ -60,10 +59,21 @@
             }
             currentUser = user;
 
-            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            // ვეძებთ პროფილს ბაზაში
+            let { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             
+            // თუ პროფილი არ არსებობს, შევქმნათ ახალი ჩანაწერი ავტომატურად
+            if (!profile) {
+                const tempNick = user.email.split('@')[0];
+                const { data: newProf } = await supabaseClient.from('profiles')
+                    .insert([{ id: user.id, username: tempNick, role: 'user' }])
+                    .select().single();
+                profile = newProf;
+            }
+
+            // მონაცემების გამოჩენა
             if (profile) {
-                document.getElementById('displayNick').innerText = profile.username || "მომხმარებელი";
+                document.getElementById('displayNick').innerText = profile.username;
                 document.getElementById('displayStatus').innerText = profile.status || "სტატუსი ცარიელია";
                 if (profile.avatar_url) {
                     document.getElementById('currentAvatar').src = profile.avatar_url;
@@ -71,45 +81,42 @@
             }
         }
 
-        // 2. შენახვა (ფოტო + სტატუსი)
         async function saveProfile() {
             const file = document.getElementById('fileInput').files[0];
             const newStatus = document.getElementById('statusInput').value;
             const msg = document.getElementById('msg');
-            msg.innerText = "მიმდინარეობს განახლება...";
+            msg.innerText = "მუშავდება...";
 
             let avatarUrl = null;
 
-            // თუ ფოტო აირჩია - ატვირთოს
+            // 1. თუ ფოტო არჩეულია, ატვირთოს Storage-ში
             if (file) {
                 const filePath = `avatars/${currentUser.id}_${Date.now()}.png`;
-                const { error: uploadError } = await supabaseClient.storage
-                    .from('avatars')
-                    .upload(filePath, file, { upsert: true });
+                const { error: upErr } = await supabaseClient.storage
+                    .from('avatars').upload(filePath, file, { upsert: true });
 
-                if (uploadError) {
-                    msg.innerText = "ფოტოს ატვირთვა ვერ მოხერხდა";
+                if (upErr) {
+                    msg.innerText = "ფოტო ვერ აიტვირთა!";
                     return;
                 }
                 const { data } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
                 avatarUrl = data.publicUrl;
             }
 
-            // მონაცემების განახლება ბაზაში
+            // 2. ბაზაში ინფორმაციის განახლება
             const updates = {
                 id: currentUser.id,
-                status: newStatus || document.getElementById('displayStatus').innerText,
-                updated_at: new Date()
+                status: newStatus || document.getElementById('displayStatus').innerText
             };
             if (avatarUrl) updates.avatar_url = avatarUrl;
 
-            const { error } = await supabaseClient.from('profiles').upsert(updates);
+            const { error: dbErr } = await supabaseClient.from('profiles').upsert(updates);
 
-            if (error) {
-                msg.innerText = "შეცდომა შენახვისას";
+            if (dbErr) {
+                msg.innerText = "ბაზაში ვერ შეინახა!";
             } else {
-                msg.innerText = "წარმატებით განახლდა! ✅";
-                setTimeout(() => location.reload(), 1500);
+                msg.innerText = "წარმატებით განახლდა! ✨";
+                setTimeout(() => location.reload(), 1000);
             }
         }
 
