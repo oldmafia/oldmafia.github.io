@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>პროფილი - კაიფმანია</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --main-red: #cc0000; --dark-bg: #0b0b0b; --panel-bg: #161616; }
+        body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .profile-card { background: var(--panel-bg); padding: 30px; border-radius: 25px; border: 1px solid #222; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .avatar-container { position: relative; width: 130px; height: 130px; margin: 0 auto 20px; }
+        #userAvatar { width: 130px; height: 130px; border-radius: 50%; border: 3px solid var(--main-red); object-fit: cover; background: #222; }
+        .upload-btn { position: absolute; bottom: 5px; right: 5px; background: var(--main-red); color: white; border: 2px solid var(--panel-bg); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 22px; font-weight: bold; }
+        h2 { margin: 10px 0 5px; color: #fff; font-size: 24px; }
+        .role-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 11px; background: #222; color: gold; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; border: 1px solid #333; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 11px; color: #555; margin-bottom: 5px; margin-left: 12px; font-weight: bold; }
+        input { width: 100%; padding: 14px 18px; background: #0f0f0f; border: 1px solid #252525; color: #fff; border-radius: 12px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--main-red); }
+        .save-btn { width: 100%; padding: 15px; background: var(--main-red); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; transition: 0.3s; }
+        .save-btn:active { transform: scale(0.98); }
+        .back-link { color: #555; text-decoration: none; font-size: 13px; display: block; margin-top: 20px; transition: 0.2s; }
+        .back-link:hover { color: var(--main-red); }
+        #fileInput { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="profile-card">
+    <div class="avatar-container">
+        <img id="userAvatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">+</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" onchange="uploadPhoto()">
+    
+    <h2 id="displayNick">იტვირთება...</h2>
+    <div id="displayRole" class="role-badge">User</div>
+
+    <div class="input-group">
+        <label>ნიკნეიმი</label>
+        <input type="text" id="newNick" placeholder="შეიყვანე ნიკი">
+    </div>
+
+    <div class="input-group">
+        <label>სტატუსი</label>
+        <input type="text" id="userStatus" placeholder="რას ფიქრობ?">
+    </div>
+
+    <button id="saveBtn" class="save-btn" onclick="updateProfile()">ცვლილებების შენახვა</button>
+    <a href="home.html" class="back-link">← დაბრუნება ჩატში</a>
+</div>
+
+<script>
+    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let userId = "";
+
+    async function loadProfile() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return window.location.href = "index.html";
+        userId = user.id;
+
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
+        
+        const nick = profile?.username || "Guest";
+        const role = (user.email === 'to222ji@gmail.com') ? 'Owner' : (profile?.role || 'User');
+        const avatar = profile?.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${nick}`;
+
+        document.getElementById('displayNick').innerText = (role === 'Owner') ? `👑 ${nick}` : nick;
+        document.getElementById('newNick').value = nick;
+        document.getElementById('userAvatar').src = avatar;
+        document.getElementById('displayRole').innerText = role;
+        document.getElementById('userStatus').value = profile?.status || "";
+    }
+
+    async function updateProfile() {
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "ინახება...";
+        btn.disabled = true;
+
+        const nick = document.getElementById('newNick').value.trim();
+        const status = document.getElementById('userStatus').value.trim();
+
+        const { error } = await supabaseClient.from('profiles').upsert({
+            id: userId,
+            username: nick,
+            status: status,
+            updated_at: new Date()
+        });
+
+        if (error) alert("შეცდომა: " + error.message);
+        else alert("პროფილი წარმატებით განახლდა! ✨");
+        
+        btn.innerText = "ცვლილებების შენახვა";
+        btn.disabled = false;
+        loadProfile();
+    }
+
+    async function uploadPhoto() {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return;
+
+        // შეზღუდვა ზომაზე (მაგალითად 2MB)
+        if (file.size > 2 * 1024 * 1024) return alert("ფაილი ძალიან დიდია (მაქს. 2MB)");
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('avatars')
+            .upload(filePath, file);
+
+        if (uploadError) return alert("ატვირთვა ვერ მოხერხდა: " + uploadError.message);
+
+        const { data } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
+        const publicUrl = data.publicUrl;
+
+        await supabaseClient.from('profiles').upsert({
+            id: userId,
+            avatar_url: publicUrl
+        });
+
+        document.getElementById('userAvatar').src = publicUrl;
+        alert("ფოტო აიტვირთა! ❤️");
+    }
+
+    loadProfile();
+</script>
+</body>
+</html>
