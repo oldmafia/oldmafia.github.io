@@ -9,19 +9,25 @@
         :root { --neon-red: #ff0000; }
         * { box-sizing: border-box; }
         body { margin: 0; height: 100vh; display: flex; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        .sidebar { width: 280px; min-width: 280px; background: #0a0a0a; border-right: 2px solid var(--neon-red); display: flex; flex-direction: column; z-index: 2000; transition: 0.3s; }
-        @media (max-width: 768px) { .sidebar { position: absolute; left: -280px; height: 100%; } .sidebar.open { left: 0; } }
+        
+        .sidebar { width: 280px; min-width: 280px; background: #0a0a0a; border-right: 2px solid var(--neon-red); display: flex; flex-direction: column; z-index: 2000; }
         .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--neon-red); border-bottom: 1px solid #1a1a1a; }
+        
         .menu-items { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .menu-item { padding: 10px 15px; margin: 2px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #bbb; transition: 0.2s; font-size: 13px; border: 1px solid transparent; }
-        .menu-item:hover { background: rgba(255, 0, 0, 0.1); color: #fff; border-color: rgba(255,0,0,0.3); }
+        .menu-item { padding: 10px 15px; margin: 2px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #bbb; transition: 0.2s; font-size: 13px; }
+        .menu-item:hover { background: rgba(255, 0, 0, 0.1); color: #fff; }
+
         .main-content { flex-grow: 1; display: flex; flex-direction: column; background: #000; min-width: 0; }
         .top-nav { height: 60px; background: #0d0d0d; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #1a1a1a; }
+        
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg-container { display: flex; gap: 10px; max-width: 95%; align-items: flex-start; }
+        .msg-container { display: flex; gap: 10px; max-width: 95%; align-items: flex-start; position: relative; }
         .username { color: var(--neon-red); font-weight: bold; font-size: 13px; }
-        .timestamp { color: #555; font-size: 10px; margin-left: 7px; }
+        .timestamp { color: gray; font-size: 10px; margin-left: 7px; }
         .msg-bubble { background: #111; padding: 10px 14px; border-radius: 0 15px 15px 15px; border: 1px solid #222; margin-top: 3px; font-size: 14px; word-wrap: break-word; }
+        
+        .delete-btn { color: #ff4444; font-size: 10px; cursor: pointer; margin-left: 10px; font-weight: bold; }
+
         .input-area { padding: 15px; background: #080808; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
         input { flex-grow: 1; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; outline: none; }
         button.send-btn { background: var(--neon-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
@@ -43,18 +49,17 @@
             <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 9. ნარდი</div>
             <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 10. მუსიკა</div>
             <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 11. იუმორი</div>
-            <div class="menu-item" style="color: gold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ 12. ადმინისტრაცია</div>
+            <div class="menu-item" style="color: gold; font-weight: bold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ 12. ადმინისტრაცია</div>
             <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 13. დახმარება</div>
             <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ 14. ფორუმი</div>
-            <div class="menu-item" style="color: #ff4444; font-weight: bold; border-top: 1px solid #222; margin-top: 10px;" onclick="logout()">🚪 15. გასვლა</div>
+            <div class="menu-item" style="color: #ff4444; border-top: 1px solid #222; margin-top: 10px; font-weight: bold;" onclick="logout()">🚪 15. გასვლა</div>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-nav">
-            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:1px solid red; color:red; cursor:pointer; padding:5px 10px; border-radius:5px;">☰ მენიუ</button>
             <div id="roomTitle">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color:red; font-weight:bold;">იტვირთება...</div>
+            <div id="userDisplay" style="color:red; font-weight:bold;">...</div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
@@ -70,7 +75,8 @@
 
         let currentRoom = 'ზოგადი ჩატი';
         let currentUser = null;
-        let myNick = "სტუმარი";
+        let myNick = "";
+        let myRole = "user";
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
@@ -78,19 +84,18 @@
             currentUser = user;
 
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            myNick = profile ? profile.username : (user.user_metadata.nickname || user.email.split('@')[0]);
-            document.getElementById('userDisplay').innerText = myNick;
+            myNick = profile ? profile.username : user.email.split('@')[0];
+            myRole = profile ? profile.role : 'user';
+            
+            const displayArea = document.getElementById('userDisplay');
+            if (myRole === 'owner') {
+                displayArea.innerHTML = `<span style="color: gold;">👑 დამფუძნებელი:</span> ${myNick}`;
+            } else {
+                displayArea.innerText = myNick;
+            }
 
             loadMessages();
             subscribeToMessages();
-        }
-
-        async function changeRoom(name, icon) {
-            currentRoom = name;
-            document.getElementById('roomTitle').innerHTML = `${icon} ${name}`;
-            document.getElementById('messageList').innerHTML = '';
-            if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
-            loadMessages();
         }
 
         async function loadMessages() {
@@ -103,40 +108,59 @@
 
         function renderMessage(msg) {
             const list = document.getElementById('messageList');
-            const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'}) : '';
-            
+            const time = new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'});
+            const canDelete = (myRole === 'owner' || msg.user_id === currentUser.id);
+            const founderTag = (msg.username === 'abu007') ? '<small style="color: gold; margin-left:5px;">[დამფუძნებელი]</small>' : '';
+
             const div = document.createElement('div');
             div.className = 'msg-container';
+            div.id = `msg-${msg.id}`;
             div.innerHTML = `
                 <div style="width:35px; height:35px; border-radius:50%; border:1px solid red; background:#222;"></div>
                 <div>
-                    <span class="username">${msg.username || 'უცნობი'} <small class="timestamp">${time}</small></span>
-                    <div class="msg-bubble">${msg.text || ''}</div>
+                    <span class="username">${msg.username}${founderTag} <small class="timestamp">${time}</small></span>
+                    ${canDelete ? `<span class="delete-btn" onclick="deleteMsg(${msg.id})">წაშლა</span>` : ''}
+                    <div class="msg-bubble">${msg.text}</div>
                 </div>
             `;
             list.appendChild(div);
             list.scrollTop = list.scrollHeight;
         }
 
+        async function deleteMsg(id) {
+            if(confirm("წავშალოთ მესიჯი?")) {
+                await supabaseClient.from('messages').delete().eq('id', id);
+            }
+        }
+
         async function sendMessage() {
             const input = document.getElementById('msgInput');
-            const val = input.value.trim();
-            if (!val || !currentUser) return;
+            if (!input.value.trim()) return;
             await supabaseClient.from('messages').insert([{
                 user_id: currentUser.id,
                 username: myNick,
-                text: val,
+                text: input.value,
                 room_name: currentRoom
             }]);
             input.value = '';
         }
 
         function subscribeToMessages() {
-            supabaseClient.channel('chat_realtime').on('postgres_changes', { 
-                event: 'INSERT', schema: 'public', table: 'messages' 
-            }, payload => {
+            supabaseClient.channel('chat_realtime')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
                 if (payload.new.room_name === currentRoom) renderMessage(payload.new);
-            }).subscribe();
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, payload => {
+                const el = document.getElementById(`msg-${payload.old.id}`);
+                if (el) el.remove();
+            })
+            .subscribe();
+        }
+
+        async function changeRoom(name, icon) {
+            currentRoom = name;
+            document.getElementById('roomTitle').innerHTML = `${icon} ${name}`;
+            loadMessages();
         }
 
         async function logout() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
