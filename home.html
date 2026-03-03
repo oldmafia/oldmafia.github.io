@@ -117,7 +117,7 @@
             div.innerHTML = `
                 <div style="width:35px; height:35px; border-radius:50%; border:1px solid red; background:#222;"></div>
                 <div>
-                    <span class="username">${msg.username || 'უცნობი'}</span>
+                    <<span class="username">${msg.username || 'უცნობი'} <small style="color:gray; font-size:10px; margin-left:5px;">${new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'})}</small></span>
                     <div class="msg-bubble">${msg.text || ''}</div>
                 </div>
             `;
