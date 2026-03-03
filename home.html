@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია</title>
+    <title>კაიფმანია 🕶️</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root { --neon-red: #ff0000; }
@@ -11,52 +11,50 @@
         body { margin: 0; height: 100vh; display: flex; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         .sidebar { width: 280px; min-width: 280px; background: #0a0a0a; border-right: 2px solid var(--neon-red); display: flex; flex-direction: column; z-index: 2000; transition: 0.3s; }
         @media (max-width: 768px) { .sidebar { position: absolute; left: -280px; height: 100%; } .sidebar.open { left: 0; } }
-        .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; text-shadow: 0 0 15px var(--neon-red); border-bottom: 1px solid #1a1a1a; position: relative; }
-        .close-menu { display: none; position: absolute; right: 15px; top: 20px; cursor: pointer; color: red; font-size: 24px; }
-        @media (max-width: 768px) { .close-menu { display: block; } }
+        .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--neon-red); border-bottom: 1px solid #1a1a1a; }
         .menu-items { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .menu-item { padding: 12px 15px; margin: 4px 0; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #bbb; transition: 0.2s; font-size: 14px; }
-        .menu-item:hover { background: rgba(255, 0, 0, 0.1); color: #fff; }
+        .menu-item { padding: 10px 15px; margin: 2px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #bbb; transition: 0.2s; font-size: 13px; border: 1px solid transparent; }
+        .menu-item:hover { background: rgba(255, 0, 0, 0.1); color: #fff; border-color: rgba(255,0,0,0.3); }
         .main-content { flex-grow: 1; display: flex; flex-direction: column; background: #000; min-width: 0; }
-        .top-nav { height: 65px; background: #0d0d0d; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #1a1a1a; }
+        .top-nav { height: 60px; background: #0d0d0d; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #1a1a1a; }
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .msg-container { display: flex; gap: 10px; max-width: 95%; align-items: flex-start; }
         .username { color: var(--neon-red); font-weight: bold; font-size: 13px; }
+        .timestamp { color: #555; font-size: 10px; margin-left: 7px; }
         .msg-bubble { background: #111; padding: 10px 14px; border-radius: 0 15px 15px 15px; border: 1px solid #222; margin-top: 3px; font-size: 14px; word-wrap: break-word; }
         .input-area { padding: 15px; background: #080808; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
         input { flex-grow: 1; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; outline: none; }
         button.send-btn { background: var(--neon-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .toggle-btn { background: none; border: 1px solid red; color: red; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">კაიფმანია 🕶️ <span class="close-menu" onclick="toggleMenu()">×</span></div>
+        <div class="sidebar-header">კაიფმანია 🕶️</div>
         <div class="menu-items">
-            <div class="menu-item" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
-            <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 ვიპ საუბრები</div>
-            <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
-            <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 შიფროგრამა</div>
-            <div class="menu-item" onclick="changeRoom('ვიქტორინა', '🧠')">🧠 ვიქტორინა</div>
-            <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '💀')">💀 ჩამოხრჩობანა</div>
-            <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">🕵️‍♂️ მაფიის ღამე</div>
-            <div class="menu-item" onclick="changeRoom('ჯოკერი', '🃏')">🃏 ჯოკერი</div>
-            <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 ნარდი</div>
-            <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 მუსიკა</div>
-            <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 იუმორი</div>
-            <div class="menu-item" id="adminBtn" style="display:none; color: gold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
-            <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 დახმარება</div>
-            <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ ფორუმი</div>
-            <div class="menu-item" style="color: #ff4444; margin-top: 20px;" onclick="logout()">🚪 გასვლა</div>
+            <div class="menu-item" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 1. ზოგადი ჩატი</div>
+            <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 2. ვიპ საუბრები</div>
+            <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 3. გამოძიება</div>
+            <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 4. შიფროგრამა</div>
+            <div class="menu-item" onclick="changeRoom('ვიქტორინა', '🧠')">🧠 5. ვიქტორინა</div>
+            <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '💀')">💀 6. ჩამოხრჩობანა</div>
+            <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">🕵️‍♂️ 7. მაფიის ღამე</div>
+            <div class="menu-item" onclick="changeRoom('ჯოკერი', '🃏')">🃏 8. ჯოკერი</div>
+            <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 9. ნარდი</div>
+            <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 10. მუსიკა</div>
+            <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 11. იუმორი</div>
+            <div class="menu-item" style="color: gold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ 12. ადმინისტრაცია</div>
+            <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 13. დახმარება</div>
+            <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ 14. ფორუმი</div>
+            <div class="menu-item" style="color: #ff4444; font-weight: bold; border-top: 1px solid #222; margin-top: 10px;" onclick="logout()">🚪 15. გასვლა</div>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-nav">
-            <button class="toggle-btn" onclick="toggleMenu()">☰ მენიუ</button>
+            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:1px solid red; color:red; cursor:pointer; padding:5px 10px; border-radius:5px;">☰ მენიუ</button>
             <div id="roomTitle">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color:red; font-weight:bold;">...</div>
+            <div id="userDisplay" style="color:red; font-weight:bold;">იტვირთება...</div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
@@ -74,21 +72,14 @@
         let currentUser = null;
         let myNick = "სტუმარი";
 
-        function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
-
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) { window.location.href = "index.html"; return; }
             currentUser = user;
-            
-            // ნიკის დაყენება
+
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             myNick = profile ? profile.username : (user.user_metadata.nickname || user.email.split('@')[0]);
             document.getElementById('userDisplay').innerText = myNick;
-            
-            if (profile && (profile.role === 'owner' || profile.role === 'admin')) {
-                document.getElementById('adminBtn').style.display = 'flex';
-            }
 
             loadMessages();
             subscribeToMessages();
@@ -98,7 +89,7 @@
             currentRoom = name;
             document.getElementById('roomTitle').innerHTML = `${icon} ${name}`;
             document.getElementById('messageList').innerHTML = '';
-            if (window.innerWidth <= 768) toggleMenu();
+            if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
             loadMessages();
         }
 
@@ -112,12 +103,14 @@
 
         function renderMessage(msg) {
             const list = document.getElementById('messageList');
+            const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'}) : '';
+            
             const div = document.createElement('div');
             div.className = 'msg-container';
             div.innerHTML = `
                 <div style="width:35px; height:35px; border-radius:50%; border:1px solid red; background:#222;"></div>
                 <div>
-                    <<span class="username">${msg.username || 'უცნობი'} <small style="color:gray; font-size:10px; margin-left:5px;">${new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'})}</small></span>
+                    <span class="username">${msg.username || 'უცნობი'} <small class="timestamp">${time}</small></span>
                     <div class="msg-bubble">${msg.text || ''}</div>
                 </div>
             `;
@@ -129,14 +122,13 @@
             const input = document.getElementById('msgInput');
             const val = input.value.trim();
             if (!val || !currentUser) return;
-            const { error } = await supabaseClient.from('messages').insert([{
+            await supabaseClient.from('messages').insert([{
                 user_id: currentUser.id,
                 username: myNick,
                 text: val,
                 room_name: currentRoom
             }]);
-            if (error) alert("შეცდომა: " + error.message);
-            else input.value = '';
+            input.value = '';
         }
 
         function subscribeToMessages() {
