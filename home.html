@@ -12,13 +12,17 @@
         
         .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow-y: auto; }
         .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
-        .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; transition: 0.2s; }
-        .menu-item:hover { background: #111; color: #fff; }
+        .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; }
         .menu-item.active { background: #111; color: var(--main-red); border-left: 3px solid var(--main-red); }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
         .top-nav { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         
+        /* პროფილის სტილი ზემოთ */
+        .user-profile-nav { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; transition: 0.3s; }
+        .user-profile-nav:hover { background: #111; }
+        .nav-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--main-red); object-fit: cover; }
+
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .msg-box { background: var(--panel-bg); padding: 10px 15px; border-radius: 12px; border: 1px solid #1a1a1a; max-width: 85%; align-self: flex-start; }
         .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -56,7 +60,6 @@
             <div class="menu-item" style="color: gold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
             <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 დახმარება</div>
             <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ ფორუმი</div>
-            <div class="menu-item" style="color: #44aa44;" onclick="window.location.href='user.html'">👤 ჩემი პროფილი</div>
             <div class="menu-item" style="color: #ff4444;" onclick="logout()">🚪 გასვლა</div>
         </div>
     </div>
@@ -64,7 +67,10 @@
     <div class="main-content">
         <div class="top-nav">
             <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
+            <div class="user-profile-nav" onclick="window.location.href='user.html'">
+                <img id="navAvatar" class="nav-avatar" src="https://via.placeholder.com/32">
+                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
+            </div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
@@ -91,6 +97,7 @@
             if (profile) {
                 myNick = profile.username;
                 myRole = profile.role || 'user';
+                if(profile.avatar_url) document.getElementById('navAvatar').src = profile.avatar_url;
             } else {
                 myNick = user.user_metadata.nickname || 'Guest';
             }
@@ -108,10 +115,7 @@
         }
 
         async function loadMsgs() {
-            const { data: msgs, error } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-            
-            if (error) return;
-
+            const { data: msgs } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
             const list = document.getElementById('messageList');
             list.innerHTML = '';
 
@@ -158,12 +162,9 @@
         function changeRoom(name, icon) {
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
-            
-            const items = document.querySelectorAll('.menu-item');
-            items.forEach(item => {
-                item.classList.remove('active');
-                if(item.innerText.includes(name)) item.classList.add('active');
-            });
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            const target = Array.from(document.querySelectorAll('.menu-item')).find(el => el.innerText.includes(name));
+            if(target) target.classList.add('active');
             loadMsgs();
         }
 
