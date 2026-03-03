@@ -14,27 +14,22 @@
         .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
         .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; }
         .menu-item.active { background: #111; color: var(--main-red); border-left: 3px solid var(--main-red); }
+        .menu-item:hover { background: #080808; color: #fff; }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
         .top-nav { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         
-        .user-profile-nav { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; transition: 0.3s; }
-        .user-profile-nav:hover { background: #111; }
+        .user-profile-nav { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; }
         .nav-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--main-red); object-fit: cover; }
 
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .msg-box { background: var(--panel-bg); padding: 10px 15px; border-radius: 12px; border: 1px solid #1a1a1a; max-width: 85%; align-self: flex-start; }
         .msg-header { display: flex; align-items: center; margin-bottom: 4px; gap: 8px; }
-        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #333; object-fit: cover; }
-        .username { color: var(--main-red); font-weight: bold; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
-        .username:hover { text-decoration: underline; }
+        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        .username { color: var(--main-red); font-weight: bold; font-size: 13px; cursor: pointer; }
         .msg-time { color: #444; font-size: 10px; margin-left: auto; }
-        .msg-text { font-size: 14px; color: #eee; word-break: break-word; padding-left: 36px; }
+        .msg-text { font-size: 14px; color: #eee; word-break: break-word; }
         
-        .crown { color: gold; font-size: 12px; }
-        .del-btn { color: #444; font-size: 11px; cursor: pointer; margin-left: 10px; }
-        .del-btn:hover { color: red; text-decoration: underline; }
-
         .input-area { padding: 15px; background: #000; border-top: 1px solid #1a1a1a; display: flex; gap: 10px; }
         input { flex-grow: 1; padding: 12px; background: #050505; border: 1px solid #222; color: #fff; border-radius: 8px; outline: none; }
         .send-btn { background: var(--main-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
@@ -87,55 +82,76 @@
 
         let currentRoom = 'ზოგადი ჩატი';
         let myNick = ''; 
-        let myRole = 'user';
-        let myAvatar = '';
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            myNick = profile ? profile.username : (user.user_metadata.nickname || 'Guest');
             
-            if (profile) {
-                myNick = profile.username;
-                myRole = profile.role || 'user';
-                myAvatar = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${myNick}`;
-                document.getElementById('navAvatar').src = myAvatar;
-            } else {
-                myNick = user.user_metadata.nickname || 'Guest';
-                myAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${myNick}`;
-            }
+            document.getElementById('userDisplay').innerText = myNick;
+            if (profile?.avatar_url) document.getElementById('navAvatar').src = profile.avatar_url;
 
-            if (user.email && user.email.toLowerCase() === 'to222ji@gmail.com') {
-                myNick = 'abu007';
-                myRole = 'owner';
-            }
-
-            const display = document.getElementById('userDisplay');
-            display.innerHTML = (myRole === 'owner' || myNick === 'abu007') ? `👑 ${myNick}` : myNick;
-            
             loadMsgs();
             supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
         }
 
         async function loadMsgs() {
-            const { data: msgs } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+            const { data: msgs, error } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+            if(error) return console.error(error);
+
             const list = document.getElementById('messageList');
             list.innerHTML = '';
 
             msgs?.forEach(msg => {
-                const isOwner = (msg.username === 'abu007');
                 const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const canDelete = (myRole === 'owner');
-                const delBtn = canDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
-                const userAvatar = msg.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.username}`;
-
+                const avatar = msg.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.username}`;
+                
                 const div = document.createElement('div');
                 div.className = 'msg-box';
                 div.innerHTML = `
                     <div class="msg-header">
-                        <img src="${userAvatar}" class="msg-avatar">
-                        <span class="username" onclick="window.location.href='user.html?id=${msg.user_id}'">
-                            ${isOwner ? '<span class="crown">👑</span>' : ''} ${msg.username}
-                        </span>
-                        <span class="msg-time">${time} ${delBtn}</span>
+                        <img src="${avatar}" class="msg-avatar">
+                        <span class="username" onclick="window.location.href='user.html?id=${msg.user_id}'">${msg.username}</span>
+                        <span class="msg-time">${time}</span>
+                    </div>
+                    <div class="msg-text">${msg.text}</div>
+                `;
+                list.appendChild(div);
+            });
+            list.scrollTop = list.scrollHeight;
+        }
+
+        async function send() {
+            const input = document.getElementById('msgInput');
+            if (!input.value.trim()) return;
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            const { data: profile } = await supabaseClient.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle();
+
+            await supabaseClient.from('messages').insert([{ 
+                username: myNick, 
+                text: input.value, 
+                room_name: currentRoom, 
+                user_id: user.id,
+                avatar_url: profile?.avatar_url || null
+            }]);
+            input.value = '';
+        }
+
+        function changeRoom(name, icon) {
+            currentRoom = name;
+            document.getElementById('roomTitle').innerText = `${icon} ${name}`;
+            document.querySelectorAll('.menu-item').forEach(m => {
+                m.classList.remove('active');
+                if(m.innerText.includes(name)) m.classList.add('active');
+            });
+            loadMsgs();
+        }
+
+        async function logout() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+        init();
+    </script>
+</body>
+</html>
