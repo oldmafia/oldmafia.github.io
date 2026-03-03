@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>ჩემი პროფილი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #080808; color: #ccc; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #121212; border: 1px solid #cc0000; padding: 40px; border-radius: 20px; text-align: center; width: 350px; box-shadow: 0 0 20px rgba(204, 0, 0, 0.2); }
+        .avatar { width: 120px; height: 120px; border-radius: 50%; border: 2px solid #cc0000; margin-bottom: 15px; object-fit: cover; }
+        .nick { color: #cc0000; font-size: 26px; font-weight: bold; margin: 5px 0; }
+        .role { color: gold; font-size: 14px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
+        .status-box { background: #000; padding: 15px; border-radius: 10px; font-style: italic; color: #888; margin-bottom: 25px; border: 1px solid #1a1a1a; }
+        
+        .edit-input { width: 100%; padding: 10px; background: #050505; border: 1px solid #222; color: #fff; border-radius: 8px; margin-bottom: 10px; display: none; }
+        
+        button { background: #cc0000; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        button:hover { background: #ff0000; }
+        .back { background: #222; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img id="uAvatar" class="avatar" src="https://via.placeholder.com/120">
+        <div id="uNick" class="nick">იტვირთება...</div>
+        <div id="uRole" class="role"></div>
+        
+        <div id="statusDisplay" class="status-box">იტვირთება სტატუსი...</div>
+        <input type="text" id="statusInput" class="edit-input" placeholder="ჩაწერე ახალი სტატუსი...">
+        
+        <button id="editBtn" onclick="toggleEdit()">სტატუსის შეცვლა</button>
+        <button id="saveBtn" onclick="saveStatus()" style="display:none;">შენახვა</button>
+        <button class="back" onclick="window.location.href='home.html'">🔙 ჩატში დაბრუნება</button>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function getMe() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return window.location.href = "index.html";
+
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            
+            let finalNick = profile ? profile.username : (user.user_metadata.nickname || "Guest");
+            let finalRole = "მომხმარებელი";
+
+            // აბუსთვის სპეციალური ლოგიკა
+            if (user.email === 'to222ji@gmail.com' || finalNick === 'abu007') {
+                finalNick = 'abu007';
+                finalRole = "👑 დამფუძნებელი";
+            } else if (profile?.role === 'admin') {
+                finalRole = "🛡️ ადმინისტრატორი";
+            }
+
+            document.getElementById('uNick').innerText = finalNick;
+            document.getElementById('uRole').innerText = finalRole;
+            document.getElementById('statusDisplay').innerText = profile?.status || "სტატუსი ცარიელია";
+            document.getElementById('uAvatar').src = profile?.avatar_url || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + finalNick;
+        }
+
+        function toggleEdit() {
+            document.getElementById('statusDisplay').style.display = 'none';
+            document.getElementById('statusInput').style.display = 'block';
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'block';
+            document.getElementById('statusInput').value = document.getElementById('statusDisplay').innerText;
+        }
+
+        async function saveStatus() {
+            const newStatus = document.getElementById('statusInput').value;
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
+
+            if (!error) {
+                document.getElementById('statusDisplay').innerText = newStatus;
+                document.getElementById('statusDisplay').style.display = 'block';
+                document.getElementById('statusInput').style.display = 'none';
+                document.getElementById('editBtn').style.display = 'block';
+                document.getElementById('saveBtn').style.display = 'none';
+            }
+        }
+
+        getMe();
+    </script>
+</body>
+</html>
