@@ -9,7 +9,7 @@
         :root { --main-red: #cc0000; --dark-bg: #000; --panel-bg: #0b0b0b; }
         body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: var(--panel-bg); padding: 40px; border-radius: 25px; border: 1px solid #1a1a1a; width: 320px; text-align: center; }
-        .avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--main-red); margin-bottom: 15px; }
+        .avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--main-red); margin-bottom: 15px; background: #111; }
         .username { font-size: 22px; font-weight: bold; color: white; margin-bottom: 5px; }
         .role { color: gold; font-size: 11px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
         .status { color: #888; font-style: italic; margin-bottom: 25px; }
@@ -26,8 +26,8 @@
         <div id="uRole" class="role"></div>
         <div id="uStatus" class="status"></div>
         <div id="editBox">
-            <input type="text" id="inNick" placeholder="ახალი ნიკი">
-            <input type="text" id="inStatus" placeholder="ახალი სტატუსი">
+            <input type="text" id="inNick" placeholder="ნიკი">
+            <input type="text" id="inStatus" placeholder="სტატუსი">
             <button class="btn" onclick="save()">განახლება</button>
         </div>
         <a href="home.html" class="back">← უკან</a>
@@ -43,25 +43,26 @@
             if (!user) return window.location.href = "index.html";
 
             const params = new URLSearchParams(window.location.search);
-            let tid = params.get('id') || user.id;
+            let tid = params.get('id');
+
+            // თუ ლინკში ID არ არის, ჩავწეროთ შენი ID
+            if (!tid || tid === "null") tid = user.id;
 
             let { data: p } = await supabase.from('profiles').select('*').eq('id', tid).maybeSingle();
             
-            if (!p && tid === user.id) {
-                const { data: newP } = await supabase.from('profiles').insert([{ id: user.id, username: user.email.split('@')[0], role: 'user' }]).select().single();
-                p = newP;
+            if (!p) {
+                document.getElementById('uName').innerText = "არ მოიძებნა";
+                return;
             }
 
-            if (!p) { document.getElementById('uName').innerText = "არ მოიძებნა"; return; }
-
-            document.getElementById('uName').innerText = p.username;
+            document.getElementById('uName').innerText = p.username || "უცნობი";
             document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : '👤 მომხმარებელი';
-            document.getElementById('uStatus').innerText = p.status || "სტატუსი ცარიელია";
+            document.getElementById('uStatus').innerText = p.status || "";
             document.getElementById('uAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username}`;
 
             if (tid === user.id) {
                 document.getElementById('editBox').style.display = 'block';
-                document.getElementById('inNick').value = p.username;
+                document.getElementById('inNick').value = p.username || "";
                 document.getElementById('inStatus').value = p.status || "";
             }
         }
