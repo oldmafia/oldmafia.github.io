@@ -153,19 +153,20 @@ async function register(){
     return;
   }
 
-  const { error } = await supabaseClient.auth.signUp({
+  // 1. რეგისტრაცია
+  const { data, error } = await supabaseClient.auth.signUp({
     email: email,
-    password: password,
-    options: {
-      data: {
-        nickname: nickname
-      }
-    }
+    password: password
   });
 
   if(error){
     message.innerText = error.message;
     return;
+  }
+
+  // 2. აი ეს დავამატე: ნიკის შენახვა, რომ "აბუ" აღარ დაეწეროს ყველას
+  if (data.user) {
+    await supabaseClient.from('profiles').upsert({ id: data.user.id, username: nickname });
   }
 
   window.location.href = "home.html";
