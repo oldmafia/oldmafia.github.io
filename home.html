@@ -10,16 +10,12 @@
         * { box-sizing: border-box; font-family: sans-serif; }
         body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #ddd; overflow: hidden; }
         
-        /* Sidebar */
         .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s; }
         .sidebar-header { padding: 25px; font-size: 20px; font-weight: bold; text-align: center; color: var(--main-red); }
         .menu-item { padding: 12px 20px; margin: 2px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-gray); font-size: 14px; }
         .menu-item.active { background: #1a1a1a; color: var(--main-red); font-weight: bold; border-left: 3px solid var(--main-red); }
 
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -280px; top: 0; height: 100%; z-index: 1000; }
-            .sidebar.open { left: 0; }
-        }
+        @media (max-width: 768px) { .sidebar { position: fixed; left: -280px; top: 0; height: 100%; z-index: 1000; } .sidebar.open { left: 0; } }
 
         .main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--dark-bg); }
         .top-nav { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
@@ -33,7 +29,7 @@
         .msg-box { background: var(--panel-bg); padding: 12px 16px; border-radius: 15px; border: 1px solid #222; max-width: 85%; align-self: flex-start; }
         .msg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
         .msg-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
-        .username { color: var(--main-red); font-weight: bold; font-size: 13px; }
+        .username { font-weight: bold; font-size: 13px; }
         .del-btn { color: #444; background: none; border: none; margin-left: auto; cursor: pointer; }
 
         .input-area { padding: 20px; background: #000; border-top: 1px solid #222; display: flex; gap: 12px; }
@@ -70,7 +66,7 @@
             <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
             <div class="user-info" onclick="window.location.href='user.html'">
                 <img id="navAvatar" class="nav-avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
-                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
+                <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">ჩამოსვლა...</div>
             </div>
         </div>
         <div id="messageList"></div>
@@ -86,75 +82,76 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let myData = { id: '', nick: 'Guest', avatar: '', role: 'user' };
+        let myData = { id: '', nick: 'სტუმარი', avatar: '', role: 'user' };
 
         async function init() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) return window.location.href = "index.html";
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+            if (authError || !user) return window.location.href = "index.html";
+
             myData.id = user.id;
 
-            let { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            // პროფილის წამოღება (ცალკე Profiles ცხრილიდან)
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             
-            if (!profile) {
-                const isOwner = (user.email === 'to222ji@gmail.com');
-                const autoNick = isOwner ? 'abu007' : user.email.split('@')[0];
-                const { data: newProf } = await supabaseClient.from('profiles').upsert([{ id: user.id, username: autoNick, role: isOwner ? 'owner' : 'user' }]).select().single();
-                profile = newProf;
+            if (profile) {
+                myData.nick = profile.username;
+                myData.role = profile.role;
+                myData.avatar = profile.avatar_url;
+            } else {
+                // თუ პროფილი არ არსებობს, დროებით მეილს ვიყენებთ
+                myData.nick = user.email.split('@')[0];
+                if(user.email === 'to222ji@gmail.com') { myData.nick = 'abu007'; myData.role = 'owner'; }
             }
 
-            myData.nick = profile.username;
-            myData.role = profile.role;
-            myData.avatar = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${myData.nick}`;
-
-            document.getElementById('userDisplay').innerHTML = (myData.role === 'owner') ? `👑 ${myData.nick}` : myData.nick;
-            document.getElementById('navAvatar').src = myData.avatar;
+            document.getElementById('userDisplay').innerText = (myData.role === 'owner' ? '👑 ' : '') + myData.nick;
+            document.getElementById('navAvatar').src = myData.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${myData.nick}`;
 
             loadMsgs();
+            
+            // რეალურ დროში განახლება
             supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
         }
 
         async function loadMsgs() {
-            // მარტივი წამოღება Profiles-ის გარეშე, რომ არ გაიჭედოს
             const { data: msgs, error } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-            if (error) return;
-
+            
             const list = document.getElementById('messageList');
             list.innerHTML = '';
 
-            msgs.forEach(msg => {
-                const isOwner = (msg.username === 'abu007');
-                const ava = msg.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${msg.username}`;
-
-                const div = document.createElement('div');
-                div.className = 'msg-box';
-                if(isOwner) div.style.borderLeft = '3px solid gold';
-                div.innerHTML = `
-                    <div class="msg-header">
-                        <img src="${ava}" class="msg-avatar">
-                        <span class="username">${isOwner ? '👑' : ''} ${msg.username}</span>
-                        ${myData.role === 'owner' ? `<button class="del-btn" onclick="deleteMessage(${msg.id})">✖</button>` : ''}
-                    </div>
-                    <div class="msg-text">${msg.text}</div>
-                `;
-                list.appendChild(div);
-            });
+            if (msgs) {
+                msgs.forEach(msg => {
+                    const isOwner = (msg.username === 'abu007');
+                    const div = document.createElement('div');
+                    div.className = 'msg-box';
+                    if(isOwner) div.style.borderLeft = '3px solid gold';
+                    
+                    div.innerHTML = `
+                        <div class="msg-header">
+                            <img src="${msg.avatar_url || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + msg.username}" class="msg-avatar">
+                            <span class="username" style="color:${isOwner ? 'gold' : 'var(--main-red)'}">${isOwner ? '👑' : ''} ${msg.username}</span>
+                            ${myData.role === 'owner' ? `<button class="del-btn" onclick="deleteMessage(${msg.id})">✖</button>` : ''}
+                        </div>
+                        <div class="msg-text">${msg.text}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
             list.scrollTop = list.scrollHeight;
         }
 
         async function send() {
             const input = document.getElementById('msgInput');
-            const val = input.value.trim();
-            if (!val) return;
+            if (!input.value.trim()) return;
 
-            const { error } = await supabaseClient.from('messages').insert([{ 
-                user_id: myData.id, 
-                username: myData.nick, 
-                text: val, 
-                room_name: currentRoom, 
-                avatar_url: myData.avatar 
+            const { error } = await supabaseClient.from('messages').insert([{
+                user_id: myData.id,
+                username: myData.nick,
+                text: input.value.trim(),
+                room_name: currentRoom,
+                avatar_url: myData.avatar
             }]);
-            
-            if (error) alert("ვერ გაიგზავნა: " + error.message);
+
+            if (error) { console.error(error); alert("შეცდომა გაგზავნისას!"); }
             input.value = '';
         }
 
@@ -169,13 +166,13 @@
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            const items = document.querySelectorAll('.menu-item');
-            for (let item of items) { if(item.innerText.includes(name)) item.classList.add('active'); }
+            event.currentTarget.classList.add('active');
             if(window.innerWidth <= 768) toggleMenu();
             loadMsgs();
         }
 
         async function logout() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+        
         init();
     </script>
 </body>
