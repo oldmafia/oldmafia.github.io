@@ -2,228 +2,214 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>კაიფმანია - პრემიუმ ჩატი</title>
+    <title>კაიფმანია - ჩატი</title>
     <style>
-        * { box-sizing: border-box; transition: all 0.3s ease; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            margin: 0; 
             background: #000; 
             color: white; 
-            font-family: 'Helvetica Neue', sans-serif; 
+            font-family: 'Segoe UI', sans-serif; 
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
             overflow: hidden; 
         }
 
-        /* ზედა პანელი ნეონ ხაზით */
+        /* ზედა პანელი */
         .header {
-            height: 70px;
-            background: rgba(10, 10, 10, 0.95);
+            height: 60px;
+            background: #0a0a0a;
             border-bottom: 2px solid #ff0000;
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            z-index: 1000;
+            padding: 0 20px;
+            gap: 20px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+            z-index: 100;
         }
 
-        .logo { font-size: 24px; font-weight: bold; text-shadow: 0 0 10px #ff0000; }
-
-        /* ჩამოსაშლელი მენიუს ღილაკი ანიმაციით */
-        .menu-btn {
-            background: transparent;
+        .menu-toggle {
+            background: #ff0000;
             color: white;
-            border: 2px solid #ff0000;
-            padding: 10px 20px;
-            border-radius: 30px;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            box-shadow: 0 0 10px #ff0000;
         }
 
-        .menu-btn:hover { background: #ff0000; box-shadow: 0 0 20px #ff0000; }
-
-        /* ახალი, "ცოცხალი" მენიუ */
-        .dropdown-menu {
-            position: absolute;
-            top: 80px;
-            left: 30px;
-            background: rgba(20, 20, 20, 0.98);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 0, 0, 0.5);
+        /* გვერდითა სრიალა მენიუ (მარცხნივ) */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px; /* თავიდან დამალულია მარცხნივ */
             width: 280px;
-            max-height: 0; /* თავიდან დამალულია */
-            overflow: hidden;
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            opacity: 0;
-            transition: max-height 0.5s ease, opacity 0.3s ease;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid #ff0000;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            padding-top: 60px;
         }
 
-        .dropdown-menu.show { max-height: 600px; opacity: 1; padding: 10px 0; }
+        .sidebar.open { left: 0; }
 
         .menu-item {
             padding: 15px 25px;
             cursor: pointer;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid #222;
+            transition: 0.3s;
             display: flex;
             align-items: center;
             gap: 15px;
-            font-size: 15px;
         }
 
         .menu-item:hover {
             background: rgba(255, 0, 0, 0.1);
-            padding-left: 35px; /* პატარა ანიმაცია მიტანისას */
             color: #ff0000;
+            padding-left: 35px;
         }
 
-        .menu-item.active { border-left: 5px solid #ff0000; background: rgba(255, 0, 0, 0.2); }
-
-        /* ჩატი */
-        .chat-area {
+        /* ჩატის ზონა */
+        .chat-main {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
+            position: relative;
         }
 
         #messages {
             flex-grow: 1;
-            padding: 30px;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
-        /* შეტყობინების დიზაინი */
         .msg {
-            background: rgba(30, 30, 30, 0.6);
-            padding: 15px 20px;
-            border-radius: 20px;
-            max-width: 70%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #111;
+            padding: 12px 18px;
+            border-radius: 15px;
+            max-width: 80%;
+            border-left: 3px solid #ff0000;
             position: relative;
         }
 
-        .msg b { color: #ff0000; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-        .msg p { margin: 5px 0 0 0; line-height: 1.6; }
+        .msg b { color: #ff0000; font-size: 13px; }
 
-        /* წერის ადგილი - დიდი და მოხერხებული */
-        .input-container {
-            padding: 30px;
-            background: linear-gradient(to top, #000, transparent);
-        }
-
-        .input-wrapper {
+        /* წერის ადგილი */
+        .input-box {
+            padding: 20px;
+            background: #000;
             display: flex;
-            gap: 15px;
-            background: rgba(40, 40, 40, 0.5);
-            padding: 10px;
-            border-radius: 50px;
-            border: 1px solid #333;
+            gap: 10px;
         }
-
-        .input-wrapper:focus-within { border-color: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.2); }
 
         input {
             flex-grow: 1;
-            background: transparent;
-            border: none;
+            background: #111;
+            border: 1px solid #333;
             color: white;
-            padding: 10px 20px;
+            padding: 15px;
+            border-radius: 10px;
             outline: none;
-            font-size: 16px;
         }
+
+        input:focus { border-color: #ff0000; }
 
         .send-btn {
             background: #ff0000;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            cursor: pointer;
             color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 10px;
+            cursor: pointer;
             font-weight: bold;
         }
+
+        /* ფონი მენიუს გახსნისას */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 900;
+        }
+        .overlay.show { display: block; }
     </style>
 </head>
 <body>
 
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
     <div class="header">
-        <div class="logo">კაიფმანია 🚀</div>
-        <button class="menu-btn" onclick="toggleMenu()">
-            <span>☰</span> აირჩიე ოთახი
-        </button>
-        <div class="user-info">
-            ნიკი: <span id="myNick" style="color:#ff0000; font-weight:bold;">tojina</span>
-        </div>
-        
-        <div class="dropdown-menu" id="dropdown">
-            <div class="menu-item active" onclick="changeRoom('💬 ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
-            <div class="menu-item" onclick="changeRoom('💎 ვიპ საუბრები')">💎 ვიპ საუბრები</div>
-            <div class="menu-item" onclick="changeRoom('🔍 გამოძიება')">🔍 გამოძიება</div>
-            <div class="menu-item" onclick="changeRoom('🔐 შიფროგრამა')">🔐 შიფროგრამა</div>
-            <div class="menu-item" onclick="changeRoom('❓ ვიქტორინა')">❓ ვიქტორინა</div>
-            <div class="menu-item" onclick="changeRoom('😵 ჩამოხრჩობანა')">😵 ჩამოხრჩობანა</div>
-            <div class="menu-item" onclick="changeRoom('🕵️ მაფიის ღამე')">🕵️ მაფიის ღამე</div>
-            <div class="menu-item" onclick="changeRoom('🃏 ჯოკერი')">🃏 ჯოკერი</div>
-            <div class="menu-item" onclick="changeRoom('🎲 ნარდი')">🎲 ნარდი</div>
-            <div class="menu-item" onclick="changeRoom('🎵 მუსიკა')">🎵 მუსიკა</div>
-            <div class="menu-item" onclick="changeRoom('😂 იუმორი')">😂 იუმორი</div>
-            <div class="menu-item" onclick="changeRoom('🛡️ ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
-            <div class="menu-item" onclick="changeRoom('❓ დახმარება')">❓ დახმარება</div>
-            <div class="menu-item" onclick="changeRoom('🏛️ ფორუმი')">🏛️ ფორუმი</div>
-            <div class="menu-item" onclick="location.href='index.html'" style="color: #666;">🚪 გასვლა</div>
-        </div>
+        <button class="menu-toggle" onclick="toggleMenu()">☰ მენიუ</button>
+        <div style="font-weight: bold; letter-spacing: 2px;">კაიფმანია</div>
     </div>
 
-    <div class="chat-area">
+    <div class="sidebar" id="sidebar">
+        <div class="menu-item" onclick="changeRoom('💬 ზოგადი ჩატი')">💬 ზოგადი ჩატი</div>
+        <div class="menu-item" onclick="changeRoom('💎 ვიპ საუბრები')">💎 ვიპ საუბრები</div>
+        <div class="menu-item" onclick="changeRoom('🔍 გამოძიება')">🔍 გამოძიება</div>
+        <div class="menu-item" onclick="changeRoom('🔐 შიფროგრამა')">🔐 შიფროგრამა</div>
+        <div class="menu-item" onclick="changeRoom('❓ ვიქტორინა')">❓ ვიქტორინა</div>
+        <div class="menu-item" onclick="changeRoom('😵 ჩამოხრჩობანა')">😵 ჩამოხრჩობანა</div>
+        <div class="menu-item" onclick="changeRoom('🕵️ მაფიის ღამე')">🕵️ მაფიის ღამე</div>
+        <div class="menu-item" onclick="changeRoom('🃏 ჯოკერი')">🃏 ჯოკერი</div>
+        <div class="menu-item" onclick="changeRoom('🎲 ნარდი')">🎲 ნარდი</div>
+        <div class="menu-item" onclick="changeRoom('🎵 მუსიკა')">🎵 მუსიკა</div>
+        <div class="menu-item" onclick="changeRoom('😂 იუმორი')">😂 იუმორი</div>
+        <div class="menu-item" onclick="changeRoom('🛡️ ადმინისტრაცია')">🛡️ ადმინისტრაცია</div>
+        <div class="menu-item" onclick="changeRoom('❓ დახმარება')">❓ დახმარება</div>
+        <div class="menu-item" onclick="changeRoom('🏛️ ფორუმი')">🏛️ ფორუმი</div>
+        <div class="menu-item" onclick="location.href='index.html'" style="color: #666;">🚪 გასვლა</div>
+    </div>
+
+    <div class="chat-main">
         <div id="messages">
-            <div class="msg">
-                <b>სისტემა</b>
-                <p>მოგესალმებით! აირჩიეთ ოთახი და დაიწყეთ საუბარი.</p>
-            </div>
+            <div class="msg"><b>სისტემა</b><p>მოგესალმებით! აირჩიეთ ოთახი მენიუდან.</p></div>
         </div>
 
-        <div class="input-container">
-            <div class="input-wrapper">
-                <input type="text" id="msgInput" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') send()">
-                <button class="send-btn" onclick="send()">➤</button>
-            </div>
+        <div class="input-box">
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">გაგზავნა</button>
         </div>
     </div>
 
     <script>
-        const myNickname = "tojina"; // აქ შეგიძლია დინამიურად ჩასვა ნიკი
+        // 1. დინამიური ნიკის ლოგიკა
+        // თუ რეგისტრაციისას სახელი შეინახე localStorage-ში, ის გამოჩნდება. 
+        // თუ არა - დაეწერება "სტუმარი"
+        const currentNick = localStorage.getItem('userName') || "სტუმარი";
 
         function toggleMenu() {
-            document.getElementById('dropdown').classList.toggle('show');
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
         }
 
         function changeRoom(name) {
-            document.querySelector('.menu-btn span').innerText = "📍";
-            document.getElementById('messages').innerHTML += `<div class='msg' style='border-color:gold'><b>სისტემა</b><p>გადახვედით ოთახში: ${name}</p></div>`;
-            toggleMenu(); // მენიუს დახურვა არჩევის შემდეგ
+            document.getElementById('messages').innerHTML += `<div class="msg" style="border-color: #555"><b>სისტემა</b><p>გადახვედით ოთახში: ${name}</p></div>`;
+            toggleMenu();
         }
 
         function send() {
             const input = document.getElementById('msgInput');
             if(input.value.trim() !== "") {
-                const msgHtml = `
-                    <div class="msg" style="align-self: flex-end; border-left: none; border-right: 4px solid #ff0000;">
-                        <b>${myNickname}</b>
-                        <p>${input.value}</p>
-                    </div>
-                `;
-                document.getElementById('messages').innerHTML += msgHtml;
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg';
+                msgDiv.style.alignSelf = 'flex-end'; // შენი მესიჯები მარჯვნივ
+                msgDiv.style.borderLeft = 'none';
+                msgDiv.style.borderRight = '3px solid #ff0000';
+                
+                msgDiv.innerHTML = `<b>${currentNick}</b><p>${input.value}</p>`;
+                
+                document.getElementById('messages').appendChild(msgDiv);
                 input.value = "";
                 const chat = document.getElementById('messages');
                 chat.scrollTop = chat.scrollHeight;
