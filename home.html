@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Old Mafia - მთავარი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #8b0000; --bright: #ff3131; --dark: #050505; --panel: #111; --gold: #d4af37; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--dark); color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* 🔗 ზედა მენიუ (გადადის სხვა გვერდებზე) */
+        nav { background: #000; padding: 12px; border-bottom: 2px solid var(--red); display: flex; justify-content: space-around; }
+        nav a { color: #fff; text-decoration: none; font-weight: bold; font-size: 13px; opacity: 0.7; transition: 0.3s; }
+        nav a.active { color: var(--bright); opacity: 1; }
+
+        /* 🏨 ოთახების პანელი */
+        .rooms-bar { background: var(--panel); padding: 12px; overflow-x: auto; display: flex; gap: 10px; border-bottom: 1px solid #222; scrollbar-width: none; }
+        .rooms-bar::-webkit-scrollbar { display: none; }
+        .room-btn { background: #1a1a1a; border: 1px solid #333; color: #aaa; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+        .room-btn.active { background: var(--red); color: #fff; border-color: var(--bright); box-shadow: 0 0 8px rgba(255,49,49,0.3); }
+
+        /* 💬 ჩატის არე */
+        #chatBox { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle, #100000 0%, #050505 100%); }
+        .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 85%; background: #1a1a1a; border-left: 3px solid var(--red); align-self: flex-start; }
+        .msg.me { align-self: flex-end; background: #300000; border-left: none; border-right: 3px solid var(--red); }
+        .u-name { font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 3px; display: block; }
+        .time { font-size: 9px; opacity: 0.4; float: right; margin-top: 5px; margin-left: 8px; }
+
+        /* ⌨️ ქვედა პანელი */
+        footer { padding: 15px; background: #000; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
+        #msgInput { flex: 1; background: #151515; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; outline: none; }
+        .send-btn { background: var(--red); border: none; width: 50px; border-radius: 8px; color: white; cursor: pointer; font-size: 20px; transition: 0.2s; }
+        .send-btn:active { background: var(--bright); transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="home.html" class="active">💬 ჩატი</a>
+        <a href="inbox.html">💌 პირადი</a>
+        <a href="profile.html">👤 პროფილი</a>
+    </nav>
+
+    <div class="rooms-bar" id="roomsList">
+        <button class="room-btn active" onclick="changeRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</button>
+        <button class="room-btn" onclick="changeRoom('ვიპ საუბრები', this)">💎 ვიპ საუბრები</button>
+        <button class="room-btn" onclick="changeRoom('გამოძება', this)">🕵️ გამოძება</button>
+        <button class="room-btn" onclick="changeRoom('მაფიის ღამე', this)">🌑 მაფიის ღამე</button>
+        <button class="room-btn" onclick="changeRoom('შიფროგრამა', this)">🔐 შიფროგრამა</button>
+        <button class="room-btn" onclick="changeRoom('ვიქტორინა', this)">❓ ვიქტორინა</button>
+        <button class="room-btn" onclick="changeRoom('ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</button>
+        <button class="room-btn" onclick="changeRoom('ჯოკერი', this)">🃏 ჯოკერი</button>
+        <button class="room-btn" onclick="changeRoom('ნარდი', this)">🎲 ნარდი</button>
+        <button class="room-btn" onclick="changeRoom('მუსიკა', this)">🎵 მუსიკა</button>
+        <button class="room-btn" onclick="changeRoom('იუმორი', this)">😂 იუმორი</button>
+        <button class="room-btn" onclick="changeRoom('გალერეა', this)">🖼️ გალერეა</button>
+        <button class="room-btn" onclick="changeRoom('ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</button>
+        <button class="room-btn" onclick="changeRoom('დახმარება', this)">🆘 დახმარება</button>
+        <button class="room-btn" onclick="logout()" style="opacity: 0.5;">🚪 გასვლა</button>
+    </div>
+
+    <div id="chatBox"></div>
+
+    <footer>
+        <input type="text" id="msgInput" placeholder="დაწერე მესიჯი..." autocomplete="off">
+        <button class="send-btn" onclick="send()">➤</button>
+    </footer>
+
+<script>
+    // ჩასვი შენი მონაცემები აქ!
+    const sb = supabase.createClient("შენი_URL", "შენი_KEY");
+    
+    let currentRoom = 'ზოგადი ჩატი';
+    let myUser = { id: '', name: '' };
+
+    async function init() {
+        const { data: { user } } = await sb.auth.getUser();
+        if(!user) return window.location.href = 'index.html';
+        
+        myUser.id = user.id;
+        
+        // მომხმარებლის სახელის წამოღება
+        let { data: profile } = await sb.from('profiles').select('username').eq('id', user.id).single();
+        myUser.name = profile ? profile.username : user.email.split('@')[0];
+
+        loadMessages();
+
+        // რეალურ დროში მოსმენა
+        sb.channel('public:messages')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => loadMessages())
+          .subscribe();
+    }
+
+    async function loadMessages() {
+        const { data } = await sb.from('messages')
+            .select('*')
+            .eq('room', currentRoom)
+            .order('created_at', { ascending: true });
+
+        const box = document.getElementById('chatBox');
+        box.innerHTML = (data || []).map(m => `
+            <div class="msg ${m.user_id === myUser.id ? 'me' : ''}">
+                <span class="u-name">${m.username || 'უცნობი'}</span>
+                ${m.text}
+                <span class="time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function send() {
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
+        if(!text) return;
+
+        const { error } = await sb.from('messages').insert([{
+            text: text,
+            room: currentRoom,
+            user_id: myUser.id,
+            username: myUser.name
+        }]);
+
+        if(error) console.error("Error sending:", error);
+        input.value = "";
+    }
+
+    function changeRoom(name, btn) {
+        currentRoom = name;
+        document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        loadMessages();
+    }
+
+    async function logout() {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+    }
+
+    document.getElementById('msgInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
+
+    init();
+</script>
+</body>
+</html>
