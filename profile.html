@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>ჩემი პროფილი 👤</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body style="background: #080808; color: white; font-family: sans-serif; padding: 20px;">
+
+    <h2>მოგესალმები, <span id="myNick" style="color: red;">...</span></h2>
+    <p>კავშირი მყარდება...</p>
+
+    <script>
+        const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function checkMe() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                document.body.innerHTML = "შესვლა საჭიროა!";
+                return;
+            }
+
+            const { data: profile } = await supabaseClient.from('profiles').select('username').eq('id', user.id).single();
+            document.getElementById('myNick').innerText = profile ? profile.username : "უცნობი";
+        }
+
+        checkMe();
+    </script>
+</body>
+</html>
