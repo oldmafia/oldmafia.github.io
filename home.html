@@ -6,47 +6,52 @@
     <title>კაიფმანია 🕶️</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --main-red: #cc0000; --dark-bg: #080808; --panel-bg: #121212; }
+        :root { --main-red: #cc0000; --dark-bg: #080808; --panel-bg: #121212; --text-gray: #999; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #e0e0e0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow: hidden; }
+        body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #e0e0e0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
         
-        /* მენიუს დიზაინი */
-        .sidebar { width: 260px; min-width: 260px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
-        .sidebar-header { padding: 20px; font-size: 20px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
+        /* Sidebar სტილი */
+        .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
+        .sidebar-header { padding: 25px 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; text-shadow: 0 0 10px rgba(204, 0, 0, 0.3); }
         .menu-items { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .menu-item { padding: 10px 15px; margin: 2px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #999; font-size: 14px; transition: 0.2s; }
+        .menu-item { padding: 12px 15px; margin: 4px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-gray); font-size: 14px; transition: 0.2s; }
         .menu-item:hover { background: #111; color: #fff; }
-        .menu-item.active { background: #1a1a1a; color: var(--main-red); font-weight: bold; }
+        .menu-item.active { background: #1a1a1a; color: var(--main-red); font-weight: bold; border-left: 3px solid var(--main-red); }
+        .menu-item.admin-room { color: #d4af37; } /* ოქროსფერი ადმინებისთვის */
 
-        /* მობილურზე მენიუს დამალვა */
+        /* მობილურის ადაპტაცია */
         @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -260px; height: 100%; }
-            .sidebar.open { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
+            .sidebar { position: fixed; left: -280px; height: 100%; }
+            .sidebar.open { left: 0; box-shadow: 10px 0 20px rgba(0,0,0,0.8); }
         }
 
-        /* მთავარი არე */
+        /* მთავარი ჩატი */
         .main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--dark-bg); }
-        .top-nav { height: 55px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #1a1a1a; }
-        .menu-btn { background: none; border: 1px solid #333; color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; display: none; }
+        .top-nav { height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #1a1a1a; }
+        .menu-btn { background: none; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: none; }
         @media (max-width: 768px) { .menu-btn { display: block; } }
 
-        /* მესიჯების სტილი */
-        #messageList { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg-container { display: flex; gap: 10px; max-width: 95%; align-items: flex-start; }
-        .avatar { width: 32px; height: 32px; border-radius: 8px; background: #1a1a1a; border: 1px solid #222; flex-shrink: 0; }
-        .msg-info { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-        .username { color: var(--main-red); font-weight: bold; font-size: 13px; }
-        .owner-tag { color: #888; font-size: 10px; font-weight: normal; }
-        .timestamp { color: #444; font-size: 10px; }
-        .msg-bubble { background: var(--panel-bg); padding: 10px 14px; border-radius: 0 12px 12px 12px; font-size: 14px; color: #ccc; border: 1px solid #1a1a1a; line-height: 1.4; word-break: break-word; }
+        #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         
-        .delete-btn { color: #444; font-size: 10px; cursor: pointer; margin-left: 10px; }
-        .delete-btn:hover { color: #ff0000; }
+        /* მესიჯის ბაბლი */
+        .msg-container { display: flex; gap: 12px; max-width: 90%; align-items: flex-start; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .avatar { width: 38px; height: 38px; border-radius: 10px; background: #1a1a1a; border: 1px solid #222; flex-shrink: 0; }
+        .msg-body { flex-grow: 1; }
+        .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .username { color: var(--main-red); font-weight: bold; font-size: 13px; }
+        .role-badge { background: #331111; color: #ff4444; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: normal; }
+        .del-btn { color: #444; font-size: 11px; cursor: pointer; transition: 0.2s; margin-left: auto; }
+        .del-btn:hover { color: #ff0000; text-decoration: underline; }
+        .msg-text { background: var(--panel-bg); padding: 12px 16px; border-radius: 0 15px 15px 15px; font-size: 14px; color: #ccc; border: 1px solid #1a1a1a; line-height: 1.5; word-break: break-word; }
 
         /* ინპუტი */
-        .input-area { padding: 15px; background: #000; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; }
-        input { flex-grow: 1; padding: 12px; background: #0a0a0a; border: 1px solid #222; color: #fff; border-radius: 8px; outline: none; font-size: 14px; }
-        .send-btn { background: var(--main-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .input-area { padding: 20px; background: #000; display: flex; gap: 12px; border-top: 1px solid #1a1a1a; }
+        input { flex-grow: 1; padding: 14px; background: #0a0a0a; border: 1px solid #222; color: #fff; border-radius: 10px; outline: none; font-size: 14px; }
+        input:focus { border-color: var(--main-red); }
+        .send-btn { background: var(--main-red); color: white; border: none; padding: 0 25px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .send-btn:hover { background: #ff0000; transform: scale(1.02); }
     </style>
 </head>
 <body>
@@ -54,130 +59,142 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">კაიფმანია 🕶️</div>
         <div class="menu-items">
-            <div class="menu-item" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
-            <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 ვიპ საუბრები</div>
-            <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
-            <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 შიფროგრამა</div>
-            <div class="menu-item" onclick="changeRoom('ვიქტორინა', '🧠')">🧠 ვიქტორინა</div>
-            <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '💀')">💀 ჩამოხრჩობანა</div>
-            <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">🕵️‍♂️ მაფიის ღამე</div>
-            <div class="menu-item" onclick="changeRoom('ჯოკერი', '🃏')">🃏 ჯოკერი</div>
-            <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 ნარდი</div>
-            <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 მუსიკა</div>
-            <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 იუმორი</div>
-            <div class="menu-item" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
-            <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 დახმარება</div>
-            <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ ფორუმი</div>
-            <div class="menu-item" style="color: #ff4444; border-top: 1px solid #1a1a1a; margin-top: 10px;" onclick="logout()">🚪 გასვლა</div>
+            <div class="menu-item active" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 1. ზოგადი ჩატი</div>
+            <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 2. ვიპ საუბრები</div>
+            <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 3. გამოძიება</div>
+            <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 4. შიფროგრამა</div>
+            <div class="menu-item" onclick="changeRoom('ვიქტორინა', '🧠')">🧠 5. ვიქტორინა</div>
+            <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '💀')">💀 6. ჩამოხრჩობანა</div>
+            <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">🕵️‍♂️ 7. მაფიის ღამე</div>
+            <div class="menu-item" onclick="changeRoom('ჯოკერი', '🃏')">🃏 8. ჯოკერი</div>
+            <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 9. ნარდი</div>
+            <div class="menu-item" onclick="changeRoom('მუსიკა', '🎵')">🎵 10. მუსიკა</div>
+            <div class="menu-item" onclick="changeRoom('იუმორი', '😂')">😂 11. იუმორი</div>
+            <div class="menu-item admin-room" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ 12. ადმინისტრაცია</div>
+            <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 13. დახმარება</div>
+            <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ 14. ფორუმი</div>
+            <div class="menu-item" style="color: #ff4444; border-top: 1px solid #111; margin-top: 15px;" onclick="logout()">🚪 15. გასვლა</div>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-nav">
             <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-            <div id="roomTitle" style="font-size: 14px;">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color:var(--main-red); font-size: 13px; font-weight: bold;">...</div>
+            <div id="roomTitle" style="font-weight: bold; font-size: 15px;">💬 ზოგადი ჩატი</div>
+            <div id="userDisplay" style="color:var(--main-red); font-weight: bold; font-size: 13px;">...</div>
         </div>
+
         <div id="messageList"></div>
+
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button class="send-btn" onclick="sendMessage()">➤</button>
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." autocomplete="off">
+            <button class="send-btn" onclick="sendMessage()">გაგზავნა</button>
         </div>
     </div>
 
     <script>
         const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
-        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"; // შენი გასაღები
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let currentUser = null;
-        let myNick = "abu007";
-        let myRole = "user";
+        let myNick = '';
+        let myRole = '';
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) { window.location.href = "index.html"; return; }
-            currentUser = user;
+            if (!user) return window.location.href = "index.html";
 
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            if(profile) { myNick = profile.username; myRole = profile.role; }
+            myNick = profile?.username || 'user';
+            myRole = profile?.role || 'user';
             
-            document.getElementById('userDisplay').innerHTML = (myRole === 'owner') ? `👑 ${myNick}` : myNick;
+            document.getElementById('userDisplay').innerText = (myNick === 'abu007') ? `👑 ${myNick}` : myNick;
+            
             loadMessages();
-            subscribeToMessages();
+            
+            // Real-time მოსმენა (ავტომატური განახლება)
+            supabaseClient.channel('chat_main')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+                    if (payload.eventType === 'DELETE') {
+                        const el = document.getElementById(`msg-${payload.old.id}`);
+                        if (el) el.remove();
+                    } else if (payload.new.room_name === currentRoom) {
+                        loadMessages();
+                    }
+                }).subscribe();
         }
 
         async function loadMessages() {
-            const { data: msgs } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+            const { data: msgs } = await supabaseClient.from('messages')
+                .select('*')
+                .eq('room_name', currentRoom)
+                .order('created_at', { ascending: true });
+
             const list = document.getElementById('messageList');
             list.innerHTML = '';
-            if (msgs) msgs.forEach(msg => renderMessage(msg));
-            list.scrollTop = list.scrollHeight;
-        }
-
-        function renderMessage(msg) {
-            const list = document.getElementById('messageList');
-            const time = new Date(msg.created_at).toLocaleTimeString('ka-GE', {hour: '2-digit', minute: '2-digit'});
-            const isMe = (msg.username === 'abu007');
-            const canDelete = (myRole === 'owner' || msg.user_id === currentUser.id);
-
-            const div = document.createElement('div');
-            div.className = 'msg-container';
-            div.id = `msg-${msg.id}`;
-            div.innerHTML = `
-                <div class="avatar"></div>
-                <div>
-                    <div class="msg-info">
-                        <span class="username">${msg.username}</span>
-                        ${isMe ? '<span class="owner-tag">👑</span>' : ''}
-                        <span class="timestamp">${time}</span>
-                        ${canDelete ? `<span class="delete-btn" onclick="deleteMsg(${msg.id})">წაშლა</span>` : ''}
+            
+            msgs?.forEach(msg => {
+                const isOwner = (msg.username === 'abu007');
+                const canDelete = (myNick === 'abu007' || myRole === 'admin' || myRole === 'owner');
+                
+                const div = document.createElement('div');
+                div.className = 'msg-container';
+                div.id = `msg-${msg.id}`;
+                div.innerHTML = `
+                    <div class="avatar"></div>
+                    <div class="msg-body">
+                        <div class="msg-header">
+                            <span class="username">${msg.username}</span>
+                            ${isOwner ? '<span class="role-badge">დამფუძნებელი</span>' : ''}
+                            ${canDelete ? `<span class="del-btn" onclick="deleteMsg(${msg.id})">წაშლა</span>` : ''}
+                        </div>
+                        <div class="msg-text">${msg.text}</div>
                     </div>
-                    <div class="msg-bubble">${msg.text}</div>
-                </div>
-            `;
-            list.appendChild(div);
+                `;
+                list.appendChild(div);
+            });
             list.scrollTop = list.scrollHeight;
-        }
-
-        async function deleteMsg(id) {
-            const { error } = await supabaseClient.from('messages').delete().eq('id', id);
-            if(error) alert("ვერ წაიშალა. SQL-ში Policy შეამოწმე.");
         }
 
         async function sendMessage() {
             const input = document.getElementById('msgInput');
             const val = input.value.trim();
-            if (!val) return;
+            if(!val) return;
+            
+            const { data: { user } } = await supabaseClient.auth.getUser();
             const { error } = await supabaseClient.from('messages').insert([{
-                user_id: currentUser.id,
+                user_id: user.id,
                 username: myNick,
                 text: val,
                 room_name: currentRoom
             }]);
+            
             if(error) console.error(error);
             input.value = '';
         }
 
-        function subscribeToMessages() {
-            supabaseClient.channel('chat_realtime')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                if (payload.new.room_name === currentRoom) renderMessage(payload.new);
-            })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, payload => {
-                const el = document.getElementById(`msg-${payload.old.id}`);
-                if (el) el.remove();
-            })
-            .subscribe();
+        async function deleteMsg(id) {
+            if(!confirm("წავშალოთ მესიჯი?")) return;
+            const { error } = await supabaseClient.from('messages').delete().eq('id', id);
+            if(error) alert("შეცდომა: " + error.message);
         }
 
-        async function changeRoom(name, icon) {
+        function changeRoom(name, icon) {
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
+            
+            // აქტიური კლასის შეცვლა მენიუში
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
             if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
             loadMessages();
         }
+
+        document.getElementById('msgInput').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') sendMessage();
+        });
 
         async function logout() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
         init();
