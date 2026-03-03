@@ -2,103 +2,62 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>პროფილი - კაიფმანია</title>
+    <title>პროფილი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --main-red: #cc0000; --dark-bg: #000; --panel-bg: #0b0b0b; }
-        body { margin: 0; background: var(--dark-bg); color: #ddd; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .profile-card { background: var(--panel-bg); padding: 40px; border-radius: 30px; border: 1px solid #1a1a1a; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .avatar-main { width: 130px; height: 130px; border-radius: 50%; border: 3px solid var(--main-red); margin-bottom: 15px; object-fit: cover; }
-        .role-badge { background: #1a1a1a; color: gold; padding: 5px 15px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 20px; border: 1px solid #333; }
-        .info-group { text-align: left; margin-bottom: 15px; }
-        .info-group label { display: block; font-size: 11px; color: #555; margin-bottom: 5px; margin-left: 10px; }
-        input { width: 100%; padding: 12px 18px; background: #050505; border: 1px solid #222; color: #fff; border-radius: 15px; outline: none; }
-        .btn-save { width: 100%; padding: 14px; background: var(--main-red); color: white; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn-save:hover { background: #990000; }
-        .back-btn { display: block; margin-top: 25px; color: #444; text-decoration: none; font-size: 13px; }
+        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; padding-top: 50px; }
+        .card { background: #0b0b0b; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 300px; text-align: center; }
+        img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #cc0000; }
+        .name { font-size: 20px; margin: 10px 0; color: #cc0000; }
+        .btn { display: block; margin-top: 20px; color: #555; text-decoration: none; font-size: 13px; }
     </style>
 </head>
 <body>
-
-<div class="profile-card">
-    <img id="uAvatar" class="avatar-main" src="https://api.dicebear.com/7.x/identicon/svg?seed=loading">
-    <h2 id="uName" style="margin: 0;">იტვირთება...</h2>
-    <div id="uRole" class="role-badge">USER</div>
-
-    <div id="editBox" style="display: none;">
-        <div class="info-group">
-            <label>ნიკნეიმი</label>
-            <input type="text" id="inNick">
-        </div>
-        <div class="info-group">
-            <label>სტატუსი</label>
-            <input type="text" id="inStatus" placeholder="დაწერე სტატუსი...">
-        </div>
-        <button class="btn-save" onclick="updateProfile()">შენახვა</button>
+    <div class="card">
+        <img id="pAvatar" src="">
+        <div id="pName" class="name">იტვირთება...</div>
+        <div id="pStatus" style="color: #888; font-size: 14px;"></div>
+        <a href="home.html" class="btn">← უკან ჩატში</a>
     </div>
 
-    <p id="uStatusDisplay" style="font-style: italic; color: #888; margin-top: 10px;"></p>
+    <script>
+        const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    <a href="home.html" class="back-btn">← დაბრუნება ჩატში</a>
-</div>
+        async function init() {
+            // 1. გავიგოთ ვინ არის შესული
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return window.location.href = "index.html";
 
-<script>
-    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
-    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+            // 2. ვის პროფილს ვუყურებთ? (ლინკიდან)
+            const urlParams = new URLSearchParams(window.location.search);
+            let targetId = urlParams.get('id');
 
-    async function loadProfile() {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return window.location.href = "index.html";
+            // თუ ID არ არის ლინკში, ან აწერია "null/undefined", გახსნას შენი საკუთარი
+            if (!targetId || targetId === "null" || targetId === "undefined") {
+                targetId = user.id;
+            }
 
-        // ვიგებთ ვის პროფილს ვუყურებთ (ლინკიდან)
-        const params = new URLSearchParams(window.location.search);
-        const viewId = params.get('id') || user.id;
+            // 3. წამოვიღოთ მონაცემები
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', targetId)
+                .maybeSingle();
 
-        // წამოვიღოთ მონაცემები ბაზიდან
-        const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', viewId).maybeSingle();
+            if (!profile) {
+                document.getElementById('pName').innerText = "არ მოიძებნა";
+                return;
+            }
 
-        if (error || !p) {
-            document.getElementById('uName').innerText = "არ მოიძებნა";
-            console.error("ბაზაში პროფილი არ არის!");
-            return;
+            // 4. გამოვაჩინოთ
+            document.getElementById('pName').innerText = profile.username;
+            document.getElementById('pStatus').innerText = profile.status || "სტატუსი ცარიელია";
+            document.getElementById('pAvatar').src = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${profile.username}`;
         }
 
-        // მონაცემების შევსება
-        document.getElementById('uName').innerText = p.username;
-        document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : (p.role === 'admin' ? '🛡️ ადმინისტრატორი' : '👤 მომხმარებელი');
-        document.getElementById('uAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username}`;
-        document.getElementById('uStatusDisplay').innerText = p.status || "";
-
-        // თუ ჩემი პროფილია, გამოვაჩინოთ რედაქტირება
-        if (viewId === user.id) {
-            document.getElementById('editBox').style.display = 'block';
-            document.getElementById('inNick').value = p.username;
-            document.getElementById('inStatus').value = p.status || "";
-            document.getElementById('uStatusDisplay').style.display = 'none';
-        }
-    }
-
-    async function updateProfile() {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        const newNick = document.getElementById('inNick').value;
-        const newStatus = document.getElementById('inStatus').value;
-
-        const { error } = await supabaseClient.from('profiles').update({
-            username: newNick,
-            status: newStatus
-        }).eq('id', user.id);
-
-        if (error) {
-            alert("შეცდომა შენახვისას: " + error.message);
-        } else {
-            alert("მონაცემები განახლდა!");
-            location.reload();
-        }
-    }
-
-    loadProfile();
-</script>
+        init();
+    </script>
 </body>
 </html>
