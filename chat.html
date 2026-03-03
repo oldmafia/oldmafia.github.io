@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>ჩატი</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="chat-container">
+
+    <h2 id="room-title"></h2>
+
+    <div class="chat-box" id="chat-box"></div>
+
+    <div class="input-area">
+        <input type="text" id="message-input" placeholder="დაწერე რამე...">
+        <button onclick="sendMessage()">გაგზავნა</button>
+    </div>
+
+</div>
+
+<script>
+document.getElementById("room-title").innerText = 
+localStorage.getItem("room");
+
+function sendMessage(){
+    let input = document.getElementById("message-input");
+    let message = input.value;
+
+    if(message.trim() === "") return;
+
+    let chatBox = document.getElementById("chat-box");
+
+    let msgDiv = document.createElement("div");
+    msgDiv.className = "message";
+
+    msgDiv.innerHTML = `
+        <img src="https://i.pravatar.cc/40" class="avatar">
+        <span class="nickname">User</span>
+        <p>${message}</p>
+    `;
+
+    chatBox.appendChild(msgDiv);
+    input.value = "";
+}
+</script>
+
+</body>
+</html>
