@@ -18,20 +18,19 @@
             display: flex;
             background: #000;
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
         }
 
-        /* გვერდითა მენიუ */
+        /* სიდებარი */
         .sidebar {
             width: 280px;
             background: #0a0a0a;
             border-right: 2px solid var(--neon-red);
             display: flex;
             flex-direction: column;
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.4s;
             z-index: 1000;
-            box-shadow: 10px 0 30px rgba(255, 0, 0, 0.1);
         }
 
         @media (max-width: 768px) {
@@ -44,7 +43,6 @@
             font-size: 24px;
             font-weight: bold;
             text-align: center;
-            color: #fff;
             text-shadow: 0 0 15px var(--neon-red);
             border-bottom: 1px solid #1a1a1a;
         }
@@ -60,24 +58,20 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            border: 1px solid transparent;
             color: #bbb;
         }
 
         .menu-item:hover {
-            border-color: var(--neon-red);
             background: rgba(255, 0, 0, 0.1);
             color: #fff;
-            transform: translateX(5px);
         }
 
-        /* მთავარი ჩატის არე */
+        /* ჩატი */
         .main-content {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             background: radial-gradient(circle at center, #100000 0%, #000 100%);
-            position: relative;
         }
 
         .top-nav {
@@ -88,7 +82,6 @@
             justify-content: space-between;
             padding: 0 25px;
             border-bottom: 1px solid #1a1a1a;
-            backdrop-filter: blur(10px);
         }
 
         #messageList {
@@ -98,135 +91,75 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            scroll-behavior: smooth;
         }
 
-        /* მესიჯების სტილი - ყველა მარცხნივ */
         .msg-container {
             display: flex;
-            gap: 15px;
-            align-items: flex-start;
-            max-width: 80%;
-            animation: slideIn 0.3s ease-out;
+            gap: 12px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
         }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .avatar {
-            width: 48px;
-            height: 48px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             border: 2px solid var(--neon-red);
             object-fit: cover;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
         }
 
-        .msg-content {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .msg-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .username {
-            color: var(--neon-red);
-            font-weight: bold;
-            font-size: 14px;
-            text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
-        }
-
-        .time {
-            color: #555;
-            font-size: 11px;
-        }
-
+        .username { color: var(--neon-red); font-weight: bold; font-size: 14px; }
+        .time { color: #555; font-size: 11px; margin-left: 10px; }
         .msg-bubble {
             background: var(--msg-bg);
-            color: #eee;
-            padding: 12px 18px;
-            border-radius: 0 18px 18px 18px;
+            padding: 10px 15px;
+            border-radius: 0 15px 15px 15px;
             border: 1px solid #222;
-            line-height: 1.5;
-            font-size: 14.5px;
-            position: relative;
+            margin-top: 5px;
         }
 
-        /* ინპუტის ზონა */
         .input-area {
-            padding: 25px;
+            padding: 20px;
             background: #080808;
             display: flex;
-            gap: 15px;
+            gap: 10px;
             border-top: 1px solid #1a1a1a;
         }
 
-        .input-area input {
+        input {
             flex-grow: 1;
-            padding: 15px 20px;
+            padding: 15px;
             background: #111;
             border: 1px solid #333;
             color: white;
-            border-radius: 15px;
+            border-radius: 12px;
             outline: none;
-            transition: 0.3s;
         }
 
-        .input-area input:focus {
-            border-color: var(--neon-red);
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
-        }
-
-        .input-area button {
+        button.send-btn {
             background: var(--neon-red);
             color: white;
             border: none;
-            padding: 0 30px;
-            border-radius: 15px;
+            padding: 0 25px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: bold;
-            transition: 0.3s;
         }
-
-        .input-area button:hover {
-            box-shadow: 0 0 20px var(--neon-red);
-            transform: scale(1.05);
-        }
-
-        /* მობილურის მენიუს ღილაკი */
-        .mobile-btn {
-            display: none;
-            background: none;
-            border: 1px solid var(--neon-red);
-            color: var(--neon-red);
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        @media (max-width: 768px) { .mobile-btn { display: block; } }
-
-        /* სქროლის გასუფთავება */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--neon-red); }
     </style>
 </head>
 <body>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">კაიფმანია 😎🔥</div>
+        <div class="sidebar-header">კაიფმანია 🕶️🔥</div>
         <div class="menu-items">
             <div class="menu-item" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
             <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 ვიპ საუბრები</div>
             <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
             <div class="menu-item" onclick="changeRoom('შიფროგრამა', '🔐')">🔐 შიფროგრამა</div>
             <div class="menu-item" onclick="changeRoom('ვიქტორინა', '🧠')">🧠 ვიქტორინა</div>
-            <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '🪢')">🪢 ჩამოხრჩობანა</div>
+            <div class="menu-item" onclick="changeRoom('ჩამოხრჩობანა', '💀')">💀 ჩამოხრჩობანა</div>
             <div class="menu-item" onclick="changeRoom('მაფიის ღამე', '🕵️‍♂️')">🕵️‍♂️ მაფიის ღამე</div>
             <div class="menu-item" onclick="changeRoom('ჯოკერი', '🃏')">🃏 ჯოკერი</div>
             <div class="menu-item" onclick="changeRoom('ნარდი', '🎲')">🎲 ნარდი</div>
@@ -241,16 +174,16 @@
 
     <div class="main-content">
         <div class="top-nav">
-            <button class="mobile-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-            <div id="roomTitle" style="font-size: 18px; font-weight: bold; text-shadow: 0 0 10px red;">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color: #888; font-size: 13px;">...</div>
+            <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="background:none; border:1px solid red; color:red; padding:5px 10px; border-radius:5px; cursor:pointer;">☰</button>
+            <div id="roomTitle">💬 ზოგადი ჩატი</div>
+            <div id="userDisplay" style="color:red; font-weight:bold;">...</div>
         </div>
 
         <div id="messageList"></div>
 
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button onclick="sendMessage()">გაგზავნა</button>
+            <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">გაგზავნა</button>
         </div>
     </div>
 
@@ -266,8 +199,10 @@
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) { window.location.href = "index.html"; return; }
             currentUser = user;
-            document.getElementById('userDisplay').innerText = user.user_metadata.nickname || user.email;
             
+            // ნიკნეიმის გამოჩენა
+            document.getElementById('userDisplay').innerText = user.user_metadata.nickname || user.email;
+
             checkAdmin();
             loadMessages();
             subscribeMessages();
@@ -284,10 +219,7 @@
             currentRoom = name;
             document.getElementById('roomTitle').innerHTML = `${icon} ${name}`;
             document.getElementById('messageList').innerHTML = '';
-            if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
-            
             loadMessages();
-            subscribeMessages();
         }
 
         async function loadMessages() {
@@ -295,12 +227,13 @@
                 .from('messages')
                 .select('*')
                 .eq('room_name', currentRoom)
-                .order('created_at', { ascending: true })
-                .limit(50);
+                .order('created_at', { ascending: true });
 
             if (msgs) {
+                const list = document.getElementById('messageList');
+                list.innerHTML = '';
                 msgs.forEach(msg => renderMessage(msg));
-                scrollDown();
+                list.scrollTop = list.scrollHeight;
             }
         }
 
@@ -313,48 +246,45 @@
             div.className = 'msg-container';
             div.innerHTML = `
                 <img src="${avatar}" class="avatar">
-                <div class="msg-content">
-                    <div class="msg-header">
-                        <span class="username">${msg.username}</span>
-                        <span class="time">${time}</span>
-                    </div>
+                <div>
+                    <span class="username">${msg.username}</span>
+                    <span class="time">${time}</span>
                     <div class="msg-bubble">${msg.content}</div>
                 </div>
             `;
             list.appendChild(div);
-            scrollDown();
+            list.scrollTop = list.scrollHeight;
         }
 
         async function sendMessage() {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
-            if (!text) return;
+            if (!text || !currentUser) return;
 
             const { error } = await supabaseClient.from('messages').insert([{
                 user_id: currentUser.id,
                 username: currentUser.user_metadata.nickname || currentUser.email,
                 content: text,
                 room_name: currentRoom,
-                avatar_url: currentUser.user_metadata.avatar_url
+                avatar_url: currentUser.user_metadata.avatar_url || null
             }]);
 
-            if (!error) input.value = '';
+            if (error) {
+                console.error("Error sending:", error.message);
+                alert("შეცდომა გაგზავნისას: " + error.message);
+            } else {
+                input.value = '';
+            }
         }
 
         function subscribeMessages() {
-            supabaseClient.channel('any').on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'messages',
-                filter: `room_name=eq.${currentRoom}`
-            }, payload => {
-                renderMessage(payload.new);
-            }).subscribe();
-        }
-
-        function scrollDown() {
-            const list = document.getElementById('messageList');
-            list.scrollTop = list.scrollHeight;
+            supabaseClient.channel('custom-filter-channel')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                if(payload.new.room_name === currentRoom) {
+                    renderMessage(payload.new);
+                }
+            })
+            .subscribe();
         }
 
         async function logout() {
