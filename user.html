@@ -25,7 +25,7 @@
 <body>
 <div class="profile-card">
     <div class="avatar-container">
-        <img id="userAvatar" src="">
+        <img id="userAvatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=guest">
         <button class="upload-btn" onclick="document.getElementById('fileInput').click()">+</button>
     </div>
     <input type="file" id="fileInput" accept="image/*" onchange="uploadPhoto()">
@@ -36,52 +36,7 @@
     <button id="saveBtn" class="save-btn" onclick="updateProfile()">შენახვა</button>
     <a href="home.html" class="back-link">← დაბრუნება ჩატში</a>
 </div>
+
 <script>
     const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
-    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-    let userId = "";
-
-    async function loadProfile() {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return window.location.href = "index.html";
-        userId = user.id;
-
-        let { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
-        
-        if (!profile) {
-            const isOwner = (user.email === 'to222ji@gmail.com');
-            const initialNick = isOwner ? 'abu007' : user.email.split('@')[0];
-            const { data: newProf } = await supabaseClient.from('profiles').upsert([{ 
-                id: userId, username: initialNick, role: isOwner ? 'owner' : 'user' 
-            }]).select().single();
-            profile = newProf;
-        }
-
-        document.getElementById('displayNick').innerHTML = (profile.role === 'owner' ? '👑 ' : '') + profile.username;
-        document.getElementById('newNick').value = profile.username;
-        document.getElementById('userAvatar').src = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${profile.username}`;
-        document.getElementById('displayRole').innerText = profile.role.toUpperCase();
-        document.getElementById('userStatus').value = profile.status || "";
-    }
-
-    async function updateProfile() {
-        const nick = document.getElementById('newNick').value.trim();
-        const { error } = await supabaseClient.from('profiles').update({ username: nick, status: document.getElementById('userStatus').value }).eq('id', userId);
-        if (error) alert(error.message); else { alert("განახლდა!"); location.reload(); }
-    }
-
-    async function uploadPhoto() {
-        const file = document.getElementById('fileInput').files[0];
-        if (!file) return;
-        const filePath = `${userId}-${Date.now()}`;
-        const { error: upErr } = await supabaseClient.storage.from('avatars').upload(filePath, file);
-        if (upErr) return alert(upErr.message);
-        const { data } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
-        await supabaseClient.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', userId);
-        location.reload();
-    }
-    loadProfile();
-</script>
-</body>
-</html>
+    const supabaseKey = "sb_publishable_e
