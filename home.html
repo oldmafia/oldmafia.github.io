@@ -7,48 +7,40 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root { --main-red: #cc0000; --dark-bg: #080808; --panel-bg: #121212; }
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #ccc; overflow: hidden; }
         
-        /* Sidebar */
-        .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
+        .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow-y: auto; }
         .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; color: var(--main-red); border-bottom: 1px solid #1a1a1a; }
-        .menu-items { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .menu-item { padding: 12px; margin: 3px 0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; transition: 0.2s; font-size: 14.5px; }
-        .menu-item:hover, .menu-item.active { background: #111; color: #fff; }
-        .menu-item.active { border-left: 3px solid var(--main-red); color: var(--main-red); font-weight: bold; }
+        .menu-item { padding: 12px; margin: 3px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; }
+        .menu-item.active { background: #111; color: var(--main-red); border-left: 3px solid var(--main-red); }
 
-        /* Main Content */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; }
         .top-nav { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-        .menu-toggle { display: none; background: none; border: 1px solid #333; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-
-        #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg-container { display: flex; gap: 12px; max-width: 90%; }
-        .avatar { width: 40px; height: 40px; background: #1a1a1a; border: 1px solid #222; border-radius: 10px; flex-shrink: 0; }
-        .username { color: var(--main-red); font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .msg-text { background: var(--panel-bg); padding: 12px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; margin-top: 4px; line-height: 1.4; word-break: break-word; }
         
-        .crown { color: gold; font-size: 14px; }
-        .del-btn { color: #444; font-size: 11px; cursor: pointer; margin-left: 10px; font-weight: normal; }
-        .del-btn:hover { color: #ff0000; text-decoration: underline; }
+        #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg-box { background: var(--panel-bg); padding: 10px 15px; border-radius: 12px; border: 1px solid #1a1a1a; max-width: 85%; align-self: flex-start; }
+        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .username { color: var(--main-red); font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .msg-time { color: #444; font-size: 10px; margin-left: 10px; }
+        .msg-text { font-size: 14px; color: #eee; word-break: break-word; }
+        
+        .crown { color: gold; }
+        .del-btn { color: #444; font-size: 11px; cursor: pointer; margin-left: 10px; }
+        .del-btn:hover { color: red; text-decoration: underline; }
 
-        .input-area { padding: 20px; background: #000; border-top: 1px solid #1a1a1a; display: flex; gap: 10px; }
+        .input-area { padding: 15px; background: #000; border-top: 1px solid #1a1a1a; display: flex; gap: 10px; }
         input { flex-grow: 1; padding: 12px; background: #050505; border: 1px solid #222; color: #fff; border-radius: 8px; outline: none; }
-        .send-btn { background: var(--main-red); color: white; border: none; padding: 0 25px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .send-btn { background: var(--main-red); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -280px; height: 100%; }
-            .sidebar.open { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
-            .menu-toggle { display: block; }
-        }
+        @media (max-width: 768px) { .sidebar { display: none; } }
     </style>
 </head>
 <body>
 
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar">
         <div class="sidebar-header">კაიფმანია 🕶️</div>
-        <div class="menu-items">
+        <div id="roomsContainer">
             <div class="menu-item active" onclick="changeRoom('ზოგადი ჩატი', '💬')">💬 ზოგადი ჩატი</div>
             <div class="menu-item" onclick="changeRoom('ვიპ საუბრები', '💎')">💎 ვიპ საუბრები</div>
             <div class="menu-item" onclick="changeRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
@@ -63,15 +55,14 @@
             <div class="menu-item" style="color: gold;" onclick="changeRoom('ადმინისტრაცია', '🛡️')">🛡️ ადმინისტრაცია</div>
             <div class="menu-item" onclick="changeRoom('დახმარება', '🆘')">🆘 დახმარება</div>
             <div class="menu-item" onclick="changeRoom('ფორუმი', '🏛️')">🏛️ ფორუმი</div>
-            <div class="menu-item" style="color: #ff4444; border-top: 1px solid #111; margin-top: 10px;" onclick="logout()">🚪 გასვლა</div>
+            <div class="menu-item" style="color: #ff4444;" onclick="logout()">🚪 გასვლა</div>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-nav">
-            <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-            <div id="roomTitle">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">...</div>
+            <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
+            <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">👑 abu007</div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
@@ -86,22 +77,22 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let myNick = '';
-        let myRole = '';
+        let myNick = 'abu007'; 
+        let myRole = 'owner';
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            myNick = profile?.username || 'user';
-            myRole = profile?.role || 'user';
-            
-            const isBoss = (myNick === 'abu007' || myRole === 'admin' || myRole === 'owner');
-            document.getElementById('userDisplay').innerHTML = isBoss ? `<span class="crown">👑</span> ${myNick}` : myNick;
+            if (profile) {
+                myNick = profile.username || 'abu007';
+                myRole = profile.role || 'owner';
+            }
+            document.getElementById('userDisplay').innerHTML = (myRole === 'admin' || myRole === 'owner' || myNick === 'abu007') ? `👑 ${myNick}` : myNick;
             
             loadMsgs();
-            supabaseClient.channel('chat_main').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
+            supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
         }
 
         async function loadMsgs() {
@@ -114,46 +105,54 @@
             msgs?.forEach(msg => {
                 const uProf = profs?.find(p => p.username === msg.username);
                 const isAdmin = (uProf?.role === 'admin' || uProf?.role === 'owner' || msg.username === 'abu007');
-                const crown = isAdmin ? `<span class="crown">👑</span>` : '';
                 
-                const canIDelete = (myRole === 'admin' || myRole === 'owner' || myNick === 'abu007');
-                const delBtn = canIDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
+                // დროის ფორმატირება
+                const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const canDelete = (myRole === 'admin' || myRole === 'owner' || myNick === 'abu007');
+                const delBtn = canDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
 
                 const div = document.createElement('div');
-                div.className = 'msg-container';
-                div.id = `msg-${msg.id}`;
+                div.className = 'msg-box';
                 div.innerHTML = `
-                    <div class="avatar"></div>
-                    <div style="flex-grow:1;">
-                        <div class="username">${crown} ${msg.username} ${delBtn}</div>
-                        <div class="msg-text">${msg.text}</div>
+                    <div class="msg-header">
+                        <span class="username">${isAdmin ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
+                        <span class="msg-time">${time} ${delBtn}</span>
                     </div>
+                    <div class="msg-text">${msg.text}</div>
                 `;
                 list.appendChild(div);
             });
             list.scrollTop = list.scrollHeight;
         }
 
-        async function del(id) {
-            if (!confirm("ნამდვილად წავშალოთ?")) return;
-            const { error } = await supabaseClient.from('messages').delete().eq('id', id);
-            if (error) alert("შეცდომა: " + error.message);
-        }
-
         async function send() {
             const input = document.getElementById('msgInput');
             if (!input.value.trim()) return;
             const { data: { user } } = await supabaseClient.auth.getUser();
-            await supabaseClient.from('messages').insert([{ username: myNick, text: input.value, room_name: currentRoom, user_id: user.id }]);
+            
+            const { error } = await supabaseClient.from('messages').insert([{ 
+                username: myNick, 
+                text: input.value, 
+                room_name: currentRoom, 
+                user_id: user.id 
+            }]);
+            
+            if(error) console.error(error);
             input.value = '';
+        }
+
+        async function del(id) {
+            if (!confirm("წავშალოთ?")) return;
+            await supabaseClient.from('messages').delete().eq('id', id);
+            loadMsgs();
         }
 
         function changeRoom(name, icon) {
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+            Array.from(document.querySelectorAll('.menu-item')).find(el => el.innerText.includes(name)).classList.add('active');
             loadMsgs();
         }
 
