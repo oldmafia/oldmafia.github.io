@@ -62,7 +62,7 @@
     <div class="main-content">
         <div class="top-nav">
             <div id="roomTitle" style="font-weight:bold;">💬 ზოგადი ჩატი</div>
-            <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">👑 abu007</div>
+            <div id="userDisplay" style="color:var(--main-red); font-weight:bold;">იტვირთება...</div>
         </div>
         <div id="messageList"></div>
         <div class="input-area">
@@ -77,19 +77,26 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let myNick = 'abu007'; 
-        let myRole = 'owner';
+        let myNick = ''; 
+        let myRole = 'user';
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
+            // მონაცემების წამოღება
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            
             if (profile) {
-                myNick = profile.username || 'abu007';
-                myRole = profile.role || 'owner';
+                myNick = profile.username;
+                myRole = profile.role || 'user';
+            } else {
+                myNick = user.user_metadata.nickname || 'Guest';
             }
-            document.getElementById('userDisplay').innerHTML = (myRole === 'admin' || myRole === 'owner' || myNick === 'abu007') ? `👑 ${myNick}` : myNick;
+
+            const display = document.getElementById('userDisplay');
+            // გვირგვინი მხოლოდ Owner-ისთვის ან კონკრეტულად შენთვის
+            display.innerHTML = (myRole === 'owner' || myNick === 'abu007') ? `👑 ${myNick}` : myNick;
             
             loadMsgs();
             supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
@@ -104,19 +111,17 @@
 
             msgs?.forEach(msg => {
                 const uProf = profs?.find(p => p.username === msg.username);
-                const isAdmin = (uProf?.role === 'admin' || uProf?.role === 'owner' || msg.username === 'abu007');
-                
-                // დროის ფორმატირება
+                const isSpecial = (uProf?.role === 'owner' || msg.username === 'abu007');
                 const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
-                const canDelete = (myRole === 'admin' || myRole === 'owner' || myNick === 'abu007');
+                const canDelete = (myRole === 'owner' || myNick === 'abu007');
                 const delBtn = canDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
 
                 const div = document.createElement('div');
                 div.className = 'msg-box';
                 div.innerHTML = `
                     <div class="msg-header">
-                        <span class="username">${isAdmin ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
+                        <span class="username">${isSpecial ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
                         <span class="msg-time">${time} ${delBtn}</span>
                     </div>
                     <div class="msg-text">${msg.text}</div>
@@ -128,7 +133,8 @@
 
         async function send() {
             const input = document.getElementById('msgInput');
-            if (!input.value.trim()) return;
+            if (!input.value.trim() || !myNick) return;
+
             const { data: { user } } = await supabaseClient.auth.getUser();
             
             const { error } = await supabaseClient.from('messages').insert([{ 
@@ -143,7 +149,7 @@
         }
 
         async function del(id) {
-            if (!confirm("წავშალოთ?")) return;
+            if (!confirm("წავშალოთ შეტყობინება?")) return;
             await supabaseClient.from('messages').delete().eq('id', id);
             loadMsgs();
         }
@@ -152,7 +158,8 @@
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            Array.from(document.querySelectorAll('.menu-item')).find(el => el.innerText.includes(name)).classList.add('active');
+            const target = Array.from(document.querySelectorAll('.menu-item')).find(el => el.innerText.includes(name));
+            if(target) target.classList.add('active');
             loadMsgs();
         }
 
