@@ -2,41 +2,52 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>ჩემი პროფილი</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>პროფილი - კაიფმანია</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .card { background: #161616; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 100%; max-width: 400px; text-align: center; }
-        .avatar-wrapper { position: relative; width: 120px; height: 120px; margin: 0 auto 15px; }
-        .avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #cc0000; object-fit: cover; }
-        .upload-label { position: absolute; bottom: 0; right: 0; background: #cc0000; padding: 8px; border-radius: 50%; cursor: pointer; font-size: 12px; }
-        .name { font-size: 24px; font-weight: bold; color: #cc0000; margin-bottom: 5px; }
-        .status-text { color: #999; margin-bottom: 20px; display: block; }
-        input[type="text"] { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; }
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
+        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #161616; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .avatar-container { position: relative; width: 130px; height: 130px; margin: 0 auto 20px; }
+        .u-avatar { width: 100%; height: 100%; border-radius: 50%; border: 3px solid #cc0000; object-fit: cover; background: #222; }
+        .upload-btn { position: absolute; bottom: 5px; right: 5px; background: #cc0000; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #161616; font-size: 18px; }
+        
+        .u-name { font-size: 26px; font-weight: bold; color: #cc0000; margin-bottom: 5px; }
+        .u-role { font-size: 14px; color: gold; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .u-status { background: #111; padding: 10px; border-radius: 10px; font-style: italic; color: #aaa; margin-bottom: 25px; display: block; border: 1px solid #222; }
+        
+        input[type="text"] { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; outline: none; }
+        input[type="text"]:focus { border-color: #cc0000; }
+        
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 14px; margin-bottom: 10px; }
         .btn-save { background: #cc0000; color: white; }
-        .btn-back { background: #333; color: white; }
+        .btn-save:hover { background: #f00; }
+        .btn-back { background: #252525; color: #ccc; }
+        
         #fileInput { display: none; }
-        .loading-overlay { display: none; color: gold; font-size: 12px; margin-bottom: 10px; }
+        .loader { display: none; color: gold; font-size: 12px; margin-bottom: 10px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="avatar-wrapper">
-            <img id="uAvatar" class="avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=user">
-            <label for="fileInput" class="upload-label">📷</label>
-            <input type="file" id="fileInput" accept="image/*" onchange="uploadImage()">
-        </div>
-        
-        <div id="uploadStatus" class="loading-overlay">იტვირთება ფოტო...</div>
-        
-        <div id="uName" class="name">იტვირთება...</div>
-        <div id="uRole" style="color: gold; font-size: 13px; margin-bottom: 10px;"></div>
-        <span id="uStatus" class="status-text"></span>
 
-        <input type="text" id="newStatus" placeholder="შეცვალე სტატუსი...">
-        <button class="btn btn-save" onclick="updateStatus()">სტატუსის შენახვა</button>
-        <button class="btn btn-back" onclick="window.location.href='home.html'">უკან ჩატში</button>
+    <div class="card">
+        <div class="avatar-container">
+            <img id="displayAvatar" class="u-avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=user">
+            <label for="fileInput" class="upload-btn">📷</label>
+            <input type="file" id="fileInput" accept="image/*" onchange="handleUpload()">
+        </div>
+
+        <div id="loadingText" class="loader">ფოტო იტვირთება... გთხოვთ დაელოდოთ</div>
+
+        <div id="displayName" class="u-name">იტვირთება...</div>
+        <div id="displayRole" class="u-role"></div>
+        <div id="displayStatus" class="u-status">იტვირთება სტატუსი...</div>
+
+        <input type="text" id="inputStatus" placeholder="დაწერე ახალი სტატუსი...">
+        <button class="btn btn-save" onclick="saveStatus()">სტატუსის განახლება</button>
+        <button class="btn btn-back" onclick="window.location.href='home.html'">← უკან ჩატში</button>
     </div>
 
     <script>
@@ -44,65 +55,70 @@
         const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        let myId = "";
+        let currentUser = null;
 
         async function init() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return window.location.href = "index.html";
-            myId = user.id;
+            currentUser = user;
 
-            const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            if (p) {
-                document.getElementById('uName').innerText = p.username || "მომხმარებელი";
-                document.getElementById('uStatus').innerText = p.status || "სტატუსი არ არის";
-                document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : '👤 წევრი';
-                if (p.avatar_url) document.getElementById('uAvatar').src = p.avatar_url;
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+            
+            if (profile) {
+                document.getElementById('displayName').innerText = profile.username || "მომხმარებელი";
+                document.getElementById('displayStatus').innerText = profile.status || "სტატუსი ცარიელია";
+                document.getElementById('displayRole').innerText = profile.role === 'owner' ? '👑 დამფუძნებელი' : (profile.role === 'admin' ? '🛡️ ადმინისტრატორი' : '👤 წევრი');
+                if (profile.avatar_url) {
+                    document.getElementById('displayAvatar').src = profile.avatar_url;
+                }
             }
         }
 
-        async function uploadImage() {
+        async function handleUpload() {
             const file = document.getElementById('fileInput').files[0];
             if (!file) return;
 
-            document.getElementById('uploadStatus').style.display = 'block';
-            
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${myId}-${Math.random()}.${fileExt}`;
-            const filePath = `public/${fileName}`;
+            document.getElementById('loadingText').style.display = 'block';
 
-            // 1. ფოტოს ატვირთვა Storage-ში
+            // ფაილის უნიკალური სახელი
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
+            const filePath = `user_avatars/${fileName}`;
+
+            // 1. ატვირთვა Storage-ში (avatars ბაკეტში)
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file);
 
             if (uploadError) {
-                alert("ატვირთვის შეცდომა: " + uploadError.message);
+                alert("შეცდომა ატვირთვისას: " + uploadError.message);
+                document.getElementById('loadingText').style.display = 'none';
                 return;
             }
 
-            // 2. ფოტოს საჯარო ლინკის აღება
+            // 2. ლინკის აღება
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
             const publicUrl = data.publicUrl;
 
-            // 3. პროფილის განახლება ბაზაში
-            await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', myId);
-            
-            document.getElementById('uAvatar').src = publicUrl;
-            document.getElementById('uploadStatus').style.display = 'none';
-            alert("ფოტო განახლდა!");
-        }
+            // 3. ბაზაში ჩაწერა
+            const { error: updateError } = await supabase.from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', currentUser.id);
 
-        async function updateStatus() {
-            const status = document.getElementById('newStatus').value;
-            if (!status) return;
-            const { error } = await supabase.from('profiles').update({ status: status }).eq('id', myId);
-            if (!error) {
-                document.getElementById('uStatus').innerText = status;
-                alert("სტატუსი შეიცვალა!");
+            if (!updateError) {
+                document.getElementById('displayAvatar').src = publicUrl;
+                alert("ფოტო წარმატებით განახლდა!");
             }
+            document.getElementById('loadingText').style.display = 'none';
         }
 
-        init();
-    </script>
-</body>
-</html>
+        async function saveStatus() {
+            const newStatus = document.getElementById('inputStatus').value.trim();
+            if (!newStatus) return;
+
+            const { error } = await supabase.from('profiles')
+                .update({ status: newStatus })
+                .eq('id', currentUser.id);
+
+            if (!error) {
+                document.getElementById('displayStatus').innerText
