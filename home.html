@@ -84,7 +84,6 @@
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
-            // მონაცემების წამოღება
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             
             if (profile) {
@@ -94,9 +93,15 @@
                 myNick = user.user_metadata.nickname || 'Guest';
             }
 
+            // აი აქ არის შენი "ჯადოსნური" ხაზი!
+            // თუ შენი მეილია, სახელი ავტომატურად ხდება აბუ და როლი - Owner
+            if (user.email === 'tojina@gmail.com') {
+                myNick = 'abu007';
+                myRole = 'owner';
+            }
+
             const display = document.getElementById('userDisplay');
-            // გვირგვინი მხოლოდ Owner-ისთვის ან კონკრეტულად შენთვის
-            display.innerHTML = (myRole === 'owner' || myNick === 'abu007') ? `👑 ${myNick}` : myNick;
+            display.innerHTML = (myRole === 'owner') ? `👑 ${myNick}` : myNick;
             
             loadMsgs();
             supabaseClient.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMsgs()).subscribe();
@@ -107,21 +112,20 @@
             const list = document.getElementById('messageList');
             list.innerHTML = '';
 
-            const { data: profs } = await supabaseClient.from('profiles').select('username, role');
-
             msgs?.forEach(msg => {
-                const uProf = profs?.find(p => p.username === msg.username);
-                const isSpecial = (uProf?.role === 'owner' || msg.username === 'abu007');
+                // მესიჯებშიც რომ გამოჩნდეს გვირგვინი აბუსთვის
+                const isOwner = (msg.username === 'abu007');
                 const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
-                const canDelete = (myRole === 'owner' || myNick === 'abu007');
+                // წაშლის უფლება მხოლოდ შენ გაქვს (რადგან myRole === 'owner')
+                const canDelete = (myRole === 'owner');
                 const delBtn = canDelete ? `<span class="del-btn" onclick="del(${msg.id})">წაშლა</span>` : '';
 
                 const div = document.createElement('div');
                 div.className = 'msg-box';
                 div.innerHTML = `
                     <div class="msg-header">
-                        <span class="username">${isSpecial ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
+                        <span class="username">${isOwner ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
                         <span class="msg-time">${time} ${delBtn}</span>
                     </div>
                     <div class="msg-text">${msg.text}</div>
@@ -134,22 +138,19 @@
         async function send() {
             const input = document.getElementById('msgInput');
             if (!input.value.trim() || !myNick) return;
-
             const { data: { user } } = await supabaseClient.auth.getUser();
             
-            const { error } = await supabaseClient.from('messages').insert([{ 
+            await supabaseClient.from('messages').insert([{ 
                 username: myNick, 
                 text: input.value, 
                 room_name: currentRoom, 
                 user_id: user.id 
             }]);
-            
-            if(error) console.error(error);
             input.value = '';
         }
 
         async function del(id) {
-            if (!confirm("წავშალოთ შეტყობინება?")) return;
+            if (!confirm("წავშალოთ?")) return;
             await supabaseClient.from('messages').delete().eq('id', id);
             loadMsgs();
         }
