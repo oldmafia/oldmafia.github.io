@@ -18,7 +18,6 @@
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
         .top-nav { height: 60px; background: #000; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         
-        /* პროფილის სტილი ზემოთ */
         .user-profile-nav { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; transition: 0.3s; }
         .user-profile-nav:hover { background: #111; }
         .nav-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--main-red); object-fit: cover; }
@@ -26,7 +25,8 @@
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .msg-box { background: var(--panel-bg); padding: 10px 15px; border-radius: 12px; border: 1px solid #1a1a1a; max-width: 85%; align-self: flex-start; }
         .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .username { color: var(--main-red); font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .username { color: var(--main-red); font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .username:hover { text-decoration: underline; }
         .msg-time { color: #444; font-size: 10px; margin-left: 10px; }
         .msg-text { font-size: 14px; color: #eee; word-break: break-word; }
         
@@ -130,7 +130,9 @@
                 div.className = 'msg-box';
                 div.innerHTML = `
                     <div class="msg-header">
-                        <span class="username">${isOwner ? '<span class="crown">👑</span>' : ''} ${msg.username}</span>
+                        <span class="username" onclick="window.location.href='user.html?id=${msg.user_id}'">
+                            ${isOwner ? '<span class="crown">👑</span>' : ''} ${msg.username}
+                        </span>
                         <span class="msg-time">${time} ${delBtn}</span>
                     </div>
                     <div class="msg-text">${msg.text}</div>
