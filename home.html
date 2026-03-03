@@ -10,19 +10,17 @@
         * { box-sizing: border-box; font-family: sans-serif; }
         body { margin: 0; height: 100vh; display: flex; background: var(--dark-bg); color: #ddd; overflow: hidden; }
         
-        /* Sidebar Styles */
         .sidebar { width: 280px; min-width: 280px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; overflow-y: auto; }
         .sidebar-header { padding: 25px; font-size: 20px; font-weight: bold; text-align: center; color: var(--main-red); }
         .menu-item { padding: 12px 20px; margin: 2px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-gray); font-size: 14px; transition: 0.2s; }
         .menu-item:hover { background: #111; color: white; }
         .menu-item.active { background: #1a1a1a; color: var(--main-red); font-weight: bold; border-left: 3px solid var(--main-red); }
 
-        /* Main Content Styles */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--dark-bg); }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; }
         .top-nav { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         
         .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px 10px; border-radius: 20px; }
-        .nav-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #333; object-fit: cover; }
+        .nav-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #333; object-fit: cover; background: #222; }
 
         #messageList { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg-box { background: var(--panel-bg); padding: 12px 16px; border-radius: 15px; border: 1px solid #222; max-width: 85%; align-self: flex-start; }
@@ -32,7 +30,7 @@
 
         .input-area { padding: 20px; background: #000; border-top: 1px solid #222; display: flex; gap: 12px; }
         input { flex-grow: 1; padding: 14px 20px; background: #111; border: 1px solid #333; color: #fff; border-radius: 25px; outline: none; }
-        .send-btn { background: var(--main-red); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
+        .send-btn { background: var(--main-red); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -79,37 +77,39 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentRoom = 'ზოგადი ჩატი';
-        let myData = { id: '', nick: '', avatar: '' };
+        let myData = { id: '', nick: '', avatar: '', role: '' };
 
         async function init() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return window.location.href = "index.html";
 
             myData.id = user.id;
-            myData.nick = user.email.split('@')[0];
 
-            // ვიღებთ პროფილს
-            const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-            
-            if (p) {
-                myData.nick = p.username || myData.nick;
-                myData.avatar = p.avatar_url;
+            // შენი ID-ს სპეციალური შემოწმება, რომ "იტვირთება" აღარ დაწეროს
+            if (user.id === '1b0d3a82-fac3-471a-98d1-2cc5697669d0') {
+                myData.nick = 'abu007';
+                myData.role = 'owner';
+            } else {
+                const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+                myData.nick = (p && p.username) ? p.username : user.email.split('@')[0];
+                myData.role = (p && p.role) ? p.role : 'user';
+                myData.avatar = p ? p.avatar_url : '';
             }
 
-            document.getElementById('userDisplay').innerText = myData.nick;
+            document.getElementById('userDisplay').innerText = (myData.role === 'owner' ? '👑 ' : '') + myData.nick;
             document.getElementById('navAvatar').src = myData.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${myData.nick}`;
 
             loadMsgs();
             
-            // მესიჯების მოსმენა
-            supabaseClient.channel('chat_realtime')
+            // რეალურ დროში განახლება
+            supabaseClient.channel('chat_main')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                     if (payload.new.room_name === currentRoom) loadMsgs();
                 }).subscribe();
         }
 
         async function loadMsgs() {
-            const { data: msgs } = await supabaseClient.from('messages')
+            const { data: msgs, error } = await supabaseClient.from('messages')
                 .select('*')
                 .eq('room_name', currentRoom)
                 .order('id', { ascending: true });
@@ -149,18 +149,15 @@
                 avatar_url: myData.avatar
             }]);
 
-            if (error) alert("შეცდომა გაგზავნისას: " + error.message);
+            if (error) alert("შეცდომა: " + error.message);
             input.value = '';
         }
 
         function changeRoom(name, icon, el) {
             currentRoom = name;
             document.getElementById('roomTitle').innerText = `${icon} ${name}`;
-            
-            // აქტიური ოთახის მონიშვნა
             document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
-            
             loadMsgs();
         }
 
