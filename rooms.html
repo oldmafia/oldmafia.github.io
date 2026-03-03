@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>ოთახები</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="rooms-container">
+    <h1>აირჩიე ოთახი 🔥</h1>
+
+    <div class="room-list">
+        <button onclick="openRoom('ზოგადი ჩატი')">ზოგადი ჩატი</button>
+        <button onclick="openRoom('ვიპ საუბრები')">ვიპ საუბრები</button>
+        <button onclick="openRoom('გამოძიება')">გამოძიება</button>
+        <button onclick="openRoom('შიფროგრამა')">შიფროგრამა</button>
+        <button onclick="openRoom('ვიქტორეინა')">ვიქტორეინა</button>
+        <button onclick="openRoom('ჩამოხრჩობანა')">ჩამოხრჩობანა</button>
+        <button onclick="openRoom('მაფიის ღამე')">მაფიის ღამე</button>
+        <button onclick="openRoom('ჯოკერი')">ჯოკერი</button>
+        <button onclick="openRoom('ნარდი')">ნარდი</button>
+        <button onclick="openRoom('მუსიკა')">მუსიკა</button>
+        <button onclick="openRoom('იუმორი')">იუმორი</button>
+        <button onclick="openRoom('ადმინისტრაცია')">ადმინისტრაცია</button>
+        <button onclick="openRoom('დახმარება')">დახმარება</button>
+        <button onclick="openRoom('ფორუმი')">ფორუმი</button>
+        <button onclick="logout()">გასვლა</button>
+    </div>
+</div>
+
+<script>
+function openRoom(roomName){
+    localStorage.setItem("room", roomName);
+    window.location.href = "chat.html";
+}
+
+function logout(){
+    window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
