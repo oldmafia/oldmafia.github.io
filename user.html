@@ -10,18 +10,25 @@
         .card { background: #0b0b0b; padding: 40px; border-radius: 20px; border: 1px solid #222; width: 300px; text-align: center; }
         .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #cc0000; margin-bottom: 15px; }
         .username { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .role { color: gold; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; }
+        .role { color: gold; font-size: 12px; font-weight: bold; margin-bottom: 20px; }
         .status { color: #888; margin-bottom: 20px; }
-        .back { color: #555; text-decoration: none; font-size: 14px; }
+        .back { color: #555; text-decoration: none; font-size: 14px; display: block; margin-top: 10px; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; }
+        .btn { width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img id="uAvatar" class="avatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=abu007">
+        <img id="uAvatar" class="avatar" src="">
         <div id="uName" class="username">იტვირთება...</div>
         <div id="uRole" class="role"></div>
         <div id="uStatus" class="status"></div>
-        <a href="home.html" class="back">← უკან</a>
+        <div id="editBox" style="display:none;">
+            <input type="text" id="inNick" placeholder="ნიკი">
+            <input type="text" id="inStatus" placeholder="სტატუსი">
+            <button class="btn" onclick="save()">განახლება</button>
+        </div>
+        <a href="home.html" class="back">← უკან ჩატში</a>
     </div>
 
     <script>
@@ -30,29 +37,36 @@
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         async function init() {
-            // ვიღებთ ID-ს ლინკიდან
+            const { data: { user } } = await supabase.auth.getUser();
             const params = new URLSearchParams(window.location.search);
-            let tid = params.get('id');
-
-            // თუ ID არ არის, ავტომატურად ვნახულობთ შესულ იუზერს
-            if (!tid) {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) tid = user.id;
-            }
+            let tid = params.get('id') || (user ? user.id : null);
 
             if (!tid) return window.location.href = "index.html";
 
-            // მონაცემების წამოღება
-            const { data: p, error } = await supabase.from('profiles').select('*').eq('id', tid).single();
+            const { data: p } = await supabase.from('profiles').select('*').eq('id', tid).maybeSingle();
 
             if (p) {
-                document.getElementById('uName').innerText = p.username;
+                document.getElementById('uName').innerText = p.username || "NULL";
                 document.getElementById('uRole').innerText = p.role === 'owner' ? '👑 დამფუძნებელი' : '👤 მომხმარებელი';
-                document.getElementById('uStatus').innerText = p.status || "სტატუსი ცარიელია";
+                document.getElementById('uStatus').innerText = p.status || "";
                 document.getElementById('uAvatar').src = p.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${p.username}`;
+                
+                if (user && tid === user.id) {
+                    document.getElementById('editBox').style.display = 'block';
+                    document.getElementById('inNick').value = p.username || "";
+                    document.getElementById('inStatus').value = p.status || "";
+                }
             } else {
                 document.getElementById('uName').innerText = "არ მოიძებნა";
             }
+        }
+
+        async function save() {
+            const { data: { user } } = await supabase.auth.getUser();
+            const nick = document.getElementById('inNick').value;
+            const stat = document.getElementById('inStatus').value;
+            await supabase.from('profiles').update({ username: nick, status: stat }).eq('id', user.id);
+            location.reload();
         }
         init();
     </script>
