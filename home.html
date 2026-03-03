@@ -99,11 +99,9 @@
             if (!user) { window.location.href = "index.html"; return; }
             currentUser = user;
 
-            // 1. მაშინვე დავაყენოთ ნიკი, რომ წერტილები არ ეწეროს
             myNick = user.user_metadata.nickname || user.email.split('@')[0];
             document.getElementById('userDisplay').innerText = myNick;
 
-            // 2. მერე ვცადოთ ბაზიდან დაზუსტება
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
             if (profile) {
                 myNick = profile.username;
@@ -129,6 +127,7 @@
             const { data: msgs } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
             const list = document.getElementById('messageList');
             list.innerHTML = '';
+            // აქ შევცვალე content -> text-ით
             if (msgs) msgs.forEach(msg => renderMessage(msg));
             list.scrollTop = list.scrollHeight;
         }
@@ -137,11 +136,12 @@
             const list = document.getElementById('messageList');
             const div = document.createElement('div');
             div.className = 'msg-container';
+            // აქაც შევცვალე msg.content -> msg.text-ით
             div.innerHTML = `
                 <div style="width:35px; height:35px; border-radius:50%; border:1px solid red; background:#222;"></div>
                 <div>
-                    <span class="username">${msg.username}</span>
-                    <div class="msg-bubble">${msg.content}</div>
+                    <span class="username">${msg.username || 'უცნობი'}</span>
+                    <div class="msg-bubble">${msg.text || ''}</div>
                 </div>
             `;
             list.appendChild(div);
@@ -150,13 +150,13 @@
 
         async function sendMessage() {
             const input = document.getElementById('msgInput');
-            const text = input.value.trim();
-            if (!text || !currentUser) return;
+            const messageText = input.value.trim();
+            if (!messageText || !currentUser) return;
 
             const { error } = await supabaseClient.from('messages').insert([{
                 user_id: currentUser.id,
                 username: myNick,
-                content: text,
+                text: messageText, // აქაც text
                 room_name: currentRoom
             }]);
 
