@@ -3,68 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OLD MAFIA - CLASSIC RED</title>
+    <title>OLD MAFIA - SIDEBAR</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; }
-        body { background: #0b0b0b; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { background: #000; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        header { background: #111; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .logo { font-weight: bold; color: #cc0000; font-size: 18px; text-transform: uppercase; }
+        /* ჰედერი */
+        header { background: #111; padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #cc0000; z-index: 100; }
+        .menu-btn { background: none; border: none; color: #cc0000; font-size: 24px; cursor: pointer; margin-right: 15px; }
+        .logo { font-weight: bold; color: #cc0000; font-size: 18px; text-transform: uppercase; flex: 1; }
 
-        /* ოთახების ზოლი - ზუსტად შენი სურათის სტილში */
-        .room-bar { 
-            background: #111; padding: 10px; display: flex; gap: 8px; 
-            overflow-x: auto; border-bottom: 1px solid #222; 
-            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+        /* მარცხენა გვერდითა მენიუ (Sidebar) */
+        .sidebar { 
+            position: fixed; left: -280px; top: 0; width: 280px; height: 100%; 
+            background: #111; transition: 0.3s; z-index: 1000; 
+            border-right: 2px solid #cc0000; display: flex; flex-direction: column;
         }
-        .room-bar::-webkit-scrollbar { display: none; }
-        
-        .room-btn { 
-            background: #222; color: #888; border: none; padding: 8px 15px; 
-            border-radius: 12px; cursor: pointer; white-space: nowrap; font-size: 13px; transition: 0.2s;
+        .sidebar.active { left: 0; }
+        .sidebar-header { padding: 20px; background: #000; border-bottom: 1px solid #222; font-weight: bold; color: #cc0000; }
+        .room-list { overflow-y: auto; flex: 1; }
+        .room-item { 
+            padding: 15px 20px; border-bottom: 1px solid #1a1a1a; cursor: pointer; 
+            color: #bbb; transition: 0.2s; display: block; width: 100%; text-align: left; background: none; border-left: none; border-right: none; border-top: none;
         }
-        .room-btn.active { background: #cc0000; color: white; }
+        .room-item:hover, .room-item.active { background: #1a1a1a; color: white; border-left: 4px solid #cc0000; }
 
-        #messageList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #050505; }
-        
-        /* მესიჯი საათით */
-        .msg { background: #111; padding: 10px; border-radius: 8px; border: 1px solid #1a1a1a; width: 100%; }
-        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .msg-nick { font-weight: bold; font-size: 14px; cursor: pointer; }
+        /* მუქი ფონი მენიუს დროს */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 999; }
+        .overlay.active { display: block; }
+
+        /* მესიჯების არე */
+        #messageList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #000; }
+        .msg { background: #0a0a0a; padding: 12px; border-radius: 8px; border: 1px solid #1a1a1a; }
+        .msg-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .msg-nick { font-weight: bold; color: #00ccff; font-size: 14px; }
         .msg-time { color: #444; font-size: 10px; }
-        .msg-text { color: #ccc; font-size: 15px; word-break: break-word; }
+        .msg-text { color: #ddd; font-size: 15px; line-height: 1.4; word-break: break-word; }
 
-        .input-area { background: #0a0a0a; padding: 12px; display: flex; gap: 10px; border-top: 1px solid #222; }
-        input { flex: 1; background: #000; border: 1px solid #222; color: white; padding: 12px; border-radius: 8px; outline: none; }
+        /* ინპუტი */
+        .input-area { background: #111; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #222; }
+        input { flex: 1; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 8px; outline: none; }
         .send-btn { background: #cc0000; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        .prof-btn { background: #222; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <header>
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
     <div class="logo">OLD MAFIA</div>
-    <button class="prof-btn" onclick="window.location.href='user.html'">პროფილი 👤</button>
+    <button onclick="window.location.href='user.html'" style="background:#222; color:white; border:none; padding:6px 10px; border-radius:5px; font-size:12px;">პროფილი</button>
 </header>
 
-<div class="room-bar">
-    <button class="room-btn active" onclick="switchRoom('ზოგადი ჩატი')">ზოგადი ჩატი</button>
-    <button class="room-btn" onclick="switchRoom('ვიპ საუბრები')">ვიპ საუბრები</button>
-    <button class="room-btn" onclick="switchRoom('გამოძიება')">გამოძიება</button>
-    <button class="room-btn" onclick="switchRoom('შიფროგრამა')">შიფროგრამა</button>
-    <button class="room-btn" onclick="switchRoom('ვიქტორეინა')">ვიქტორეინა</button>
-    <button class="room-btn" onclick="switchRoom('ჩამოხრჩობანა')">ჩამოხრჩობანა</button>
-    <button class="room-btn" onclick="switchRoom('მაფიის ღამე')">მაფიის ღამე</button>
-    <button class="room-btn" onclick="switchRoom('ჯოკერი')">ჯოკერი</button>
-    <button class="room-btn" onclick="switchRoom('ნარდი')">ნარდი</button>
-    <button class="room-btn" onclick="switchRoom('მუსიკა')">მუსიკა</button>
-    <button class="room-btn" onclick="switchRoom('იუმორი')">იუმორი</button>
-    <button class="room-btn" onclick="switchRoom('ადმინისტრაცია')">ადმინისტრაცია</button>
-    <button class="room-btn" onclick="switchRoom('დახმარება')">დახმარება</button>
-    <button class="room-btn" onclick="switchRoom('ფორუმი')">ფორუმი</button>
-    <button class="room-btn" onclick="logout()" style="color:#ff4444;">გასვლა</button>
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">აირჩიე ოთახი</div>
+    <div class="room-list">
+        <button class="room-item active" onclick="switchRoom('ზოგადი ჩატი')">ზოგადი ჩატი</button>
+        <button class="room-item" onclick="switchRoom('ვიპ საუბრები')">ვიპ საუბრები</button>
+        <button class="room-item" onclick="switchRoom('გამოძიება')">გამოძიება</button>
+        <button class="room-item" onclick="switchRoom('შიფროგრამა')">შიფროგრამა</button>
+        <button class="room-item" onclick="switchRoom('ვიქტორეინა')">ვიქტორეინა</button>
+        <button class="room-item" onclick="switchRoom('ჩამოხრჩობანა')">ჩამოხრჩობანა</button>
+        <button class="room-item" onclick="switchRoom('მაფიის ღამე')">მაფიის ღამე</button>
+        <button class="room-item" onclick="switchRoom('ჯოკერი')">ჯოკერი</button>
+        <button class="room-item" onclick="switchRoom('ნარდი')">ნარდი</button>
+        <button class="room-item" onclick="switchRoom('მუსიკა')">მუსიკა</button>
+        <button class="room-item" onclick="switchRoom('იუმორი')">იუმორი</button>
+        <button class="room-item" onclick="switchRoom('ადმინისტრაცია')">ადმინისტრაცია</button>
+        <button class="room-item" onclick="switchRoom('დახმარება')">დახმარება</button>
+        <button class="room-item" onclick="switchRoom('ფორუმი')">ფორუმი</button>
+    </div>
 </div>
 
 <div id="messageList"></div>
@@ -75,4 +85,64 @@
 </div>
 
 <script>
-    const
+    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co"; 
+    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let currentRoom = 'ზოგადი ჩატი';
+    let myUser = null;
+
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    async function init() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return window.location.href = 'index.html';
+        const { data: p } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+        myUser = { id: user.id, username: p?.username || 'User' };
+        loadMsgs();
+        supabase.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            if (payload.new.room_name === currentRoom) appendMsg(payload.new);
+        }).subscribe();
+    }
+
+    async function loadMsgs() {
+        const { data: msgs } = await supabase.from('messages').select('*').eq('room_name', currentRoom).order('id', { ascending: true }).limit(50);
+        const list = document.getElementById('messageList');
+        list.innerHTML = '';
+        if (msgs) msgs.forEach(m => appendMsg(m));
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function appendMsg(m) {
+        const list = document.getElementById('messageList');
+        const time = new Date(m.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isMe = (m.username === 'abu007');
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `<div class="msg-header"><span class="msg-nick" style="color:${isMe ? 'red' : '#00ccff'}">${m.username}</span><span class="msg-time">${time}</span></div><div class="msg-text">${m.text}</div>`;
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+    }
+
+    async function sendMsg() {
+        const input = document.getElementById('msgInput');
+        if (!input.value.trim() || !myUser) return;
+        const text = input.value;
+        input.value = '';
+        await supabase.from('messages').insert([{ user_id: myUser.id, username: myUser.username, text: text, room_name: currentRoom }]);
+    }
+
+    function switchRoom(name) {
+        currentRoom = name;
+        document.querySelectorAll('.room-item').forEach(b => b.classList.toggle('active', b.innerText === name));
+        toggleMenu();
+        loadMsgs();
+    }
+
+    init();
+</script>
+</body>
+</html>
