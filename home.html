@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA ROOMS</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #000; color: white; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+        /* მენიუ */
+        #sidebar { 
+            position: fixed; left: 0; top: 0; width: 280px; height: 100%; 
+            background: #000; border-right: 3px solid red; transition: 0.3s; z-index: 1000;
+            display: flex; flex-direction: column;
+        }
+        #sidebar.closed { left: -280px; }
+        
+        /* მენიუს ზედა ბარი: X და 😎 კაი ფანია */
+        .sidebar-top { 
+            padding: 15px; border-bottom: 2px solid red; display: flex; 
+            justify-content: space-between; align-items: center; 
+        }
+        .close-btn { color: red; font-size: 24px; cursor: pointer; font-weight: bold; }
+        .fan-btn { 
+            background: #111; color: #fff; border: 1px solid red; padding: 5px 10px; 
+            border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 13px;
+        }
+
+        .room-list { flex: 1; overflow-y: auto; }
+        .room-item { 
+            padding: 12px 15px; border-bottom: 1px solid #111; cursor: pointer; 
+            color: #ccc; display: flex; align-items: center; gap: 10px;
+        }
+        .room-item:hover, .room-item.active { background: #111; color: red; }
+
+        /* ჩატის მხარე */
+        #mainChat { flex: 1; display: flex; flex-direction: column; background: #050505; }
+        .header { 
+            height: 60px; border-bottom: 2px solid red; display: flex; 
+            justify-content: space-between; align-items: center; padding: 0 15px;
+        }
+        .open-menu { font-size: 25px; color: red; cursor: pointer; }
+
+        #messageList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* მესიჯის დიზაინი დროით */
+        .msg-card { padding: 10px; border-radius: 8px; background: #0a0a0a; border-left: 3px solid #333; position: relative; }
+        .msg-owner { border-left: 3px solid red; }
+        .msg-info { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .msg-time { font-size: 10px; color: #555; }
+
+        /* საწერი გრაფა: წითელი ისარი და ცისფერი თვითმფრინავი */
+        .input-box { padding: 15px; background: #000; border-top: 1px solid red; display: flex; gap: 10px; align-items: center; }
+        input { flex: 1; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: white; border-radius: 20px; outline: none; }
+        
+        .send-container { 
+            background: red; width: 50px; height: 50px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .plane-icon { color: #00d4ff; font-size: 24px; } /* ცისფერი თვითმფრინავი */
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-top">
+            <div class="close-btn" onclick="toggleSidebar()">X</div>
+            <div class="fan-btn" onclick="toggleSidebar()">😎 კაიფმანია</div>
+        </div>
+        <div class="room-list">
+            <div class="room-item active" onclick="selectRoom('ზოგადი ჩატი', this)">💬 ზოგადი ჩატი</div>
+            <div class="room-item" onclick="selectRoom('VIP საუბრები', this)">💎 VIP საუბრები</div>
+            <div class="room-item" onclick="selectRoom('გამოძიება', this)">🔍 გამოძიება</div>
+            <div class="room-item" onclick="selectRoom('შიფროგრამა', this)">🔐 შიფროგრამა</div>
+            <div class="room-item" onclick="selectRoom('ვიქტორინა', this)">🧩 ვიქტორინა</div>
+            <div class="room-item" onclick="selectRoom('ჩამოხრჩობანა', this)">🪢 ჩამოხრჩობანა</div>
+            <div class="room-item" onclick="selectRoom('მაფიის ღამე', this)">🌑 მაფიის ღამე</div>
+            <div class="room-item" onclick="selectRoom('ჯოკერი', this)">🃏 ჯოკერი</div>
+            <div class="room-item" onclick="selectRoom('ნარდი', this)">🎲 ნარდი</div>
+            <div class="room-item" onclick="selectRoom('მუსიკა', this)">🎵 მუსიკა</div>
+            <div class="room-item" onclick="selectRoom('იუმორი', this)">🤣 იუმორი</div>
+            <div class="room-item" onclick="selectRoom('ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+            <div class="room-item" onclick="selectRoom('დახმარება', this)">❓ დახმარება</div>
+            <div class="room-item" onclick="selectRoom('ფორუმი', this)">📝 ფორუმი</div>
+        </div>
+    </div>
+
+    <div id="mainChat">
+        <div class="header">
+            <div class="open-menu" onclick="toggleSidebar()">☰</div>
+            <div id="roomTitle" style="color:red; font-weight:bold;">ზოგადი ჩატი</div>
+            <div style="width:30px;"></div>
+        </div>
+        <div id="messageList"></div>
+        <div class="input-box">
+            <input type="text" id="msgInput" placeholder="დაწერე მესიჯი...">
+            <div class="send-container" onclick="sendMsg()">
+                <span class="plane-icon">➤</span> </div>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+        const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentRoom = 'ზოგადი ჩატი';
+        let myId = "", myName = "";
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('closed'); }
+
+        async function init() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return window.location.href = 'index.html';
+            myId = user.id;
+            const { data: p } = await supabase.from('profiles').select('username').eq('id', myId).single();
+            myName = p ? p.username : "guest";
+            loadMsgs();
+            supabase.channel('chat').on('postgres_changes', { event: '*', table: 'messages' }, loadMsgs).subscribe();
+        }
+
+        async function loadMsgs() {
+            const { data: msgs } = await supabase.from('messages').select('*').eq('room_name', currentRoom).order('id', { ascending: true });
+            const list = document.getElementById('messageList');
+            list.innerHTML = msgs ? msgs.map(m => {
+                const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `
+                <div class="msg-card ${m.username === 'abu007' ? 'msg-owner' : ''}">
+                    <div class="msg-info">
+                        <b style="color:${m.username === 'abu007' ? 'red' : '#999'}; font-size:13px;">${m.username}</b>
+                        <span class="msg-time">${time}</span>
+                    </div>
+                    <div style="font-size:15px;">${m.text}</div>
+                </div>`;
+            }).join('') : '';
+            list.scrollTop = list.scrollHeight;
+        }
+
+        async function sendMsg() {
+            const input = document.getElementById('msgInput');
+            const txt = input.value.trim();
+            if(!txt) return;
+            input.value = '';
+            await supabase.from('messages').insert([{ user_id: myId, username: myName, text: txt, room_name: currentRoom }]);
+        }
+
+        function selectRoom(name, el) {
+            currentRoom = name;
+            document.getElementById('roomTitle').innerText = name;
+            document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            toggleSidebar(); // ოთახის არჩევისას მენიუ ითიშება
+            loadMsgs();
+        }
+
+        init();
+    </script>
+</body>
+</html>
