@@ -6,16 +6,17 @@
     <title>პროფილი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #161616; padding: 30px; border-radius: 20px; border: 1px solid #222; width: 90%; max-width: 380px; text-align: center; }
-        .u-avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #cc0000; object-fit: cover; margin-bottom: 15px; }
-        .u-name { font-size: 24px; font-weight: bold; color: #cc0000; margin-bottom: 5px; }
-        .u-status { color: #999; margin-bottom: 20px; display: block; }
-        .edit-section { display: none; } /* დამალულია სხვის პროფილზე */
-        input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; }
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
-        .btn-save { background: #cc0000; color: white; }
-        .btn-back { background: #333; color: #ccc; }
+        body { background:#0b0b0b; color:white; font-family:sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
+        .card { background:#161616; padding:30px; border-radius:20px; border:1px solid #222; width:90%; max-width:380px; text-align:center; }
+        .u-avatar { width:120px; height:120px; border-radius:50%; border:3px solid #cc0000; object-fit:cover; margin-bottom:15px; }
+        .u-name { font-size:24px; font-weight:bold; color:#cc0000; margin-bottom:5px; }
+        .u-status { color:#999; margin-bottom:20px; display:block; font-style:italic; }
+        #editSection { display:none; margin-top:20px; border-top:1px solid #333; padding-top:20px; }
+        input { width:100%; padding:12px; background:#000; border:1px solid #333; color:white; border-radius:10px; margin-bottom:10px; box-sizing:border-box; }
+        .btn { width:100%; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; margin-bottom:8px; transition: 0.3s; }
+        .btn-save { background:#cc0000; color:white; }
+        .btn-back { background:#333; color:#ccc; margin-top:10px; }
+        .btn:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -24,9 +25,9 @@
         <div id="uName" class="u-name">იტვირთება...</div>
         <div id="uStatus" class="u-status">...</div>
 
-        <div id="editSection" class="edit-section">
+        <div id="editSection">
             <input type="text" id="newStatus" placeholder="შეცვალე სტატუსი...">
-            <button class="btn btn-save" onclick="updateStatus()">განახლება</button>
+            <button class="btn btn-save" onclick="updateStatus()">მონაცემების შენახვა</button>
         </div>
 
         <button class="btn btn-back" onclick="window.location.href='home.html'">უკან ჩატში</button>
@@ -37,44 +38,43 @@
         const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 1. ვიგებთ ვის პროფილს ვხსნით (URL-დან)
         const params = new URLSearchParams(window.location.search);
-        let userIdToShow = params.get('id');
+        let targetId = params.get('id');
 
         async function init() {
-            // ვიგებთ ჩვენს ID-ს
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return window.location.href = "index.html";
             
-            // თუ ლინკში ID არ წერია, ესე იგი ჩვენს პროფილში ვართ
-            if (!userIdToShow) userIdToShow = user.id;
+            // თუ ლინკში ID არ არის, ჩვენი პროფილი ვაჩვენოთ
+            if (!targetId) targetId = user.id;
 
-            // ბაზიდან მოგვაქვს მონაცემები
-            const { data: p, error } = await supabase.from('profiles').select('*').eq('id', userIdToShow).maybeSingle();
+            const { data: p, error } = await supabase.from('profiles').select('*').eq('id', targetId).maybeSingle();
 
             if (p) {
-                document.getElementById('uName').innerText = p.username;
+                document.getElementById('uName').innerText = p.username || "უსახელო";
                 document.getElementById('uStatus').innerText = p.status || "სტატუსი არ არის";
                 if (p.avatar_url) document.getElementById('uAvatar').src = p.avatar_url;
 
-                // თუ ეს ჩვენი პროფილია, გამოვაჩინოთ "განახლების" ღილაკები
-                if (user.id === userIdToShow) {
+                // მხოლოდ ჩვენს პროფილზე გამოჩნდეს შესაცვლელი ღილაკები
+                if (user.id === targetId) {
                     document.getElementById('editSection').style.display = 'block';
                 }
             } else {
-                document.getElementById('uName').innerText = "იუზერი ვერ მოიძებნა";
+                document.getElementById('uName').innerText = "პროფილი ცარიელია";
             }
         }
 
         async function updateStatus() {
             const st = document.getElementById('newStatus').value.trim();
-            const { data: { user } } = await supabase.auth.getUser();
+            if (!st) return alert("ჩაწერე სტატუსი");
             
+            const { data: { user } } = await supabase.auth.getUser();
             const { error } = await supabase.from('profiles').update({ status: st }).eq('id', user.id);
+            
             if (error) alert("შეცდომა: " + error.message);
             else {
                 document.getElementById('uStatus').innerText = st;
-                alert("სტატუსი განახლდა!");
+                alert("წარმატებით განახლდა!");
             }
         }
 
