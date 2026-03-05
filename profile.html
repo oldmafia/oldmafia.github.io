@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ჩემი პროფილი - KAIFMANIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #000; color: white; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
+        
+        .card { width: 100%; max-width: 500px; background: #0a0a0a; border: 2px solid red; border-radius: 25px; padding: 25px; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        
+        /* ავატარის სექცია */
+        .avatar-area { text-align: center; margin-bottom: 20px; }
+        #avatarImg { width: 130px; height: 130px; border-radius: 50%; border: 3px solid red; object-fit: cover; background: #111; }
+        .upload-btn { display: block; margin-top: 10px; color: red; cursor: pointer; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+
+        h2 { text-align: center; color: red; margin-bottom: 5px; letter-spacing: 1px; }
+        .role-badge { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; background: #222; color: #888; margin-bottom: 15px; }
+
+        /* სტატუსი */
+        .status-display { background: #111; border: 1px solid #222; padding: 15px; border-radius: 15px; margin: 15px 0; text-align: center; font-style: italic; color: #ccc; }
+        
+        .input-group { margin-top: 15px; }
+        input[type="text"] { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 12px; outline: none; margin-bottom: 10px; }
+        .btn-save { width: 100%; padding: 12px; background: red; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-save:hover { background: #b00; }
+
+        /* პირადი მესიჯები */
+        .inbox-title { margin-top: 30px; border-top: 1px solid #222; padding-top: 20px; color: red; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        #inboxList { margin-top: 15px; max-height: 300px; overflow-y: auto; }
+        .msg-item { background: #151515; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid red; position: relative; }
+        .msg-sender { color: #00e5ff; font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px; }
+        .msg-text { font-size: 14px; color: #eee; }
+        .msg-time { font-size: 9px; color: #444; margin-top: 5px; text-align: right; }
+
+        .back-link { display: block; text-align: center; margin-top: 25px; color: #555; text-decoration: none; font-size: 14px; }
+        .back-link:hover { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="avatar-area">
+        <img src="https://via.placeholder.com/130" id="avatarImg">
+        <input type="file" id="fileInput" hidden accept="image/*" onchange="uploadPhoto(this)">
+        <label for="fileInput" class="upload-btn">📸 ფოტოს შეცვლა</label>
+    </div>
+
+    <h2 id="uName">იტვირთება...</h2>
+    <center><div id="uRole" class="role-badge">USER</div></center>
+
+    <div id="uStatus" class="status-display">"აქ თქვენი სტატუსი გამოჩნდება"</div>
+
+    <div class="input-group">
+        <input type="text" id="statusInput" placeholder="შეცვალე სტატუსი...">
+        <button class="btn-save" onclick="updateProfile()">განახლება</button>
+    </div>
+
+    <div class="inbox-section">
+        <div class="inbox-title">📩 პირადი მესიჯები</div>
+        <div id="inboxList">
+            <p style="color:#444; text-align:center; font-size:12px; margin-top:10px;">მესიჯები არ არის...</p>
+        </div>
+    </div>
+
+    <a href="home.html" class="back-link">🔙 დაბრუნება ჩატში</a>
+</div>
+
+<script>
+    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let myUser;
+
+    async function init() {
+        const { data: { user } } = await client.auth.getUser();
+        if(!user) return window.location.href = 'index.html';
+        myUser = user;
+
+        // 1. პროფილის ჩატვირთვა
+        const { data: p } = await client.from('profiles').select('*').eq('id', user.id).single();
+        if(p) {
+            document.getElementById('uName').innerText = p.username;
+            document.getElementById('uStatus').innerText = p.status || "სტატუსი ცარიელია";
+            document.getElementById('uRole').innerText = (p.role || "USER").toUpperCase();
+            if(p.avatar_url) document.getElementById('avatarImg').src = p.avatar_url;
+        }
+
+        // 2. პირადი მესიჯების ჩატვირთვა
+        loadInbox();
+    }
+
+    async function updateProfile() {
+        const newStatus = document.getElementById('statusInput').value;
+        if(!newStatus) return;
+        
+        const { error } = await client.from('profiles').update({ status: newStatus }).eq('id', myUser.id);
+        if(!error) {
+            document.getElementById('uStatus').innerText = newStatus;
+            document.getElementById('statusInput').value = '';
+            alert("პროფილი განახლდა! ✨");
+        }
+    }
+
+    async function uploadPhoto(input) {
+        const file = input.files[0];
+        if(!file) return;
+
+        const fileName = `avatars/${myUser.id}-${Date.now()}.png`;
+        const { data, error } = await client.storage.from('avatars').upload(fileName, file);
+
+        if(data) {
+            const { data: urlData } = client.storage.from('avatars').getPublicUrl(fileName);
+            const publicUrl = urlData.publicUrl;
+            await client.from('profiles').update({ avatar_url: publicUrl }).eq('id', myUser.id);
+            document.getElementById('avatarImg').src = publicUrl;
+            alert("ფოტო წარმატებით აიტვირთა! ✅");
+        } else {
+            console.error(error);
+            alert("ატვირთვის შეცდომა!");
+        }
+    }
+
+    async function loadInbox() {
+        // ვიღებთ მესიჯებს, სადაც receiver_id არის ჩემი ID
+        const { data: msgs, error } = await client.from('private_messages')
+            .select('*, profiles:sender_id(username)')
+            .eq('receiver_id', myUser.id)
+            .order('created_at', { ascending: false });
+
+        if(msgs && msgs.length > 0) {
+            const list = document.getElementById('inboxList');
+            list.innerHTML = msgs.map(m => `
+                <div class="msg-item">
+                    <span class="msg-sender">FROM: ${m.profiles ? m.profiles.username : 'Unknown'}</span>
+                    <div class="msg-text">${m.text}</div>
+                    <div class="msg-time">${new Date(m.created_at).toLocaleString('ka-GE')}</div>
+                </div>
+            `).join('');
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
