@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ჩემი პროფილი - KAIFMANIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #000; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        
+        .profile-card { width: 100%; max-width: 400px; background: #0a0a0a; border: 2px solid red; border-radius: 25px; padding: 25px; text-align: center; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+        
+        /* ავატარი */
+        .avatar-box { position: relative; width: 120px; height: 120px; margin: 0 auto 15px; }
+        #avatarImg { width: 100%; height: 100%; border-radius: 50%; border: 3px solid red; object-fit: cover; background: #111; }
+        .upload-label { position: absolute; bottom: 0; right: 0; background: red; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #000; font-size: 18px; }
+
+        h2 { color: #fff; margin-bottom: 5px; font-size: 24px; }
+        
+        /* როლი და ქულები */
+        .stats-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .badge { padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .role-admin { background: gold; color: #000; }
+        .role-user { background: #222; color: #888; }
+        .score-box { background: red; color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+
+        /* სტატუსი */
+        .status-text { background: #111; padding: 15px; border-radius: 15px; border: 1px solid #222; margin-bottom: 20px; font-style: italic; color: #ccc; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+
+        input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; outline: none; text-align: center; }
+        input:focus { border-color: red; }
+
+        .btn-action { width: 100%; padding: 12px; background: red; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
+        .btn-action:hover { background: darkred; }
+
+        .back-link { display: block; margin-top: 15px; color: #444; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="profile-card">
+    <div class="avatar-box">
+        <img src="https://via.placeholder.com/120" id="avatarImg">
+        <label for="fileInput" class="upload-label">📸</label>
+        <input type="file" id="fileInput" hidden accept="image/*" onchange="uploadAvatar(this)">
+    </div>
+
+    <h2 id="uName">იტვირთება...</h2>
+    
+    <div class="stats-row">
+        <span id="uRole" class="badge role-user">USER</span>
+        <span class="score-box">🏆 <span id="uScore">0</span> ქულა</span>
+    </div>
+
+    <div class="status-text" id="uStatus">"თქვენი სტატუსი"</div>
+
+    <input type="text" id="statusInput" placeholder="შეცვალე სტატუსი...">
+    <button class="btn-action" onclick="updateStatus()">განახლება</button>
+
+    <a href="home.html" class="back-link">🔙 დაბრუნება ჩატში</a>
+</div>
+
+<script>
+    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let myId;
+
+    async function loadProfile() {
+        const { data: { user } } = await client.auth.getUser();
+        if(!user) return window.location.href = 'index.html';
+        myId = user.id;
+
+        // მონაცემების წამოღება (username, status, avatar_url, role, score)
+        const { data: p } = await client.from('profiles').select('*').eq('id', myId).single();
+        
+        if(p) {
+            document.getElementById('uName').innerText = p.username;
+            document.getElementById('uStatus').innerText = p.status || "სტატუსი ცარიელია";
+            document.getElementById('uScore').innerText = p.score || 0;
+            
+            // როლის ვიზუალი
+            const roleEl = document.getElementById('uRole');
+            roleEl.innerText = (p.role || "USER").toUpperCase();
+            if(p.role === 'admin') roleEl.className = "badge role-admin";
+
+            // ავატარი
+            if(p.avatar_url) document.getElementById('avatarImg').src = p.avatar_url;
+        }
+    }
+
+    async function updateStatus() {
+        const newStatus = document.getElementById('statusInput').value.trim();
+        if(!newStatus) return;
+        await client.from('profiles').update({ status: newStatus }).eq('id', myId);
+        location.reload();
+    }
+
+    async function uploadAvatar(input) {
+        const file = input.files[0];
+        if(!file) return;
+
+        const path = `avatars/${myId}-${Date.now()}.png`;
+        const { data, error } = await client.storage.from('avatars').upload(path, file);
+
+        if(data) {
+            const { data: urlData } = client.storage.from('avatars').getPublicUrl(path);
+            await client.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', myId);
+            document.getElementById('avatarImg').src = urlData.publicUrl;
+            alert("ფოტო განახლდა! ✅");
+        }
+    }
+
+    loadProfile();
+</script>
+
+</body>
+</html>
