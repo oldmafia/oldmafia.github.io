@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #fff; color: #333; font-family: sans-serif; height: 100vh; overflow: hidden; }
+
+        /* მენიუ ზემოდან ჩამოსაშლელი */
+        #sidebar { 
+            position: fixed; top: -100vh; left: 0; width: 100%; height: 100vh; 
+            background: #fff; transition: 0.3s; z-index: 2000; overflow-y: auto; padding: 20px;
+        }
+        #sidebar.open { top: 0; }
+        
+        .room-item { 
+            padding: 12px 10px; font-size: 16px; border-bottom: 1px solid #eee; 
+            display: flex; align-items: center; gap: 10px; cursor: pointer; color: #000;
+        }
+        .room-item.active { color: #00bcd4; font-weight: bold; }
+        .close-btn { color: red; padding: 15px; text-align: left; cursor: pointer; }
+
+        /* ჩატი */
+        #main { display: flex; flex-direction: column; height: 100vh; }
+        .header { height: 60px; border-bottom: 1px solid #ccc; display: flex; align-items: center; padding: 0 15px; }
+        .burger { font-size: 24px; cursor: pointer; margin-right: 15px; }
+        
+        #msgList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #f9f9f9; }
+        .msg-bubble { background: #fff; border: 1px solid #ddd; padding: 8px 12px; border-radius: 12px; max-width: 80%; }
+        .msg-bubble.is-me { align-self: flex-end; border-color: #00bcd4; background: #e0f7fa; }
+        .u-name { color: #00bcd4; font-weight: bold; font-size: 12px; margin-bottom: 3px; display: block; cursor: pointer; }
+        .msg-time { font-size: 9px; color: #999; margin-left: 5px; }
+
+        /* საწერი */
+        .input-area { padding: 10px; border-top: 1px solid #ccc; background: #fff; display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
+        button { background: none; border: none; font-size: 24px; cursor: pointer; color: #00bcd4; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="room-item active" onclick="changeRoom('💬 კაიფმანია', this)">💬 კაიფმანია</div>
+        <div class="room-item" onclick="loadPMs(this)" style="color: #00bcd4;">📩 პირადი ყუთი</div>
+        <div class="room-item" onclick="changeRoom('🍷 კაფე-ბარი', this)">🍷 კაფე-ბარი</div>
+        <div class="room-item" onclick="changeRoom('🔐 VIP-საუბრები', this)">🔐 VIP-საუბრები</div>
+        <div class="room-item" onclick="changeRoom('🧩 ვიქტორინა', this)">🧩 ვიქტორინა</div>
+        <div class="room-item" onclick="changeRoom('🔓 შიფროგრამა', this)">🔓 შიფროგრამა</div>
+        <div class="room-item" onclick="changeRoom('🌑 მაფიის ღამე', this)">🌑 მაფიის ღამე</div>
+        <div class="room-item" onclick="changeRoom('🃏 ჯოკერი', this)">🃏 ჯოკერი</div>
+        <div class="room-item" onclick="changeRoom('⚜️ ნარდი', this)">⚜️ ნარდი</div>
+        <div class="room-item" onclick="changeRoom('💖 სიყვარული', this)">💖 სიყვარული</div>
+        <div class="room-item" onclick="changeRoom('🤣 იუმორი', this)">🤣 იუმორი</div>
+        <div class="room-item" onclick="changeRoom('🎵 მელომანია', this)">🎵 მელომანია</div>
+        <div class="room-item" onclick="changeRoom('📜 ფორუმი', this)">📜 ფორუმი</div>
+        <div class="room-item" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+        <div class="room-item" onclick="changeRoom('🆘 SOS', this)">🆘 SOS</div>
+        <div class="close-btn" onclick="toggleMenu()">✕ დახურვა</div>
+    </div>
+
+    <div id="main">
+        <div class="header">
+            <div class="burger" onclick="toggleMenu()">☰</div>
+            <b id="roomTitle">კაიფმანია</b>
+        </div>
+        <div id="msgList"></div>
+        <div class="input-area" id="inputArea">
+            <input type="text" id="msgInput" placeholder="დაწერე მესიჯი...">
+            <button onclick="sendMsg()">✈️</button>
+        </div>
+    </div>
+
+<script>
+    const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
+    const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let myId, myName = "User", currentRoom = '💬 კაიფმანია';
+
+    async function init() {
+        const { data: { user } } = await client.auth.getUser();
+        if(!user) return window.location.href = 'index.html';
+        myId = user.id;
+        const { data: p } = await client.from('profiles').select('username').eq('id', myId).single();
+        if(p) myName = p.username;
+
+        loadMsgs();
+        client.channel('chat').on('postgres_changes', { event: 'INSERT', table: 'messages' }, (payload) => {
+            if(payload.new.room_name === currentRoom) loadMsgs();
+        }).subscribe();
+    }
+
+    async function loadMsgs() {
+        if(currentRoom === "PRIVATE") return;
+        const { data: msgs } = await client.from('messages').select('*').eq('room_name', currentRoom).order('id', { ascending: true });
+        const list = document.getElementById('msgList');
+        list.innerHTML = msgs ? msgs.map(m => {
+            const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `<div class="msg-bubble ${m.username === myName ? 'is-me' : ''}">
+                <span class="u-name" onclick="directMsg('${m.user_id}', '${m.username}')">${m.username}</span>
+                <span>${m.text} <small class="msg-time">${time}</small></span>
+            </div>`;
+        }).join('') : '';
+        list.scrollTop = list.scrollHeight;
+    }
+
+    async function sendMsg() {
+        const input = document.getElementById('msgInput');
+        const txt = input.value.trim();
+        if(!txt) return;
+        input.value = '';
+        await client.from('messages').insert([{ user_id: myId, username: myName, text: txt, room_name: currentRoom }]);
+    }
+
+    function directMsg(tid, tname) {
+        if(tid === myId) return;
+        const msg = prompt(`მიწერე პირადში ${tname}-ს:`);
+        if(msg) client.from('private_messages').insert([{ sender_id: myId, receiver_id: tid, text: msg }]);
+    }
+
+    async function loadPMs(el) {
+        currentRoom = "PRIVATE";
+        document.getElementById('roomTitle').innerText = "პირადი ყუთი";
+        document.getElementById('inputArea').style.display = 'none';
+        const { data: dms } = await client.from('private_messages').select('*, sender:sender_id(username), receiver:receiver_id(username)').or(`receiver_id.eq.${myId},sender_id.eq.${myId}`).order('created_at', { ascending: false });
+        const list = document.getElementById('msgList');
+        list.innerHTML = dms ? dms.map(m => {
+            const isMe = m.sender_id === myId;
+            return `<div class="msg-bubble ${isMe?'is-me':''}" style="width:90%">
+                <span class="u-name" onclick="directMsg('${isMe?m.receiver_id:m.sender_id}', '${isMe?m.receiver?.username:m.sender?.username}')">${isMe?'მე -> '+m.receiver?.username : m.sender?.username+' -> მე'}</span>
+                <span>${m.text}</span>
+            </div>`;
+        }).join('') : '';
+        toggleMenu();
+        setActive(el);
+    }
+
+    function changeRoom(name, el) {
+        currentRoom = name;
+        document.getElementById('roomTitle').innerText = name.split(' ')[1];
+        document.getElementById('inputArea').style.display = 'flex';
+        toggleMenu();
+        loadMsgs();
+        setActive(el);
+    }
+
+    function setActive(el) {
+        document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+    init();
+</script>
+</body>
+</html>
