@@ -2,40 +2,39 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>Old Mafia - Home</title>
+    <title>Old Mafia</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        /* მთავარი სტრუქტურა */
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; }
         
-        /* მარცხენა მენიუ - გასწორებული Scroll-ით */
+        /* მენიუ - აქ ჩავამატე overflow-y: auto რომ ჩამოიშალოს */
         .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 25px 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
-        .sidebar-avatar { width: 80px; height: 80px; border-radius: 12px; border: 2px solid red; margin: 0 auto 12px; background: #111 center/cover; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
+        .sidebar-avatar { width: 80px; height: 80px; border-radius: 10px; border: 2px solid red; margin: 0 auto 10px; background: #111 center/cover; }
         .user-name { color: red; font-weight: bold; font-size: 20px; }
         
-        /* აქ ჩაემატა scroll-ის შესაძლებლობა */
-        .menu-items { flex-grow: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #333 #050505; }
-        .menu-item { padding: 13px 25px; color: #999; cursor: pointer; font-size: 14px; border-left: 4px solid transparent; transition: 0.2s; }
-        .menu-item:hover, .menu-item.active { background: #1a0000; color: red; border-left: 4px solid red; }
-        
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        .top-bar { padding: 15px 25px; background: #0a0a0a; border-bottom: 1px solid #222; color: red; font-weight: bold; }
-        
-        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg-bubble { background: #0d0d0d; padding: 12px; border-radius: 0 15px 15px 15px; border: 1px solid #1a1a1a; max-width: 80%; }
-        .msg-time { font-size: 11px; color: #444; float: right; margin-top: 4px; margin-left: 10px; }
+        .menu-items { flex-grow: 1; overflow-y: auto; } /* აი ეს აცოცხლებს მენიუს */
+        .menu-item { padding: 12px 20px; color: #999; cursor: pointer; border-left: 3px solid transparent; }
+        .menu-item:hover, .menu-item.active { background: #1a0000; color: red; border-left: 3px solid red; }
 
-        .bottom-bar { padding: 15px 20px; background: #0a0a0a; display: flex; gap: 12px; align-items: center; border-top: 1px solid #222; }
-        input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 14px 20px; border-radius: 30px; color: #fff; outline: none; }
-        
-        .send-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 0; }
-        .send-btn svg { fill: #007bff; width: 40px; height: 40px; }
+        /* ჩატის ზონა */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 85%; }
+        .msg-time { font-size: 10px; color: #444; float: right; margin-left: 10px; }
+
+        /* ქვედა პანელი და ლურჯი ისარი */
+        .bottom-bar { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
+        input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
+        .send-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; }
+        .send-btn svg { fill: #007bff; width: 35px; height: 35px; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <div class="sidebar-header" onclick="window.location.href='profile.html'">
+    <div class="sidebar-header" onclick="location.href='profile.html'">
         <div class="sidebar-avatar" id="uAvat"></div>
         <div id="uNick" class="user-name">იტვირთება...</div>
     </div>
@@ -59,7 +58,6 @@
 </div>
 
 <div class="main-content">
-    <div class="top-bar" id="roomTitle">☕ კაფე-ბარი</div>
     <div class="messages-area" id="chatContainer"></div>
     <div class="bottom-bar">
         <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
@@ -78,6 +76,7 @@
         const { data: { session } } = await client.auth.getSession();
         if (!session) return window.location.href = "index.html";
 
+        // იღებს მხოლოდ შენს პროფილს ID-ით
         const { data: profile } = await client.from('profiles').select('*').eq('id', session.user.id).single();
         if (profile) {
             myProfile = profile;
@@ -91,53 +90,29 @@
         const { data } = await client.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
         const chat = document.getElementById('chatContainer');
         chat.innerHTML = "";
-        if (data) data.forEach(displayMsg);
-        chat.scrollTop = chat.scrollHeight;
-    }
-
-    function displayMsg(msg) {
-        const chat = document.getElementById('chatContainer');
-        const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const color = (myProfile && msg.username === myProfile.username) ? 'yellow' : 'red';
-        
-        chat.innerHTML += `
-            <div class="msg">
+        if (data) data.forEach(m => {
+            const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            chat.innerHTML += `
                 <div class="msg-bubble">
-                    <b style="color:${color};">${msg.username}</b>
-                    <span class="msg-time">${time}</span><br>
-                    <span style="color:#eee;">${msg.text}</span>
-                </div>
-            </div>`;
+                    <b style="color:${m.username === myProfile?.username ? 'yellow' : 'red'}">${m.username}</b>
+                    <span class="msg-time">${time}</span><br>${m.text}
+                </div>`;
+        });
         chat.scrollTop = chat.scrollHeight;
     }
 
     async function send() {
         const input = document.getElementById('msgInput');
-        const text = input.value.trim();
-        if (!text || !myProfile) return;
-
-        const { error } = await client.from('messages').insert([{ 
-            text: text, 
+        if (!input.value.trim() || !myProfile) return;
+        await client.from('messages').insert([{ 
+            text: input.value, 
             username: myProfile.username, 
-            room_name: currentRoom,
+            room_name: currentRoom, 
             user_id: myProfile.id 
         }]);
-
-        if (!error) {
-            input.value = "";
-            loadMessages();
-        }
+        input.value = "";
+        loadMessages();
     }
-
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', function() {
-            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-            currentRoom = this.innerText.trim();
-            document.getElementById('roomTitle').innerText = currentRoom;
-            loadMessages();
-        });
-    });
 
     init();
 </script>
