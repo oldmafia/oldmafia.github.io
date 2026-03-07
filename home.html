@@ -2,119 +2,167 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>Old Mafia</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია - ჩათი & დრო</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* მთავარი სტრუქტურა */
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; }
-        
-        /* მენიუ - აქ ჩავამატე overflow-y: auto რომ ჩამოიშალოს */
-        .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
-        .sidebar-avatar { width: 80px; height: 80px; border-radius: 10px; border: 2px solid red; margin: 0 auto 10px; background: #111 center/cover; }
-        .user-name { color: red; font-weight: bold; font-size: 20px; }
-        
-        .menu-items { flex-grow: 1; overflow-y: auto; } /* აი ეს აცოცხლებს მენიუს */
-        .menu-item { padding: 12px 20px; color: #999; cursor: pointer; border-left: 3px solid transparent; }
-        .menu-item:hover, .menu-item.active { background: #1a0000; color: red; border-left: 3px solid red; }
+        body {
+            background-color: #050505;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
 
-        /* ჩატის ზონა */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 85%; }
-        .msg-time { font-size: 10px; color: #444; float: right; margin-left: 10px; }
+        /* მენიუს კონტეინერი */
+        .chat-container {
+            background: #111;
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+        }
 
-        /* ქვედა პანელი და ლურჯი ისარი */
-        .bottom-bar { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
-        input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
-        .send-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; }
-        .send-btn svg { fill: #007bff; width: 35px; height: 35px; }
+        /* მესიჯების ველი */
+        #chat-box {
+            height: 200px;
+            overflow-y: auto;
+            border-bottom: 1px solid #333;
+            margin-bottom: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* ერთი მესიჯის სტილი */
+        .message {
+            background: #222;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border-left: 3px solid #ff0000;
+            font-size: 14px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* დროის სტილი მესიჯში */
+        .msg-time {
+            font-size: 10px;
+            color: #888;
+            float: right;
+            margin-top: 5px;
+            margin-left: 10px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ინპუტი */
+        #user-input {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        /* გაგზავნის ღილაკი თვითმფრინავით */
+        .send-btn {
+            width: 100%;
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.3s;
+        }
+
+        .send-btn i {
+            font-size: 18px;
+            transition: 0.4s;
+        }
+
+        .send-btn:hover {
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        .send-btn:hover i {
+            transform: translate(10px, -10px) rotate(-15deg);
+        }
+
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-header" onclick="location.href='profile.html'">
-        <div class="sidebar-avatar" id="uAvat"></div>
-        <div id="uNick" class="user-name">იტვირთება...</div>
-    </div>
-    <div class="menu-items">
-        <div class="menu-item active">☕ კაფე-ბარი</div>
-        <div class="menu-item">👑 ვიპ საუბრები</div>
-        <div class="menu-item">🕵️ გამოძიება</div>
-        <div class="menu-item">🔐 შიფროგრამა</div>
-        <div class="menu-item">❓ ვიქტორინა</div>
-        <div class="menu-item">🪢 ჩამოხრჩობანა</div>
-        <div class="menu-item">🌑 მაფიის ღამე</div>
-        <div class="menu-item">🃏 ჯოკერი</div>
-        <div class="menu-item">🎲 ნარდი</div>
-        <div class="menu-item">🎵 მუსიკა</div>
-        <div class="menu-item">😂 იუმორი</div>
-        <div class="menu-item">🚀 კაიფმანია</div>
-        <div class="menu-item">🛠️ ადმინისტრაცია</div>
-        <div class="menu-item">❓ დახმარება</div>
-        <div class="menu-item">📝 ფორუმი</div>
-    </div>
-</div>
+    <h2 style="text-shadow: 0 0 10px red;">კაიფმანია 😎🔥</h2>
 
-<div class="main-content">
-    <div class="messages-area" id="chatContainer"></div>
-    <div class="bottom-bar">
-        <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
-        <button class="send-btn" onclick="send()">
-            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+    <div class="chat-container">
+        <div id="chat-box">
+            <div class="message">გამარჯობა! მოგვწერე რამე... <span class="msg-time">00:00</span></div>
+        </div>
+
+        <input type="text" id="user-input" placeholder="ჩაწერე მესიჯი..." onkeypress="checkEnter(event)">
+
+        <button class="send-btn" onclick="sendMessage()">
+            გაგზავნა <i class="fas fa-plane-departure"></i>
         </button>
     </div>
-</div>
 
-<script>
-    const client = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    let myProfile = null;
-    let currentRoom = "☕ კაფე-ბარი";
+    <script>
+        function sendMessage() {
+            const input = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+            
+            if (input.value.trim() === "") return;
 
-    async function init() {
-        const { data: { session } } = await client.auth.getSession();
-        if (!session) return window.location.href = "index.html";
+            // დროის ამოღება
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const timeString = hours + ":" + minutes;
 
-        // იღებს მხოლოდ შენს პროფილს ID-ით
-        const { data: profile } = await client.from('profiles').select('*').eq('id', session.user.id).single();
-        if (profile) {
-            myProfile = profile;
-            document.getElementById('uNick').innerText = profile.username;
-            if(profile.avatar_url) document.getElementById('uAvat').style.backgroundImage = `url('${profile.avatar_url}')`;
+            // ახალი მესიჯის შექმნა
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.innerHTML = `
+                ${input.value}
+                <span class="msg-time">${timeString}</span>
+            `;
+
+            // ჩათში დამატება
+            chatBox.appendChild(messageDiv);
+            
+            // გასუფთავება და სქროლი ბოლოში
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
-        loadMessages();
-    }
 
-    async function loadMessages() {
-        const { data } = await client.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-        const chat = document.getElementById('chatContainer');
-        chat.innerHTML = "";
-        if (data) data.forEach(m => {
-            const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            chat.innerHTML += `
-                <div class="msg-bubble">
-                    <b style="color:${m.username === myProfile?.username ? 'yellow' : 'red'}">${m.username}</b>
-                    <span class="msg-time">${time}</span><br>${m.text}
-                </div>`;
-        });
-        chat.scrollTop = chat.scrollHeight;
-    }
+        // Enter-ზე რომ გაიგზავნოს
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
 
-    async function send() {
-        const input = document.getElementById('msgInput');
-        if (!input.value.trim() || !myProfile) return;
-        await client.from('messages').insert([{ 
-            text: input.value, 
-            username: myProfile.username, 
-            room_name: currentRoom, 
-            user_id: myProfile.id 
-        }]);
-        input.value = "";
-        loadMessages();
-    }
-
-    init();
-</script>
 </body>
 </html>
