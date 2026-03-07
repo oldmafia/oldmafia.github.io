@@ -3,38 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Old Mafia - Home</title>
+    <title>Old Mafia - მთავარი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* საიდბარი */
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
         .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
         .sidebar-avatar { width: 70px; height: 70px; border-radius: 12px; border: 2px solid #ff0000; margin: 0 auto 10px; background: #111 center/cover; }
         .user-name { color: #ff0000; font-weight: bold; }
-
-        /* მენიუ (15 ოთახი) */
         .menu-items { flex-grow: 1; overflow-y: auto; }
-        .menu-item { padding: 12px 20px; color: #bbb; cursor: pointer; border-left: 3px solid transparent; font-size: 14px; transition: 0.2s; }
+        .menu-item { padding: 12px 20px; color: #bbb; cursor: pointer; border-left: 3px solid transparent; font-size: 14px; }
         .menu-item:hover, .menu-item.active { background: #1a0000; color: #ff0000; border-left: 3px solid #ff0000; }
         .logout-item { color: #555 !important; border-top: 1px solid #1a1a1a; margin-top: auto; }
-
-        /* ჩატის ზონა */
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
         .top-bar { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; display: flex; align-items: center; color: #ff0000; font-weight: bold; }
         .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 80%; }
-        
-        /* ქვედა პანელი */
+        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 80%; position: relative; }
         .bottom-bar { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
         input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
-        
-        /* ლურჯი თვითმფრინავი */
-        .send-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; }
-        .send-btn svg { fill: #007bff; transition: 0.2s; }
-        .send-btn:hover svg { transform: scale(1.1); }
-
+        .send-btn { background: none; border: none; cursor: pointer; }
+        .send-btn svg { fill: #007bff; }
         .burger { display: none; font-size: 24px; color: #ff0000; background: none; border: none; margin-right: 15px; cursor: pointer; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: -280px; height: 100%; } .sidebar.open { left: 0; } .burger { display: block; } }
     </style>
@@ -60,14 +48,16 @@
         <div class="menu-item">😂 იუმორი</div>
         <div class="menu-item">🚀 კაიფმანია</div>
         <div class="menu-item">🛠️ ადმინისტრაცია</div>
-        <div class="menu-item">❓ დახმარება</div>
         <div class="menu-item">📝 ფორუმი</div>
         <div class="menu-item logout-item" id="logoutBtn">🚪 გასვლა</div>
     </div>
 </div>
 
 <div class="main-content">
-    <div class="top-bar"><button class="burger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><span id="roomTitle">☕ კაფე-ბარი</span></div>
+    <div class="top-bar">
+        <button class="burger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <span id="roomTitle">☕ კაფე-ბარი</span>
+    </div>
     <div class="messages-area" id="chatContainer"></div>
     <div class="bottom-bar">
         <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
@@ -90,11 +80,8 @@
         if (!user) return window.location.href = "index.html";
 
         let { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
-        if (!profile) {
-            const { data: newP } = await client.from('profiles').insert([{ id: user.id, nickname: user.user_metadata.nickname || 'User' }]).select().single();
-            profile = newP;
-        }
         myProfile = profile;
+        
         document.getElementById('uNick').innerText = profile.nickname;
         document.getElementById('uAvat').style.backgroundImage = `url('${profile.avatar_url}')`;
         loadMessages(currentRoom);
@@ -109,17 +96,55 @@
 
     function displayMsg(msg) {
         const chat = document.getElementById('chatContainer');
-        const time = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        chat.innerHTML += `<div class="msg" style="margin-bottom:10px;"><div class="msg-bubble"><b style="color:red; font-size:12px;">${msg.username}</b><br>${msg.text}<div style="font-size:9px; color:#444; text-align:right;">${time}</div></div></div>`;
+        const isFounder = (myProfile.role === 'დამფუძნებელი');
+        const isAdmin = (myProfile.role === 'ადმინი');
+
+        // წაშლის ღილაკი ადმინს და დამფუძნებელს
+        const delBtn = (isFounder || isAdmin) ? `<span onclick="deleteMsg('${msg.id}')" style="color:#555; cursor:pointer; float:right;">[X]</span>` : '';
+        
+        // მართვის ლინკი მხოლოდ დამფუძნებელს
+        const uName = isFounder ? `<b style="color:red; cursor:pointer;" onclick="manageUser('${msg.user_id}', '${msg.username}')">${msg.username}</b>` : `<b style="color:red;">${msg.username}</b>`;
+
+        chat.innerHTML += `
+            <div class="msg" id="msg-${msg.id}" style="margin-bottom:10px;">
+                <div class="msg-bubble">
+                    ${delBtn} ${uName}<br>${msg.text}
+                </div>
+            </div>`;
         chat.scrollTop = chat.scrollHeight;
     }
 
     async function send() {
         const input = document.getElementById('msgInput');
         const text = input.value.trim();
-        if (!text) return;
-        await client.from('messages').insert([{ text, username: myProfile.nickname, room_name: currentRoom }]);
+        if (!text || myProfile.is_blocked) return alert("თქვენ დაბლოკილი ხართ!");
+        
+        await client.from('messages').insert([{ 
+            text, 
+            username: myProfile.nickname, 
+            room_name: currentRoom, 
+            user_id: myProfile.id 
+        }]);
         input.value = "";
+    }
+
+    async function deleteMsg(id) {
+        if(confirm("წავშალოთ?")) {
+            await client.from('messages').delete().eq('id', id);
+            document.getElementById('msg-' + id).remove();
+        }
+    }
+
+    async function manageUser(tId, tName) {
+        const act = prompt(`მართვა: ${tName}\n1-ადმინი, 2-მომხმარებელი, 3-ბლოკი, 4-განბლოკვა`);
+        if(!act) return;
+        let up = {};
+        if(act==="1") up={role:'ადმინი'};
+        else if(act==="2") up={role:'მომხმარებელი'};
+        else if(act==="3") up={is_blocked:true};
+        else if(act==="4") up={is_blocked:false};
+        await client.from('profiles').update(up).eq('id', tId);
+        alert("შესრულდა!");
     }
 
     client.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
