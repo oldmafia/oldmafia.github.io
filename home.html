@@ -40,7 +40,7 @@
             border-radius: 12px;
             border: 2px solid #ff0000;
             margin: 0 auto 10px;
-            background: #111 url('https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/avatars/default.png') center/cover;
+            background: #111;
         }
 
         .user-name { color: #ff0000; font-weight: bold; font-size: 1.1rem; }
@@ -85,7 +85,7 @@
         /* მესიჯის სტილი */
         .msg { display: flex; gap: 10px; align-items: flex-start; }
         .msg-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ff0000; background: #111; }
-        .msg-bubble { background: #0d0d0d; padding: 10px 15px; border-radius: 0 15px 15px 15px; max-width: 75%; border: 1px solid #1a1a1a; position: relative;}
+        .msg-bubble { background: #0d0d0d; padding: 10px 15px; border-radius: 0 15px 15px 15px; max-width: 75%; border: 1px solid #1a1a1a; }
         .msg-time { font-size: 10px; color: #444; display: block; text-align: right; margin-top: 5px; }
 
         /* ქვედა პანელი */
@@ -113,7 +113,7 @@
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-avatar" id="userAvatar"></div>
+        <div class="sidebar-avatar"></div>
         <div class="user-name" id="userName">abu007</div>
     </div>
     <div class="menu-items">
@@ -164,32 +164,26 @@
     // მომხმარებლის მონაცემების წამოღება
     async function getUserData() {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            myNickname = user.user_metadata.nickname || 'abu007';
+        if (user && user.user_metadata && user.user_metadata.nickname) {
+            myNickname = user.user_metadata.nickname;
             document.getElementById('userName').innerText = myNickname;
-        } else {
-            window.location.href = "index.html"; // თუ შესული არაა, აგდებს
         }
     }
 
-    // მენიუს კონტროლი
     function toggleMenu() {
         document.getElementById('sidebar').classList.toggle('open');
         document.getElementById('overlay').classList.toggle('show');
     }
 
-    // მესიჯების ჩატვირთვა
     async function loadMessages(room) {
         const chat = document.getElementById('chatContainer');
-        chat.innerHTML = '<div style="text-align:center; color:#222; font-size:12px;">იტვირთება ისტორია...</div>'; 
-        
         const { data, error } = await supabase
             .from('messages')
             .select('*')
             .eq('room_name', room)
             .order('created_at', { ascending: true });
 
-        if (data) {
+        if (!error && data) {
             chat.innerHTML = "";
             data.forEach(msg => displayMsg(msg));
             chat.scrollTop = chat.scrollHeight;
@@ -212,25 +206,30 @@
     }
 
     async function send() {
-        let input = document.getElementById('msgInput');
-        if(!input.value.trim()) return;
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
+        if(!text) return;
 
         const { error } = await supabase
             .from('messages')
-            .insert([{ text: input.value, username: myNickname, room_name: currentRoom }]);
+            .insert([{ text: text, username: myNickname, room_name: currentRoom }]);
 
-        if (!error) input.value = "";
+        if (error) {
+            console.error("გაგზავნის შეცდომა:", error.message);
+            // დაზღვევა
+            await supabase.from('messages').insert([{ text: text, username: 'abu007', room_name: currentRoom }]);
+        }
+        input.value = "";
     }
 
-    // Realtime მოსმენა (რომ მესიჯები ეგრევე დაინახო)
-    supabase.channel('public:messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+    // Realtime მოსმენა
+    supabase.channel('messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         if(payload.new.room_name === currentRoom) {
             displayMsg(payload.new);
             document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
         }
     }).subscribe();
 
-    // ოთახების გადართვა
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function() {
             if(this.id === 'logoutBtn') {
@@ -246,7 +245,6 @@
         });
     });
 
-    // სტარტი
     getUserData();
     loadMessages(currentRoom);
 </script>
