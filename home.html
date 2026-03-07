@@ -2,144 +2,167 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - ჩატი</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>კაიფმანია - მობილური ვერსია</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --red: #ff0000; --blue: #007bff; --dark: #0a0a0a; --panel: #151515; }
+        :root { --red: #ff0000; --blue: #00a2ff; --dark: #050505; --panel: #121212; }
         
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; display: flex; height: 100vh; overflow: hidden; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Helvetica Neue', sans-serif; background: var(--dark); color: white; display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar - გვერდითა მენიუ */
+        /* Sidebar - მობილურზე სრულად იკეცება */
         .sidebar { 
-            width: 250px; background: var(--panel); border-right: 1px solid #222; 
-            transition: 0.3s; display: flex; flex-direction: column; position: relative; z-index: 100;
+            width: 280px; background: var(--panel); border-right: 1px solid #222; 
+            transition: transform 0.3s ease; display: flex; flex-direction: column; 
+            position: absolute; height: 100%; z-index: 1000; transform: translateX(-100%);
         }
-        .sidebar.collapsed { width: 0; overflow: hidden; border: none; }
+        .sidebar.open { transform: translateX(0); box-shadow: 10px 0 30px rgba(0,0,0,0.8); }
 
-        .sidebar-header { padding: 20px; font-weight: bold; color: var(--red); border-bottom: 1px solid #222; white-space: nowrap; }
+        .sidebar-header { padding: 25px; font-weight: bold; color: var(--red); border-bottom: 1px solid #222; font-size: 1.4rem; text-shadow: 0 0 10px var(--red); }
 
-        .rooms-list { flex-grow: 1; overflow-y: auto; }
+        .rooms-list { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .room-item { 
-            padding: 15px 20px; cursor: pointer; border-bottom: 1px solid #1a1a1a; 
-            transition: 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 10px;
+            padding: 14px 18px; cursor: pointer; border-radius: 12px; margin-bottom: 5px;
+            display: flex; align-items: center; gap: 15px; transition: 0.2s; font-size: 1rem;
         }
-        .room-item:hover { background: #222; color: var(--red); }
+        .room-item i { font-size: 1.2rem; min-width: 25px; text-align: center; }
+        .room-item:active { background: #222; }
         .room-item.active { background: var(--red); color: white; }
 
-        /* მთავარი კონტენტი */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; width: 100%; transition: 0.3s; }
+        /* მთავარი ზონა */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; width: 100vw; }
 
-        /* ზედა პანელი */
+        /* ზედა ბარი - მობილურისთვის მოსახერხებელი */
         .top-bar { 
-            height: 60px; background: var(--panel); border-bottom: 1px solid #222; 
-            display: flex; align-items: center; padding: 0 20px; gap: 15px;
+            height: 65px; background: var(--panel); border-bottom: 1px solid #222; 
+            display: flex; align-items: center; padding: 0 15px; justify-content: space-between;
         }
-        .toggle-btn { cursor: pointer; font-size: 1.5rem; color: var(--red); }
-        .current-room-title { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
+        .menu-btn { font-size: 1.6rem; color: var(--red); cursor: pointer; padding: 5px; }
+        .room-info { flex-grow: 1; text-align: center; font-weight: bold; font-size: 1.1rem; letter-spacing: 0.5px; }
 
-        /* ჩატის ზონა */
-        #chat-window { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        /* ჩატის ფანჯარა */
+        #chat-window { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); }
 
-        /* მესიჯის დიზაინი (მარცხენა მხარეს) */
-        .msg-container { display: flex; gap: 12px; align-items: flex-start; max-width: 80%; }
-        .avatar { width: 45px; height: 45px; background: #333; border-radius: 50%; border: 2px solid var(--red); flex-shrink: 0; }
-        .msg-content { background: #1a1a1a; padding: 10px 15px; border-radius: 0 15px 15px 15px; position: relative; }
-        .msg-author { color: var(--red); font-weight: bold; font-size: 0.8rem; margin-bottom: 5px; display: block; }
-        .msg-text { line-height: 1.4; font-size: 0.95rem; }
+        /* მესიჯის დიზაინი */
+        .msg-container { display: flex; gap: 10px; align-items: flex-end; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .avatar { width: 38px; height: 38px; background: #222; border-radius: 10px; border: 1px solid var(--red); flex-shrink: 0; overflow: hidden; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .msg-bubble { background: #1a1a1a; padding: 10px 14px; border-radius: 15px 15px 15px 0; border: 1px solid #252525; max-width: 75%; }
+        .msg-author { color: var(--red); font-weight: bold; font-size: 0.75rem; margin-bottom: 3px; display: block; }
+        .msg-text { font-size: 0.95rem; color: #eee; word-wrap: break-word; }
 
-        /* შეყვანის პანელი */
-        .input-panel { padding: 15px 25px; background: var(--panel); display: flex; align-items: center; gap: 15px; border-top: 1px solid #222; }
-        .input-wrapper { flex-grow: 1; position: relative; }
-        input { 
-            width: 100%; background: #000; border: 1px solid #333; padding: 12px 20px; 
-            border-radius: 25px; color: white; outline: none; transition: 0.3s;
+        /* ინპუტი - ლურჯი თვითმფრინავით */
+        .input-area { padding: 10px 15px; background: var(--panel); display: flex; align-items: center; gap: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+        .input-wrapper { flex-grow: 1; background: #1a1a1a; border-radius: 25px; padding: 5px 15px; display: flex; align-items: center; border: 1px solid #333; }
+        input { flex-grow: 1; background: transparent; border: none; padding: 10px 0; color: white; outline: none; font-size: 1rem; }
+        
+        .send-btn { 
+            width: 45px; height: 45px; background: transparent; display: flex; 
+            align-items: center; justify-content: center; cursor: pointer; 
         }
-        input:focus { border-color: var(--blue); box-shadow: 0 0 10px rgba(0, 123, 255, 0.3); }
+        /* ნამდვილი ლურჯი თვითმფრინავის აიქონი */
+        .fa-paper-plane { color: var(--blue); font-size: 1.5rem; filter: drop-shadow(0 0 5px rgba(0, 162, 255, 0.5)); }
 
-        .send-icon { 
-            color: var(--blue); font-size: 1.5rem; cursor: pointer; 
-            transition: 0.2s; transform: rotate(45deg); 
-        }
-        .send-icon:hover { transform: rotate(45deg) scale(1.2); color: #3399ff; }
-
+        /* ეკრანის გადაფარვა Sidebar-ის დროს */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; z-index: 999; }
+        .overlay.show { display: block; }
     </style>
 </head>
 <body>
 
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">მენიუ 🔗</div>
+        <div class="sidebar-header">კაიფმანია 🔥</div>
         <div class="rooms-list" id="roomsList"></div>
     </div>
 
     <div class="main-content">
         <div class="top-bar">
-            <i class="fas fa-bars toggle-btn" onclick="toggleSidebar()"></i>
-            <div class="current-room-title" id="roomTitle">კაფე-ბარი</div>
-        </div>
+            <i class="fas fa-bars menu-btn" onclick="toggleSidebar()"></i>
+            <div class="room-info" id="activeRoomName">კაფე-ბარი</div>
+            <div style="width: 30px;"></div> </div>
 
-        <div id="chat-window">
-            </div>
+        <div id="chat-window"></div>
 
-        <div class="input-panel">
+        <div class="input-area">
             <div class="input-wrapper">
-                <input type="text" id="messageField" placeholder="დაწერე შეტყობინება...">
+                <input type="text" id="msgInput" placeholder="დაწერე რამე...">
             </div>
-            <i class="fas fa-paper-plane send-icon" id="sendBtn"></i>
+            <div class="send-btn" id="sendBtn">
+                <i class="fas fa-paper-plane"></i>
+            </div>
         </div>
     </div>
 
     <script>
-        const supabaseClient = supabase.createClient(
-            "https://ftfciebnywbondaiarnc.supabase.co",
-            "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-        );
+        const supabaseClient = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
 
-        const rooms = ["კაფე-ბარი", "ვიპ საუბრები", "გამოძიება", "შიფროგრამა", "ვიქტორინა", "ჩამოხრჩობანა", "მაფიის ღამე", "ჯოკერი", "ნარდი", "მუსიკა", "იუმორი", "ადმინისტრაცია", "დახმარება", "ფორუმი"];
+        // ოთახები შესაბამისი აიქონებით
+        const roomsConfig = [
+            { name: "კაფე-ბარი", icon: "fas fa-coffee" },
+            { name: "ვიპ საუბრები", icon: "fas fa-crown" },
+            { name: "გამოძიება", icon: "fas fa-search" },
+            { name: "შიფროგრამა", icon: "fas fa-user-secret" },
+            { name: "ვიქტორინა", icon: "fas fa-lightbulb" },
+            { name: "ჩამოხრჩობანა", icon: "fas fa-ghost" },
+            { name: "მაფიის ღამე", icon: "fas fa-moon" },
+            { name: "ჯოკერი", icon: "fas fa-suit-spades" },
+            { name: "ნარდი", icon: "fas fa-dice" },
+            { name: "მუსიკა", icon: "fas fa-music" },
+            { name: "იუმორი", icon: "fas fa-laugh-squint" },
+            { name: "ადმინისტრაცია", icon: "fas fa-shield-halved" },
+            { name: "დახმარება", icon: "fas fa-question-circle" },
+            { name: "ფორუმი", icon: "fas fa-comments" }
+        ];
+
         let currentRoom = "კაფე-ბარი";
-        let userNickname = "სტუმარი";
+        let userNick = "სტუმარი";
 
-        // 1. Sidebar-ის დაკეცვა/გაშლა
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
         }
 
-        // 2. ოთახების ჩატვირთვა
-        function initRooms() {
-            const container = document.getElementById('roomsList');
-            rooms.forEach(name => {
+        function initApp() {
+            const list = document.getElementById('roomsList');
+            roomsConfig.forEach(room => {
                 const div = document.createElement('div');
-                div.className = `room-item ${name === currentRoom ? 'active' : ''}`;
-                div.innerHTML = `<i class="fas fa-hashtag"></i> ${name}`;
-                div.onclick = () => selectRoom(name, div);
-                container.appendChild(div);
+                div.className = `room-item ${room.name === currentRoom ? 'active' : ''}`;
+                div.innerHTML = `<i class="${room.icon}"></i> <span>${room.name}</span>`;
+                div.onclick = () => {
+                    currentRoom = room.name;
+                    document.getElementById('activeRoomName').innerText = room.name;
+                    document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+                    div.classList.add('active');
+                    toggleSidebar();
+                    loadMessages();
+                };
+                list.appendChild(div);
             });
+            loadMessages();
         }
 
-        async function selectRoom(name, element) {
-            currentRoom = name;
-            document.getElementById('roomTitle').innerText = name;
-            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            document.getElementById('chat-window').innerHTML = ""; 
-            
-            // ძველი მესიჯების წამოღება
-            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', name).order('created_at', { ascending: true });
-            if(data) data.forEach(renderMessage);
-            
-            if(window.innerWidth < 768) toggleSidebar(); // მობილურზე ავტომატურად დაკეცოს
+        async function loadMessages() {
+            const win = document.getElementById('chat-window');
+            win.innerHTML = "";
+            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+            if(data) data.forEach(renderMsg);
         }
 
-        // 3. მესიჯის ვიზუალი (მარცხნივ, ავატარით)
-        function renderMessage(msg) {
+        function renderMsg(msg) {
             const win = document.getElementById('chat-window');
             const div = document.createElement('div');
             div.className = 'msg-container';
             div.innerHTML = `
-                <div class="avatar"></div>
-                <div class="msg-content">
-                    <span class="msg-author">${msg.username || 'Anon'}</span>
+                <div class="avatar"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.username}" /></div>
+                <div class="msg-bubble">
+                    <span class="msg-author">${msg.username}</span>
                     <span class="msg-text">${msg.text}</span>
                 </div>
             `;
@@ -147,35 +170,25 @@
             win.scrollTop = win.scrollHeight;
         }
 
-        // 4. გაგზავნა (ლურჯი თვითმფრინავი)
-        document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('messageField').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+        document.getElementById('sendBtn').onclick = async () => {
+            const inp = document.getElementById('msgInput');
+            if(!inp.value.trim()) return;
+            await supabaseClient.from('messages').insert([{ text: inp.value, room_name: currentRoom, username: userNick }]);
+            inp.value = "";
+        };
 
-        async function sendMessage() {
-            const input = document.getElementById('messageField');
-            if(!input.value.trim()) return;
-
-            const { error } = await supabaseClient.from('messages').insert([{
-                text: input.value,
-                room_name: currentRoom,
-                username: userNickname
-            }]);
-            if(!error) input.value = "";
-        }
-
-        // 5. Realtime
-        supabaseClient.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-            if (payload.new.room_name === currentRoom) renderMessage(payload.new);
+        // Realtime update
+        supabaseClient.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            if(payload.new.room_name === currentRoom) renderMsg(payload.new);
         }).subscribe();
 
-        // ინიციალიზაცია
-        async function start() {
+        // ავტორიზაციის შემოწმება
+        async function checkAuth() {
             const { data: { user } } = await supabaseClient.auth.getUser();
-            if(user) userNickname = user.user_metadata.nickname;
-            initRooms();
-            selectRoom(currentRoom, document.querySelector('.room-item'));
+            if(user) userNick = user.user_metadata.nickname || "User";
+            initApp();
         }
-        start();
+        checkAuth();
     </script>
 </body>
 </html>
