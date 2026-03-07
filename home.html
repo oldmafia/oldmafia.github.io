@@ -3,162 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - PRO EDITION</title>
+    <title>კაიფმანია - FINAL PRO</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --main-red: #e60000; --bg: #0a0a0a; --panel: #141414; --text: #e0e0e0; }
+        :root { --red: #ff0000; --bg: #0a0a0a; --panel: #141414; --blue: #0088cc; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
-        .sidebar { width: 280px; background: var(--panel); border-right: 1px solid #222; display: flex; flex-direction: column; }
-        .user-profile { padding: 25px; text-align: center; border-bottom: 1px solid #222; }
-        .avatar-img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--main-red); padding: 3px; }
+        /* Sidebar - ყველა ოთახი რომ გამოჩნდეს */
+        .sidebar { width: 260px; background: var(--panel); border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .p-area { padding: 15px; text-align: center; border-bottom: 1px solid #222; }
+        .avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--red); }
         
-        .rooms-list { flex-grow: 1; overflow-y: auto; padding: 10px 0; }
-        .room { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 15px; color: #999; transition: 0.3s; font-size: 14px; }
-        .room:hover { background: #1a1a1a; color: #fff; }
-        .room.active { background: #222; color: #fff; border-left: 4px solid var(--main-red); font-weight: bold; }
-        .room-icon { width: 20px; text-align: center; font-style: normal; font-weight: bold; color: var(--main-red); }
+        .r-list { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
+        .r-item { padding: 10px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #999; font-size: 13px; border-bottom: 1px solid #1a1a1a; transition: 0.2s; }
+        .r-item:hover { background: #1a1a1a; color: white; }
+        .r-item.active { background: #222; color: white; border-left: 4px solid var(--red); font-weight: bold; }
+        .r-item svg { width: 16px; height: 16px; fill: var(--red); }
+
+        /* გასვლის ღილაკის სტილი */
+        .exit-btn { color: #ff4444 !important; margin-top: 5px; border-top: 1px solid #333; }
+        .exit-btn svg { fill: #ff4444 !important; }
 
         /* Chat Area */
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #080808; }
-        .chat-header { height: 60px; padding: 0 25px; display: flex; align-items: center; background: var(--panel); border-bottom: 1px solid #222; font-size: 18px; font-weight: bold; color: var(--main-red); }
-        
-        #messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .chat { flex-grow: 1; display: flex; flex-direction: column; background: #080808; }
+        .header { height: 50px; padding: 0 20px; display: flex; align-items: center; background: #000; color: var(--red); font-weight: bold; border-bottom: 1px solid #222; }
+        #msgs { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-        /* Message Bubble - დრო შიგნით */
-        .msg-box { align-self: flex-start; max-width: 75%; }
-        .msg-sender { font-size: 11px; color: var(--main-red); font-weight: bold; margin-bottom: 4px; margin-left: 5px; }
-        .msg-bubble { 
-            background: #1e1e1e; padding: 10px 15px; border-radius: 4px 18px 18px 18px; 
-            border: 1px solid #333; position: relative; min-width: 120px;
-        }
-        .msg-content { font-size: 14px; line-height: 1.5; color: #ddd; padding-bottom: 15px; }
-        .msg-time { position: absolute; bottom: 6px; right: 12px; font-size: 10px; color: #555; font-family: monospace; }
+        /* Bubble - დრო შიგნით */
+        .m-wrap { align-self: flex-start; max-width: 80%; }
+        .m-nick { font-size: 11px; color: var(--red); font-weight: bold; margin: 0 0 3px 5px; }
+        .m-bubble { background: #1e1e1e; padding: 10px 15px; border-radius: 2px 15px 15px 15px; border: 1px solid #333; position: relative; min-width: 110px; }
+        .m-text { font-size: 14px; color: #eee; padding-bottom: 15px; word-break: break-word; line-height: 1.4; }
+        .m-time { position: absolute; bottom: 4px; right: 10px; font-size: 10px; color: #555; }
 
         /* Input Zone */
-        .input-zone { padding: 20px; background: var(--panel); display: flex; align-items: center; gap: 15px; border-top: 1px solid #222; }
-        .input-field-wrap { flex-grow: 1; background: #000; border-radius: 30px; border: 1px solid #333; padding: 5px 20px; }
-        input { width: 100%; background: transparent; border: none; padding: 10px; color: #fff; outline: none; font-size: 15px; }
+        .input-bar { padding: 15px; background: #000; display: flex; align-items: center; gap: 12px; border-top: 1px solid #222; }
+        .in-wrap { flex-grow: 1; background: #111; border-radius: 25px; border: 1px solid #333; padding: 2px 15px; }
+        input { width: 100%; background: transparent; border: none; padding: 10px; color: white; outline: none; }
 
-        /* ✈️ ნამდვილი თვითმფრინავი (Image) */
-        .plane-send { 
-            width: 48px; height: 48px; cursor: pointer; transition: 0.3s ease; 
-            filter: drop-shadow(0 0 5px rgba(230,0,0,0.5));
-        }
-        .plane-send:hover { transform: scale(1.1) rotate(-5deg); filter: brightness(1.2); }
+        /* ✈️ ნამდვილი თვითმფრინავის SVG ღილაკი */
+        .plane-send { width: 42px; height: 42px; cursor: pointer; transition: 0.3s; fill: var(--blue); }
+        .plane-send:hover { transform: scale(1.1) rotate(-5deg); filter: drop-shadow(0 0 5px var(--blue)); }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="user-profile">
-            <img id="uAvatar" src="https://api.dicebear.com/7.x/identicon/svg?seed=Kaif" class="avatar-img">
-            <div id="uName" style="margin-top:12px; font-weight:bold;">იტვირთება...</div>
+        <div class="p-area">
+            <img id="uPic" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Admin" class="avatar">
+            <div id="uNick" style="margin-top:10px; font-weight:bold; font-size: 14px;">იტვირთება...</div>
         </div>
-        <div class="rooms-list" id="roomsContainer"></div>
+        <div class="r-list" id="rContainer"></div>
     </div>
 
-    <div class="chat-area">
-        <div class="chat-header" id="currentRoomName">კაფე-ბარი</div>
-        <div id="messages"></div>
-        <div class="input-zone">
-            <div class="input-field-wrap">
-                <input type="text" id="chatInput" placeholder="დაწერე შეტყობინება...">
-            </div>
-            <img src="https://cdn-icons-png.flaticon.com/512/739/739249.png" class="plane-send" id="sendBtn" title="გაგზავნა">
+    <div class="chat">
+        <div class="header" id="rTitle">კაფე-ბარი</div>
+        <div id="msgs"></div>
+        <div class="input-bar">
+            <div class="in-wrap"><input type="text" id="mIn" placeholder="დაწერე შეტყობინება..."></div>
+            
+            <svg id="mSend" class="plane-send" viewBox="0 0 512 512">
+                <path d="M499.7 31.2c-15.5-11-34.7-10.7-50 1L23.4 300.7c-21.7 15.6-25.2 45.1-7.8 65.4l82.8 96.6c13.2 15.4 33.1 22.8 53.1 19.8l293.9-44.1c11.7-1.8 22.2-7.8 29.8-16.8L506.7 66.8c11-12.9 8.2-32.3-7-35.6zM212.7 334.3l-28.1 82.2c-1.8 5.4-9.3 5.3-10.9-.1L141.1 315c-1.1-3.6 .3-7.5 3.3-9.7l170-120c4-2.8 8.9 1.9 6.2 5.8l-107.9 143.2z"/>
+            </svg>
         </div>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
 
-        const roomData = [
-            {n: "კაიფმანია", i: "★"}, {n: "კაფე-ბარი", i: "☕"},
-            {n: "ვიპ საუბრები", i: "👑"}, {n: "გამოძიება", i: "🔍"},
-            {n: "შიფროგრამა", i: "⌨"}, {n: "ვიქტორინა", i: "💡"},
-            {n: "ჩამოხრჩობანა", i: "💀"}, {n: "მაფიის ღამე", i: "🌑"},
-            {n: "ჯოკერი", i: "♠"}, {n: "ნარდი", i: "🎲"},
-            {n: "მუსიკა", i: "🎵"}, {n: "იუმორი", i: "😂"},
-            {n: "ადმინისტრაცია", i: "🛡"}, {n: "დახმარება", i: "❓"},
-            {n: "ფორუმი", i: "💬"}, {n: "გასვლა", i: "🚪"}
+        // SVG ხატულები
+        const ico = {
+            msg: '<svg viewBox="0 0 24 24"><path d="M20,2H4C2.9,2 2,2.9 2,4V22L6,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2Z"/></svg>',
+            game: '<svg viewBox="0 0 24 24"><path d="M21,6H3C1.9,6 1,6.9 1,8V16C1,17.1 1.9,18 3,18H21C22.1,18 23,17.1 23,16V8C23,6.9 22.1,6 21,6Z"/></svg>',
+            exit: '<svg viewBox="0 0 24 24"><path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/></svg>'
+        };
+
+        const rooms = [
+            {n: "კაიფმანია", i: ico.msg}, {n: "კაფე-ბარი", i: ico.msg},
+            {n: "ვიპ საუბრები", i: ico.msg}, {n: "გამოძიება", i: ico.game},
+            {n: "შიფროგრამა", i: ico.game}, {n: "ვიქტორინა", i: ico.game},
+            {n: "ჩამოხრჩობანა", i: ico.game}, {n: "მაფიის ღამე", i: ico.game},
+            {n: "ჯოკერი", i: ico.game}, {n: "ნარდი", i: ico.game},
+            {n: "მუსიკა", i: ico.msg}, {n: "იუმორი", i: ico.msg},
+            {n: "ადმინისტრაცია", i: ico.msg}, {n: "დახმარება", i: ico.msg},
+            {n: "ფორუმი", i: ico.msg}, {n: "გასვლა", i: ico.exit, cl: "exit-btn"}
         ];
 
-        let activeRoom = "კაფე-ბარი";
-        let userName = "სტუმარი";
+        let curR = "კაფე-ბარი", curN = "სტუმარი";
 
-        async function start() {
+        async function init() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                userName = session.user.user_metadata.nickname || "User";
-                document.getElementById('uName').innerText = userName;
-                document.getElementById('uAvatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${userName}`;
+                curN = session.user.user_metadata.nickname || "User";
+                document.getElementById('uNick').innerText = curN;
+                document.getElementById('uPic').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${curN}`;
             }
 
-            const container = document.getElementById('roomsContainer');
-            roomData.forEach(r => {
+            const rBox = document.getElementById('rContainer');
+            rooms.forEach(r => {
                 const div = document.createElement('div');
-                div.className = `room ${r.n === activeRoom ? 'active' : ''}`;
-                div.innerHTML = `<span class="room-icon">${r.i}</span> <span>${r.n}</span>`;
-                div.onclick = () => {
-                    if(r.n === "გასვლა") { location.href = "index.html"; return; }
-                    activeRoom = r.n;
-                    document.getElementById('currentRoomName').innerText = r.n;
-                    document.querySelectorAll('.room').forEach(el => el.classList.remove('active'));
+                div.className = `r-item ${r.n === curR ? 'active' : ''} ${r.cl || ''}`;
+                div.innerHTML = `${r.i} <span>${r.n}</span>`;
+                div.onclick = async () => {
+                    if(r.n === "გასვლა") {
+                        await supabaseClient.auth.signOut();
+                        window.location.href = "index.html"; 
+                        return;
+                    }
+                    curR = r.n;
+                    document.getElementById('rTitle').innerText = r.n;
+                    document.querySelectorAll('.r-item').forEach(el => el.classList.remove('active'));
                     div.classList.add('active');
-                    getMessages();
+                    load();
                 };
-                container.appendChild(div);
+                rBox.appendChild(div);
             });
-            getMessages();
+            load();
         }
 
-        async function getMessages() {
-            const msgDiv = document.getElementById('messages');
-            msgDiv.innerHTML = "";
-            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', activeRoom).order('created_at', { ascending: true });
-            if(data) data.forEach(addMessage);
+        async function load() {
+            const box = document.getElementById('msgs');
+            box.innerHTML = "";
+            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', curR).order('created_at', { ascending: true });
+            if(data) data.forEach(render);
         }
 
-        function addMessage(m) {
-            const msgDiv = document.getElementById('messages');
+        function render(m) {
+            const box = document.getElementById('msgs');
             const time = new Date(m.created_at).toLocaleTimeString('ka-GE', {hour:'2-digit', minute:'2-digit'});
-            
-            const wrap = document.createElement('div');
-            wrap.className = 'msg-box';
-            wrap.innerHTML = `
-                <div class="msg-sender">${m.username}</div>
-                <div class="msg-bubble">
-                    <div class="msg-content">${m.text}</div>
-                    <div class="msg-time">${time}</div>
-                </div>
-            `;
-            msgDiv.appendChild(wrap);
-            msgDiv.scrollTop = msgDiv.scrollHeight;
+            const w = document.createElement('div');
+            w.className = 'm-wrap';
+            w.innerHTML = `<div class="m-nick">${m.username}</div><div class="m-bubble"><div class="m-text">${m.text}</div><div class="m-time">${time}</div></div>`;
+            box.appendChild(w);
+            box.scrollTop = box.scrollHeight;
         }
 
         async function send() {
-            const inp = document.getElementById('chatInput');
+            const inp = document.getElementById('mIn');
             if(!inp.value.trim()) return;
-            const val = inp.value;
-            inp.value = ""; 
-            
-            await supabaseClient.from('messages').insert([{ 
-                text: val, 
-                room_name: activeRoom, 
-                username: userName 
-            }]);
+            const t = inp.value; inp.value = "";
+            await supabaseClient.from('messages').insert([{ text: t, room_name: curR, username: curN }]);
         }
 
-        document.getElementById('sendBtn').onclick = send;
-        document.getElementById('chatInput').onkeypress = (e) => { if(e.key==='Enter') send(); };
+        document.getElementById('mSend').onclick = send;
+        document.getElementById('mIn').onkeypress = (e) => { if(e.key==='Enter') send(); };
 
-        supabaseClient.channel('realtime-msgs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-            if(payload.new.room_name === activeRoom) addMessage(payload.new);
+        supabaseClient.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+            if(p.new.room_name === curR) render(p.new);
         }).subscribe();
 
-        start();
+        init();
     </script>
 </body>
 </html>
