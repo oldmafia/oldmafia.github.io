@@ -3,64 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>პროფილი</title>
+    <title>Old Mafia - მთავარი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: #0d0d0d; border: 2px solid #ff0000; padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; margin: 0 auto 15px; background: #111 center/cover; }
-        input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: none; }
-        button { background: red; color: white; cursor: pointer; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; z-index: 1000; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
+        .sidebar-avatar { width: 70px; height: 70px; border-radius: 12px; border: 2px solid #ff0000; margin: 0 auto 10px; background: #111 center/cover; }
+        .user-name { color: #ff0000; font-weight: bold; }
+        .menu-items { flex-grow: 1; overflow-y: auto; }
+        .menu-item { padding: 12px 20px; color: #bbb; cursor: pointer; font-size: 14px; border-left: 3px solid transparent; }
+        .menu-item:hover, .menu-item.active { background: #1a0000; color: #ff0000; border-left: 3px solid #ff0000; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .top-bar { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; color: #ff0000; font-weight: bold; }
+        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 80%; }
+        .bottom-bar { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
+        input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
+        .send-btn { background: none; border: none; cursor: pointer; }
+        .send-btn svg { fill: #007bff; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="avatar" id="pAvat"></div>
-        <input type="file" id="fInput" style="display:none" onchange="upload()">
-        <button onclick="document.getElementById('fInput').click()">🖼️ ფოტოს შეცვლა</button>
-        <h2 id="pNick"></h2>
-        <p>როლი: <b id="pRole" style="color:red"></b></p>
-        <input type="text" id="pStatus" placeholder="სტატუსი...">
-        <button onclick="save()">განახლება</button>
-        <br><br>
-        <a href="home.html" style="color:gray; text-decoration:none;">← უკან დაბრუნება</a>
+
+<div class="sidebar">
+    <div class="sidebar-header" onclick="location.href='profile.html'">
+        <div class="sidebar-avatar" id="uAvat"></div>
+        <div class="user-name" id="uNick">იტვირთება...</div>
     </div>
+    <div class="menu-items">
+        <div class="menu-item active">☕ კაფე-ბარი</div>
+        <div class="menu-item">👑 ვიპ საუბრები</div>
+        <div class="menu-item">🕵️ გამოძიება</div>
+        <div class="menu-item">🔐 შიფროგრამა</div>
+        <div class="menu-item">❓ ვიქტორინა</div>
+        <div class="menu-item">🌑 მაფიის ღამე</div>
+        <div class="menu-item">🃏 ჯოკერი</div>
+        <div class="menu-item">🎲 ნარდი</div>
+        <div class="menu-item">🛠️ ადმინისტრაცია</div>
+        <div class="menu-item" onclick="logout()">🚪 გასვლა</div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="top-bar"><span id="roomTitle">☕ კაფე-ბარი</span></div>
+    <div class="messages-area" id="chatContainer"></div>
+    <div class="bottom-bar">
+        <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+        <button class="send-btn" onclick="send()">
+            <svg viewBox="0 0 24 24" width="30" height="30"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg>
+        </button>
+    </div>
+</div>
 
 <script>
     const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
     const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
     const client = supabase.createClient(supabaseUrl, supabaseKey);
-    let uId = null;
 
-    async function load() {
+    let currentRoom = '☕ კაფე-ბარი';
+    let myProfile = null;
+
+    async function init() {
         const { data: { user } } = await client.auth.getUser();
-        if (!user) return location.href="index.html";
-        uId = user.id;
-        const { data: p } = await client.from('profiles').select('*').eq('id', uId).single();
-        document.getElementById('pNick').innerText = p.nickname;
-        document.getElementById('pRole').innerText = p.role;
-        document.getElementById('pStatus').value = p.status || "";
-        document.getElementById('pAvat').style.backgroundImage = `url('${p.avatar_url}')`;
-    }
+        if (!user) return window.location.href = "index.html";
 
-    async function save() {
-        const st = document.getElementById('pStatus').value;
-        await client.from('profiles').update({ status: st }).eq('id', uId);
-        alert("შენახულია!");
-    }
-
-    async function upload() {
-        const file = document.getElementById('fInput').files[0];
-        const fName = uId + "_" + Date.now();
-        const { data, error } = await client.storage.from('avatars').upload(fName, file);
-        if(!error) {
-            const { publicUrl } = client.storage.from('avatars').getPublicUrl(fName).data;
-            await client.from('profiles').update({ avatar_url: publicUrl }).eq('id', uId);
-            document.getElementById('pAvat').style.backgroundImage = `url('${publicUrl}')`;
-            alert("ფოტო განახლდა!");
+        // ვიღებთ პროფილს. ყურადღება: ვიყენებთ 'username'-ს, რადგან ბაზაში ეგრე გიწერია
+        let { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
+        
+        if (profile) {
+            myProfile = profile;
+            document.getElementById('uNick').innerText = profile.username;
+            if(profile.avatar_url) document.getElementById('uAvat').style.backgroundImage = `url('${profile.avatar_url}')`;
+            loadMessages(currentRoom);
         }
     }
-    load();
+
+    async function loadMessages(room) {
+        const chat = document.getElementById('chatContainer');
+        chat.innerHTML = "";
+        const { data } = await client.from('messages').select('*').eq('room_name', room).order('created_at', { ascending: true });
+        if (data) data.forEach(displayMsg);
+    }
+
+    function displayMsg(msg) {
+        const chat = document.getElementById('chatContainer');
+        const isFounder = (myProfile.role === 'დამფუძნებელი');
+        const isAdmin = (myProfile.role === 'ადმინი');
+
+        const delBtn = (isFounder || isAdmin) ? `<span onclick="deleteMsg('${msg.id}')" style="color:#444; cursor:pointer; float:right; font-size:10px;">[X]</span>` : '';
+        const nameLink = isFounder ? `<b style="color:red; cursor:pointer;" onclick="manageUser('${msg.user_id}', '${msg.username}')">${msg.username}</b>` : `<b style="color:red;">${msg.username}</b>`;
+
+        chat.innerHTML += `<div class="msg" id="msg-${msg.id}"><div class="msg-bubble">${delBtn} ${nameLink}<br>${msg.text}</div></div>`;
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function send() {
+        const input = document.getElementById('msgInput');
+        if (!input.value.trim()) return;
+        
+        await client.from('messages').insert([{ 
+            text: input.value, 
+            username: myProfile.username, 
+            room_name: currentRoom, 
+            user_id: myProfile.id 
+        }]);
+        input.value = "";
+    }
+
+    async function deleteMsg(id) {
+        if(confirm("წავშალოთ?")) {
+            await client.from('messages').delete().eq('id', id);
+            document.getElementById('msg-' + id).remove();
+        }
+    }
+
+    async function manageUser(id, name) {
+        const act = prompt(`მართვა: ${name}\n1-ადმინი, 2-იუზერი, 3-ბლოკი, 4-განბლოკვა`);
+        let up = {};
+        if(act==="1") up={role:'ადმინი'};
+        else if(act==="2") up={role:'user'};
+        else if(act==="3") up={is_blocked:true};
+        else if(act==="4") up={is_blocked:false};
+        if(act) await client.from('profiles').update(up).eq('id', id);
+    }
+
+    function logout() { client.auth.signOut().then(() => location.href='index.html'); }
+
+    client.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+        if(p.new.room_name === currentRoom) displayMsg(p.new);
+    }).subscribe();
+
+    init();
 </script>
 </body>
 </html>
