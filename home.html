@@ -9,55 +9,69 @@
 <style>
 
 body{
-background:#0b0000;
-font-family:sans-serif;
 margin:0;
+font-family:sans-serif;
+background:#0b0000;
 color:white;
 }
 
-/* ოთახების მენიუ */
+/* ზედა ბარი */
 
-.rooms{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:15px;
-padding:20px;
+.topbar{
+display:flex;
+align-items:center;
+background:#000;
+padding:10px;
+box-shadow:0 0 10px red;
+}
+
+.menu-btn{
+font-size:24px;
+cursor:pointer;
+margin-right:10px;
+}
+
+/* sidebar */
+
+.sidebar{
+position:fixed;
+top:0;
+left:-260px;
+width:250px;
+height:100%;
+background:#050000;
+box-shadow:0 0 20px red;
+transition:0.3s;
+padding-top:60px;
+z-index:100;
+}
+
+.sidebar.active{
+left:0;
 }
 
 .room{
-background:#111;
-border-radius:15px;
-padding:20px;
-text-align:center;
-font-size:22px;
+padding:15px;
+border-bottom:1px solid #300;
 cursor:pointer;
-
-box-shadow:0 0 10px red;
-transition:0.3s;
-}
-
-.room span{
-display:block;
-margin-top:10px;
-font-size:14px;
 }
 
 .room:hover{
-transform:scale(1.05);
-box-shadow:0 0 20px red;
-}
-
-.exit{
 background:#200;
 }
 
 /* ჩატი */
 
+.chat-container{
+display:flex;
+flex-direction:column;
+height:100vh;
+}
+
 .chat{
-height:300px;
+flex:1;
 overflow-y:auto;
-padding:10px;
-border-top:1px solid #333;
+padding:15px;
 }
 
 /* მესიჯი */
@@ -75,17 +89,16 @@ border-radius:50%;
 background:red;
 }
 
-.msg-content{
+.msg-box{
 background:#111;
 padding:10px;
 border-radius:10px;
-box-shadow:0 0 8px red;
+box-shadow:0 0 10px red;
 max-width:70%;
 }
 
 .nick{
 font-weight:bold;
-font-size:14px;
 }
 
 .time{
@@ -94,18 +107,13 @@ color:#aaa;
 margin-left:5px;
 }
 
-.text{
-font-size:14px;
-margin-top:3px;
-}
-
 /* შეტყობინების ველი */
 
 .input-area{
 display:flex;
-gap:10px;
 padding:10px;
 background:#000;
+gap:10px;
 }
 
 .input-area input{
@@ -120,10 +128,10 @@ color:white;
 .send{
 background:red;
 border:none;
-color:white;
-font-size:18px;
 padding:10px 15px;
 border-radius:10px;
+color:white;
+font-size:18px;
 cursor:pointer;
 box-shadow:0 0 10px red;
 }
@@ -133,43 +141,54 @@ box-shadow:0 0 10px red;
 
 <body>
 
-<!-- ოთახები -->
+<!-- Sidebar -->
 
-<div class="rooms">
+<div class="sidebar" id="sidebar">
 
-<div class="room">☕<span>კაფე-ბარი</span></div>
-<div class="room">💎<span>ვიპ საუბრები</span></div>
-<div class="room">🕵️<span>გამოძიება</span></div>
-<div class="room">🔐<span>შიფროგრამა</span></div>
-<div class="room">❓<span>ვიქტორინა</span></div>
-<div class="room">😵<span>ჩამოხრჩობანა</span></div>
-<div class="room">🕴<span>მაფიის ღამე</span></div>
-<div class="room">🃏<span>ჯოკერი</span></div>
-<div class="room">🎲<span>ნარდი</span></div>
-<div class="room">🎵<span>მუსიკა</span></div>
-<div class="room">😂<span>იუმორი</span></div>
-<div class="room">🛠<span>ადმინისტრაცია</span></div>
-<div class="room">🆘<span>დახმარება</span></div>
-<div class="room">💬<span>ფორუმი</span></div>
-<div class="room exit">🚪<span>გასვლა</span></div>
+<div class="room">☕ კაფე-ბარი</div>
+<div class="room">💎 ვიპ საუბრები</div>
+<div class="room">🕵️ გამოძიება</div>
+<div class="room">🔐 შიფროგრამა</div>
+<div class="room">❓ ვიქტორინა</div>
+<div class="room">😵 ჩამოხრჩობანა</div>
+<div class="room">🕴 მაფიის ღამე</div>
+<div class="room">🃏 ჯოკერი</div>
+<div class="room">🎲 ნარდი</div>
+<div class="room">🎵 მუსიკა</div>
+<div class="room">😂 იუმორი</div>
+<div class="room">🛠 ადმინისტრაცია</div>
+<div class="room">🆘 დახმარება</div>
+<div class="room">💬 ფორუმი</div>
+<div class="room">🚪 გასვლა</div>
+
+</div>
+
+<div class="chat-container">
+
+<!-- ზედა ბარი -->
+
+<div class="topbar">
+
+<div class="menu-btn" onclick="toggleMenu()">☰</div>
+
+<div>OLD MAFIA CHAT</div>
 
 </div>
 
 <!-- ჩატი -->
 
-<div class="chat">
+<div class="chat" id="chat">
 
 <div class="message">
 
 <div class="avatar"></div>
 
-<div class="msg-content">
+<div class="msg-box">
+
 <span class="nick">Nika</span>
 <span class="time">21:34</span>
 
-<div class="text">
-გამარჯობა ყველას 👋
-</div>
+<div>გამარჯობა 👋</div>
 
 </div>
 
@@ -177,15 +196,60 @@ box-shadow:0 0 10px red;
 
 </div>
 
-<!-- შეტყობინება -->
+<!-- ტექსტის ველი -->
 
 <div class="input-area">
 
-<input type="text" placeholder="დაწერე მესიჯი...">
+<input id="msgInput" placeholder="დაწერე მესიჯი...">
 
-<button class="send">✈</button>
+<button class="send" onclick="sendMsg()">✈</button>
 
 </div>
+
+</div>
+
+<script>
+
+function toggleMenu(){
+document.getElementById("sidebar").classList.toggle("active");
+}
+
+document.querySelectorAll(".room").forEach(room=>{
+room.onclick=function(){
+document.getElementById("sidebar").classList.remove("active");
+}
+})
+
+function sendMsg(){
+
+let input=document.getElementById("msgInput");
+
+if(input.value.trim()=="") return;
+
+let chat=document.getElementById("chat");
+
+let time=new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+let msg=`
+<div class="message">
+<div class="avatar"></div>
+<div class="msg-box">
+<span class="nick">შენ</span>
+<span class="time">${time}</span>
+<div>${input.value}</div>
+</div>
+</div>
+`;
+
+chat.innerHTML+=msg;
+
+input.value="";
+
+chat.scrollTop=chat.scrollHeight;
+
+}
+
+</script>
 
 </body>
 </html>
