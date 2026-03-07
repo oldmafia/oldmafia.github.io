@@ -3,54 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OLD MAFIA - HOME</title>
+    <title>OLD MAFIA</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* საფუძველი და ფერები */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* Header */
-        .header { height: 60px; background: #000; border-bottom: 2px solid #ff0000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1001; }
-        .burger, .pm-trigger { color: #ff0000; font-size: 26px; cursor: pointer; position: relative; }
-        #roomTitle { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #fff; letter-spacing: 1px; }
+        .header { height: 60px; background: #000; border-bottom: 2px solid red; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1001; }
+        .burger, .pm-trigger { color: red; font-size: 26px; cursor: pointer; }
+        #roomTitle { font-size: 14px; font-weight: bold; text-transform: uppercase; }
 
-        /* Sidebar & Profile */
-        #sidebar { position: fixed; top: 0; left: -100%; width: 85%; height: 100%; background: rgba(0,0,0,0.98); transition: 0.3s; z-index: 2000; overflow-y: auto; border-right: 2px solid #ff0000; }
+        /* Sidebar & Profile Area */
+        #sidebar { position: fixed; top: 0; left: -100%; width: 85%; height: 100%; background: #000; transition: 0.3s; z-index: 2000; border-right: 2px solid red; overflow-y: auto; }
         #sidebar.open { left: 0; }
-        .profile-section { padding: 30px 20px; background: linear-gradient(180deg, #1a0000 0%, #000 100%); border-bottom: 1px solid #222; text-align: center; }
-        .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #ff0000; margin-bottom: 10px; object-fit: cover; }
-        .profile-nick { display: block; font-weight: bold; font-size: 16px; color: #fff; }
+        .prof-box { padding: 30px 20px; text-align: center; border-bottom: 1px solid #222; background: linear-gradient(to bottom, #1a0000, #000); }
+        .prof-img { width: 75px; height: 75px; border-radius: 50%; border: 2px solid red; object-fit: cover; margin-bottom: 10px; }
+        .prof-nick { display: block; font-weight: bold; color: #fff; }
 
         /* Rooms List */
-        .room-item { padding: 15px 25px; border-bottom: 1px solid #111; color: #bbb; cursor: pointer; font-size: 15px; transition: 0.2s; }
-        .room-item.active { color: #ff0000; font-weight: bold; background: #080808; border-left: 5px solid #ff0000; }
+        .room-item { padding: 15px 25px; border-bottom: 1px solid #111; color: #bbb; cursor: pointer; }
+        .room-item.active { color: red; font-weight: bold; border-left: 5px solid red; background: #080808; }
 
-        /* Message Styles with Avatars */
-        #msgList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #050505; }
-        .msg-wrapper { display: flex; align-items: flex-end; gap: 10px; max-width: 85%; }
-        .msg-wrapper.outgoing { align-self: flex-end; flex-direction: row-reverse; }
-        .msg-wrapper.incoming { align-self: flex-start; }
+        /* Messages Area */
+        #msgList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #050505; }
+        .msg-row { display: flex; align-items: flex-end; gap: 8px; max-width: 85%; }
+        .msg-row.me { align-self: flex-end; flex-direction: row-reverse; }
         
-        .msg-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #333; object-fit: cover; background: #222; }
-        .outgoing .msg-avatar { border-color: #ff0000; }
+        .msg-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #333; }
+        .me .msg-avatar { border-color: red; }
 
-        .bubble { padding: 10px 14px; border-radius: 15px; position: relative; font-size: 15px; line-height: 1.4; }
-        .incoming .bubble { background: #111; border: 1px solid #222; border-bottom-left-radius: 2px; }
-        .outgoing .bubble { background: #000; border: 1px solid #ff0000; border-bottom-right-radius: 2px; }
+        .bubble { padding: 10px 14px; border-radius: 15px; font-size: 15px; position: relative; }
+        .other .bubble { background: #111; border: 1px solid #222; border-bottom-left-radius: 2px; }
+        .me .bubble { background: #000; border: 1px solid red; border-bottom-right-radius: 2px; }
         
-        .u-name { font-size: 11px; font-weight: bold; color: #ff4d4d; display: block; margin-bottom: 4px; }
-        .msg-time { font-size: 9px; color: #444; float: right; margin-top: 5px; margin-left: 10px; }
+        .u-nick { font-size: 11px; font-weight: bold; color: #ff4d4d; display: block; margin-bottom: 3px; }
+        .m-time { font-size: 9px; color: #444; float: right; margin-top: 5px; margin-left: 8px; }
 
-        /* Inbox List */
-        .inbox-card { padding: 15px; background: #111; border-radius: 12px; border-left: 4px solid #ff0000; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .inbox-nick { color: #ff0000; font-weight: bold; font-size: 15px; }
+        /* Inbox Card */
+        .inbox-card { padding: 15px; background: #111; border-radius: 10px; border-left: 4px solid red; margin-bottom: 10px; cursor: pointer; }
 
         /* Input Area */
-        .input-area { padding: 12px; background: #000; border-top: 1px solid #ff0000; display: flex; gap: 10px; align-items: center; }
-        .input-box { flex: 1; background: #0a0a0a; border: 1px solid #ff0000; border-radius: 25px; padding: 0 18px; height: 45px; display: flex; align-items: center; }
+        .input-area { padding: 12px; background: #000; border-top: 1px solid red; display: flex; gap: 10px; }
+        .input-box { flex: 1; background: #0a0a0a; border: 1px solid red; border-radius: 25px; padding: 0 15px; height: 45px; display: flex; align-items: center; }
         input { width: 100%; border: none; background: transparent; color: #fff; outline: none; font-size: 16px; }
-        .send-btn { background: #ff0000; color: #000; width: 45px; height: 45px; border-radius: 50%; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-send { background: red; color: #000; width: 45px; height: 45px; border-radius: 50%; border: none; font-size: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -62,9 +59,9 @@
     </div>
 
     <div id="sidebar">
-        <div class="profile-section">
-            <img src="https://via.placeholder.com/100/1a0000/ff0000?text=USER" class="profile-img" id="myAvatar">
-            <span class="profile-nick" id="myNick">...</span>
+        <div class="prof-box">
+            <img src="https://via.placeholder.com/100/000/f00?text=?" class="prof-img" id="myImg">
+            <span class="prof-nick" id="myNick">იტვირთება...</span>
         </div>
         <div id="roomsContainer">
             <div class="room-item active" onclick="changeRoom('💬 კაიფმანია', this)">💬 კაიფმანია</div>
@@ -88,10 +85,8 @@
     <div id="msgList"></div>
 
     <div class="input-area" id="inputBar">
-        <div class="input-box">
-            <input type="text" id="msgInput" placeholder="დაწერე მესიჯი..." autocomplete="off">
-        </div>
-        <button class="send-btn" onclick="sendMsg()">✈️</button>
+        <div class="input-box"><input type="text" id="msgInput" placeholder="დაწერე მესიჯი..." autocomplete="off"></div>
+        <button class="btn-send" onclick="sendMsg()">✈️</button>
     </div>
 
 <script>
@@ -99,28 +94,27 @@
     const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
     const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let myId, myName, myAvatarUrl, currentRoom = '💬 კაიფმანია', isInbox = false;
+    let myId, myName, myAvatar, currentRoom = '💬 კაიფმანია', isInbox = false;
 
     async function init() {
         const { data: { user } } = await client.auth.getUser();
         if(!user) return window.location.href = 'index.html';
         myId = user.id;
 
-        // ნიკის და ავატარის ავტომატური ამოღება
-        const { data: profile } = await client.from('profiles').select('*').eq('id', myId).single();
+        // მონაცემების წამოღება შენი profiles ცხრილიდან
+        const { data: prof } = await client.from('profiles').select('*').eq('id', myId).single();
         
-        myName = profile?.username || user.user_metadata?.username || user.user_metadata?.full_name || user.email.split('@')[0];
-        myAvatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || "https://via.placeholder.com/100/000000/ff0000?text=" + myName[0];
+        myName = prof?.username || user.user_metadata?.username || user.email.split('@')[0];
+        myAvatar = prof?.avatar_url || "https://ui-avatars.com/api/?name=" + myName + "&background=000&color=f00";
 
         document.getElementById('myNick').innerText = myName;
-        document.getElementById('myAvatar').src = myAvatarUrl;
+        document.getElementById('myImg').src = myAvatar;
 
         loadMsgs();
         
         // რეალურ დროში განახლება
         client.channel('chat').on('postgres_changes', { event: 'INSERT', table: 'messages' }, (payload) => {
-            if (isInbox && payload.new.receiver_id === myId) loadMsgs();
-            else if (!isInbox && payload.new.room_name === currentRoom && !payload.new.receiver_id) {
+            if (!isInbox && payload.new.room_name === currentRoom) {
                 if(payload.new.user_id !== myId) appendMsg(payload.new);
             }
         }).subscribe();
@@ -128,34 +122,22 @@
 
     async function loadMsgs() {
         const list = document.getElementById('msgList');
-        const inputBar = document.getElementById('inputBar');
         list.innerHTML = "";
 
         if (isInbox) {
-            inputBar.style.display = "none";
-            const { data: pms } = await client.from('messages').select('*').eq('receiver_id', myId).order('created_at', { ascending: false });
+            document.getElementById('inputBar').style.display = "none";
+            // ვიყენებთ შენს private_messages ცხრილს
+            const { data: pms } = await client.from('private_messages').select('*').eq('receiver_id', myId).order('created_at', { ascending: false });
             
-            if (!pms?.length) {
-                list.innerHTML = "<p style='text-align:center; padding:50px; color:#444;'>პირადი ყუთი ცარიელია</p>";
-                return;
-            }
-
-            // ნიკების დაჯგუფება ინბოქსისთვის
-            const uniqueSenders = [...new Map(pms.map(m => [m.user_id, m])).values()];
-            list.innerHTML = uniqueSenders.map(m => `
-                <div class="inbox-card" onclick="alert('პირადი მიმოწერა ' + '${m.username}' + '-თან')">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${m.avatar_url || 'https://via.placeholder.com/50'}" style="width:40px;height:40px;border-radius:50%;border:1px solid red;">
-                        <div>
-                            <span class="inbox-nick">${m.username}</span>
-                            <div style="font-size:12px; color:#666; width:180px; overflow:hidden; text-overflow:ellipsis;">${m.text}</div>
-                        </div>
-                    </div>
+            list.innerHTML = pms?.length ? pms.map(m => `
+                <div class="inbox-card">
+                    <span style="color:red; font-weight:bold;">${m.sender_name || 'უცნობი'}</span>
+                    <div style="font-size:13px; color:#888;">${m.text}</div>
                 </div>
-            `).join('');
+            `).join('') : "<p style='text-align:center; padding:20px; color:#444;'>ყუთი ცარიელია</p>";
         } else {
-            inputBar.style.display = "flex";
-            const { data: msgs } = await client.from('messages').select('*').eq('room_name', currentRoom).is('receiver_id', null).order('created_at', { ascending: true }).limit(50);
+            document.getElementById('inputBar').style.display = "flex";
+            const { data: msgs } = await client.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true }).limit(50);
             list.innerHTML = msgs ? msgs.map(m => renderMsg(m)).join('') : '';
         }
         list.scrollTop = list.scrollHeight;
@@ -164,15 +146,13 @@
     function renderMsg(m) {
         const isMe = m.user_id === myId;
         const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const avatar = m.avatar_url || "https://via.placeholder.com/100/000000/ff0000?text=" + (m.username ? m.username[0] : 'M');
-        
         return `
-            <div class="msg-wrapper ${isMe ? 'outgoing' : 'incoming'}">
-                <img src="${avatar}" class="msg-avatar">
+            <div class="msg-row ${isMe ? 'me' : 'other'}">
+                <img src="${m.avatar_url || 'https://via.placeholder.com/50'}" class="msg-avatar">
                 <div class="bubble">
-                    <span class="u-name">${m.username}</span>
+                    <span class="u-nick">${m.username || 'Mafioso'}</span>
                     <span>${m.text}</span>
-                    <span class="msg-time">${time}</span>
+                    <span class="m-time">${time}</span>
                 </div>
             </div>`;
     }
@@ -181,18 +161,20 @@
         const inp = document.getElementById('msgInput');
         if(!inp.value.trim()) return;
 
-        const msgObj = { 
+        // ვაგზავნით ზუსტად იმ სვეტებში, რაც გაქვს
+        const { error } = await client.from('messages').insert([{ 
             user_id: myId, 
             username: myName, 
             text: inp.value, 
             room_name: currentRoom,
-            avatar_url: myAvatarUrl 
-        };
+            avatar_url: myAvatar 
+        }]);
 
-        const { error } = await client.from('messages').insert([msgObj]);
         if(!error) {
-            appendMsg({ ...msgObj, created_at: new Date() });
+            appendMsg({ user_id: myId, username: myName, text: inp.value, avatar_url: myAvatar, created_at: new Date() });
             inp.value = '';
+        } else {
+            alert("შეცდომა: " + error.message);
         }
     }
 
@@ -202,23 +184,15 @@
         list.scrollTop = list.scrollHeight;
     }
 
-    function openInbox() { 
-        isInbox = true; 
-        document.getElementById('roomTitle').innerHTML = "📥 პირადი ყუთი"; 
-        loadMsgs(); 
-    }
-
+    function openInbox() { isInbox = true; document.getElementById('roomTitle').innerText = "📥 პირადი ყუთი"; loadMsgs(); }
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
     function changeRoom(name, el) {
-        isInbox = false;
-        currentRoom = name;
-        document.getElementById('roomTitle').innerHTML = name;
+        isInbox = false; currentRoom = name;
+        document.getElementById('roomTitle').innerText = name;
         document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
         el.classList.add('active');
-        toggleMenu();
-        loadMsgs();
+        toggleMenu(); loadMsgs();
     }
-
-    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
 
     init();
 </script>
