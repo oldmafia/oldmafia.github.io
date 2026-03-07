@@ -3,166 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - ჩათი & დრო</title>
+    <title>კაიფმანია - სრული მენიუ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background-color: #050505;
+            background-color: #000;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
             font-family: 'Segoe UI', sans-serif;
-            color: white;
+            padding: 20px;
         }
 
-        /* მენიუს კონტეინერი */
-        .chat-container {
-            background: #111;
-            width: 90%;
-            max-width: 400px;
-            padding: 20px;
+        .container {
+            background: #0d0d0d;
+            width: 100%;
+            max-width: 500px;
+            padding: 25px;
             border-radius: 20px;
             border: 2px solid #ff0000;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
+            color: white;
         }
 
-        /* მესიჯების ველი */
-        #chat-box {
-            height: 200px;
-            overflow-y: auto;
-            border-bottom: 1px solid #333;
-            margin-bottom: 15px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .header {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px red;
+            color: #fff;
         }
 
-        /* ერთი მესიჯის სტილი */
-        .message {
-            background: #222;
-            padding: 8px 12px;
-            border-radius: 10px;
-            border-left: 3px solid #ff0000;
-            font-size: 14px;
-            position: relative;
-            animation: fadeIn 0.3s ease;
+        /* მენიუს სტრუქტურა - მობილურზე 2 სვეტი */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
         }
 
-        /* დროის სტილი მესიჯში */
-        .msg-time {
-            font-size: 10px;
-            color: #888;
-            float: right;
-            margin-top: 5px;
-            margin-left: 10px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ინპუტი */
-        #user-input {
-            width: 100%;
+        .item {
             background: #1a1a1a;
+            padding: 14px 10px;
+            border-radius: 12px;
+            text-align: left;
+            padding-left: 15px;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 1px solid #333;
-            padding: 12px;
-            border-radius: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .item:hover {
+            background: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+            transform: scale(1.05);
+            border-color: #fff;
+        }
+
+        /* გასვლის ღილაკი */
+        .exit {
+            grid-column: span 2;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid #ff0000;
+            color: #ff4d4d;
+        }
+
+        /* ჩათის ზონა */
+        .input-area {
+            border-top: 2px solid #222;
+            padding-top: 20px;
+        }
+
+        #msg-input {
+            width: 100%;
+            background: #151515;
+            border: 1px solid #ff000055;
+            padding: 15px;
+            border-radius: 12px;
             color: white;
             box-sizing: border-box;
-            margin-bottom: 10px;
             outline: none;
+            margin-bottom: 12px;
+            font-size: 15px;
         }
 
-        /* გაგზავნის ღილაკი თვითმფრინავით */
         .send-btn {
             width: 100%;
             background: #ff0000;
             color: white;
             border: none;
-            padding: 14px;
-            border-radius: 10px;
+            padding: 16px;
+            border-radius: 12px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 17px;
             transition: 0.3s;
         }
 
         .send-btn i {
-            font-size: 18px;
-            transition: 0.4s;
+            font-size: 20px;
+            transition: 0.5s ease;
         }
 
         .send-btn:hover {
-            box-shadow: 0 0 15px #ff0000;
+            background: #cc0000;
+            box-shadow: 0 0 20px #ff0000;
         }
 
         .send-btn:hover i {
-            transform: translate(10px, -10px) rotate(-15deg);
+            transform: translate(15px, -15px) rotate(-20deg);
         }
 
+        .time-label {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+            min-height: 15px;
+        }
     </style>
 </head>
 <body>
 
-    <h2 style="text-shadow: 0 0 10px red;">კაიფმანია 😎🔥</h2>
+<div class="container">
+    <div class="header">კაიფმანია 😎🔥</div>
 
-    <div class="chat-container">
-        <div id="chat-box">
-            <div class="message">გამარჯობა! მოგვწერე რამე... <span class="msg-time">00:00</span></div>
-        </div>
-
-        <input type="text" id="user-input" placeholder="ჩაწერე მესიჯი..." onkeypress="checkEnter(event)">
-
-        <button class="send-btn" onclick="sendMessage()">
-            გაგზავნა <i class="fas fa-plane-departure"></i>
-        </button>
+    <div class="menu-grid">
+        <a href="#" class="item">☕ კაფე-ბარი</a>
+        <a href="#" class="item">💎 ვიპ საუბრები</a>
+        <a href="#" class="item">🔍 გამოძიება</a>
+        <a href="#" class="item">📑 შიფროგრამა</a>
+        <a href="#" class="item">🧠 ვიქტორინა</a>
+        <a href="#" class="item">🪢 ჩამოხრჩობანა</a>
+        <a href="#" class="item">🎭 მაფიის ღამე</a>
+        <a href="#" class="item">🃏 ჯოკერი</a>
+        <a href="#" class="item">🎲 ნარდი</a>
+        <a href="#" class="item">🎵 მუსიკა</a>
+        <a href="#" class="item">😂 იუმორი</a>
+        <a href="#" class="item">🛠️ ადმინისტრაცია</a>
+        <a href="#" class="item">❓ დახმარება</a>
+        <a href="#" class="item">🏛️ ფორუმი</a>
+        <a href="#" class="item exit">🚪 გასვლა</a>
     </div>
 
-    <script>
-        function sendMessage() {
-            const input = document.getElementById('user-input');
-            const chatBox = document.getElementById('chat-box');
-            
-            if (input.value.trim() === "") return;
+    <div class="input-area">
+        <input type="text" id="msg-input" placeholder="ჩაწერე მესიჯი...">
+        <button class="send-btn" onclick="sendWithTime()">
+            გაგზავნა <i class="fas fa-plane-departure"></i>
+        </button>
+        <span id="time-status" class="time-label"></span>
+    </div>
+</div>
 
-            // დროის ამოღება
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const timeString = hours + ":" + minutes;
+<script>
+    function sendWithTime() {
+        const input = document.getElementById('msg-input');
+        const status = document.getElementById('time-status');
 
-            // ახალი მესიჯის შექმნა
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message');
-            messageDiv.innerHTML = `
-                ${input.value}
-                <span class="msg-time">${timeString}</span>
-            `;
-
-            // ჩათში დამატება
-            chatBox.appendChild(messageDiv);
-            
-            // გასუფთავება და სქროლი ბოლოში
-            input.value = "";
-            chatBox.scrollTop = chatBox.scrollHeight;
+        if (input.value.trim() === "") {
+            status.innerText = "გთხოვთ ჩაწეროთ ტექსტი!";
+            status.style.color = "orange";
+            return;
         }
 
-        // Enter-ზე რომ გაიგზავნოს
-        function checkEnter(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
-        }
-    </script>
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2, '0') + ":" + 
+                     now.getMinutes().toString().padStart(2, '0');
+
+        status.innerText = "ბოლო მესიჯი გაიგზავნა: " + time;
+        status.style.color = "#888";
+        input.value = ""; // ველის გასუფთავება
+    }
+</script>
 
 </body>
 </html>
