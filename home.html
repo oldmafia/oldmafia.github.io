@@ -11,32 +11,32 @@
         /* საიდბარი */
         .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; }
-        .sidebar-avatar { width: 70px; height: 70px; border-radius: 12px; border: 2px solid #0044ff; margin: 0 auto 10px; background: #111; }
-        .user-name { color: #0044ff; font-weight: bold; }
+        .sidebar-avatar { width: 70px; height: 70px; border-radius: 12px; border: 2px solid #ff0000; margin: 0 auto 10px; background: #111; }
+        .user-name { color: #ff0000; font-weight: bold; }
 
-        /* ოთახების სია */
+        /* მენიუს ელემენტები */
         .menu-items { flex-grow: 1; overflow-y: auto; }
         .menu-item { padding: 12px 20px; color: #bbb; cursor: pointer; border-left: 3px solid transparent; font-size: 14px; transition: 0.2s; }
-        .menu-item:hover, .menu-item.active { background: #001133; color: #0044ff; border-left: 3px solid #0044ff; }
-
-        /* ჩატის ზონა */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; }
-        .top-bar { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; display: flex; align-items: center; color: #0044ff; font-weight: bold; }
-        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .menu-item:hover, .menu-item.active { background: #1a0000; color: #ff0000; border-left: 3px solid #ff0000; }
         
-        /* მესიჯების სტილი */
-        .msg { display: flex; gap: 10px; margin-bottom: 8px; }
+        /* გასვლის ღილაკი */
+        .logout-item { color: #555 !important; border-top: 1px solid #1a1a1a; margin-top: auto; }
+        .logout-item:hover { color: #fff !important; background: #330000; }
+
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .top-bar { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; display: flex; align-items: center; color: #ff0000; font-weight: bold; }
+        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 80%; }
         
-        /* ქვედა პანელი */
         .bottom-bar { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
         input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
-        input:focus { border-color: #0044ff; }
-        .send-btn { background: none; border: none; cursor: pointer; color: #0044ff; display: flex; align-items: center; transition: 0.2s; }
-        .send-btn:hover { transform: scale(1.1); }
+        
+        .send-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; }
+        .send-btn svg { fill: #007bff; transition: 0.2s; }
+        .send-btn:hover svg { transform: scale(1.1); fill: #00a2ff; }
 
-        /* მობილური ბურგერი */
-        .burger { display: none; font-size: 24px; color: #0044ff; background: none; border: none; margin-right: 15px; cursor: pointer; }
+        .burger { display: none; font-size: 24px; color: #ff0000; background: none; border: none; margin-right: 15px; cursor: pointer; }
+
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: -280px; height: 100%; }
             .sidebar.open { left: 0; }
@@ -49,9 +49,9 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="sidebar-avatar"></div>
-        <div class="user-name" id="userName">abu007</div>
+        <div class="user-name" id="userName">ჩამომტვირთავი...</div>
     </div>
-    <div class="menu-items" id="roomList">
+    <div class="menu-items" id="menuItems">
         <div class="menu-item active">☕ კაფე-ბარი</div>
         <div class="menu-item">👑 ვიპ საუბრები</div>
         <div class="menu-item">🕵️ გამოძიება</div>
@@ -59,14 +59,14 @@
         <div class="menu-item">❓ ვიქტორინა</div>
         <div class="menu-item">🪢 ჩამოხრჩობანა</div>
         <div class="menu-item">🌑 მაფიის ღამე</div>
-        <div class="menu-item">🃏 ჯოკერი</div>
+        <div class="menu-item"> Joker 🃏 ჯოკერი</div>
         <div class="menu-item">🎲 ნარდი</div>
         <div class="menu-item">🎵 მუსიკა</div>
         <div class="menu-item">😂 იუმორი</div>
         <div class="menu-item">🚀 კაიფმანია</div>
         <div class="menu-item">🛠️ ადმინისტრაცია</div>
-        <div class="menu-item">❓ დახმარება</div>
         <div class="menu-item">📝 ფორუმი</div>
+        <div class="menu-item logout-item" id="logoutBtn">🚪 გასვლა</div>
     </div>
 </div>
 
@@ -79,7 +79,7 @@
     <div class="bottom-bar">
         <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
         <button class="send-btn" onclick="send()">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="#0044ff">
+            <svg viewBox="0 0 24 24" width="35" height="35">
                 <path d="M21,16V14L13,9V3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z"/>
             </svg>
         </button>
@@ -94,7 +94,6 @@
     let currentRoom = '☕ კაფე-ბარი';
     let myNickname = 'abu007';
 
-    // მომხმარებლის ამოცნობა
     async function init() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (user && user.user_metadata) {
@@ -104,21 +103,15 @@
         loadMessages(currentRoom);
     }
 
+    // მენიუს ჩაკეტვა-გახსნა
     function toggleMenu() {
         document.getElementById('sidebar').classList.toggle('open');
     }
 
-    // მესიჯების ჩატვირთვა
     async function loadMessages(room) {
         const chat = document.getElementById('chatContainer');
         chat.innerHTML = "";
-        
-        const { data, error } = await supabaseClient
-            .from('messages')
-            .select('*')
-            .eq('room_name', room)
-            .order('created_at', { ascending: true });
-
+        const { data } = await supabaseClient.from('messages').select('*').eq('room_name', room).order('created_at', { ascending: true });
         if (data) {
             data.forEach(displayMsg);
             chat.scrollTop = chat.scrollHeight;
@@ -128,46 +121,39 @@
     function displayMsg(msg) {
         const chat = document.getElementById('chatContainer');
         const time = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'msg';
-        msgDiv.innerHTML = `
-            <div class="msg-bubble">
-                <b style="color:#0044ff; font-size:12px;">${msg.username}</b><br>
-                ${msg.text}
-                <div style="font-size:9px; color:#444; text-align:right;">${time}</div>
-            </div>`;
-        chat.appendChild(msgDiv);
+        chat.innerHTML += `<div class="msg" style="margin-bottom:10px;"><div class="msg-bubble"><b style="color:#ff0000; font-size:12px;">${msg.username}</b><br>${msg.text}<div style="font-size:9px; color:#444; text-align:right;">${time}</div></div></div>`;
         chat.scrollTop = chat.scrollHeight;
     }
 
-    // გაგზავნა
     async function send() {
         const input = document.getElementById('msgInput');
         const text = input.value.trim();
         if (!text) return;
-
-        const { error } = await supabaseClient
-            .from('messages')
-            .insert([{ text: text, username: myNickname, room_name: currentRoom }]);
-
+        const { error } = await supabaseClient.from('messages').insert([{ text: text, username: myNickname, room_name: currentRoom }]);
         if (!error) input.value = "";
     }
 
-    // Realtime მოსმენა
     supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         if(payload.new.room_name === currentRoom) displayMsg(payload.new);
     }).subscribe();
 
-    // ოთახების გადართვა
+    // ოთახების არჩევა და მენიუს ჩაკეტვა
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function() {
+            if (this.id === 'logoutBtn') {
+                supabaseClient.auth.signOut().then(() => window.location.href = "index.html");
+                return;
+            }
+
             document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
             this.classList.add('active');
             
             currentRoom = this.innerText;
             document.getElementById('roomTitle').innerText = currentRoom;
             
-            if (window.innerWidth <= 768) toggleMenu();
+            // მთავარი: მენიუს ჩაკეტვა არჩევის შემდეგ
+            document.getElementById('sidebar').classList.remove('open');
+            
             loadMessages(currentRoom);
         });
     });
