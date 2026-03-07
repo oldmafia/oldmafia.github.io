@@ -3,225 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - პანელი</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>კაიფმანია - მთავარი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --main-red: #ff0000;
-            --dark-bg: #0a0a0a;
-            --neon-glow: 0 0 10px rgba(255, 0, 0, 0.7);
-        }
+        :root { --red: #ff0000; --dark: #0a0a0a; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; display: flex; height: 100vh; }
+        
+        /* მარცხენა მენიუ */
+        .sidebar { width: 260px; background: #111; border-right: 2px solid var(--red); display: flex; flex-direction: column; box-shadow: 5px 0 15px rgba(255,0,0,0.2); }
+        .sidebar h2 { color: var(--red); text-align: center; padding: 20px; text-shadow: 0 0 10px var(--red); margin: 0; border-bottom: 1px solid #222; }
+        .rooms { flex-grow: 1; overflow-y: auto; }
+        .room-link { padding: 12px 20px; display: block; color: #ccc; text-decoration: none; border-bottom: 1px solid #1a1a1a; transition: 0.3s; cursor: pointer; }
+        .room-link:hover, .room-link.active { background: var(--red); color: white; box-shadow: 0 0 10px var(--red); }
 
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--dark-bg);
-            color: white;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+        /* ჩატის მხარე */
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; }
+        .chat-header { padding: 15px 25px; background: #151515; border-bottom: 1px solid var(--red); display: flex; justify-content: space-between; align-items: center; }
+        #chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* მესიჯის სტილი */
+        .msg { background: #1a1a1a; padding: 10px 15px; border-radius: 10px; border-left: 3px solid var(--red); max-width: 80%; }
+        .msg-user { color: var(--red); font-weight: bold; font-size: 0.85rem; margin-bottom: 4px; }
 
-        /* გვერდითა მენიუ (Sidebar) */
-        .sidebar {
-            width: 250px;
-            background: #111;
-            border-right: 2px solid var(--main-red);
-            display: flex;
-            flex-direction: column;
-            box-shadow: var(--neon-glow);
-        }
-
-        .sidebar h2 {
-            text-align: center;
-            color: var(--main-red);
-            text-shadow: var(--neon-glow);
-            padding: 20px 0;
-        }
-
-        .rooms-list {
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .room-btn {
-            width: 100%;
-            padding: 15px;
-            background: transparent;
-            border: none;
-            color: #ccc;
-            text-align: left;
-            cursor: pointer;
-            border-bottom: 1px solid #222;
-            transition: 0.3s;
-        }
-
-        .room-btn:hover, .room-btn.active {
-            background: var(--main-red);
-            color: white;
-            box-shadow: var(--neon-glow);
-        }
-
-        /* ჩატის ზონა */
-        .main-chat {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-header {
-            padding: 20px;
-            background: #151515;
-            border-bottom: 1px solid var(--main-red);
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        #chat-box {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .message {
-            background: #222;
-            padding: 10px 15px;
-            border-radius: 8px;
-            max-width: 70%;
-            border-left: 3px solid var(--main-red);
-        }
-
-        .message .user { color: var(--main-red); font-weight: bold; font-size: 0.8rem; }
-
-        /* შეყვანის ზონა */
-        .input-area {
-            padding: 20px;
-            background: #111;
-            display: flex;
-            gap: 10px;
-        }
-
-        input {
-            flex-grow: 1;
-            background: #222;
-            border: 1px solid var(--main-red);
-            padding: 12px;
-            color: white;
-            border-radius: 5px;
-            outline: none;
-        }
-
-        button#send-btn {
-            background: var(--main-red);
-            border: none;
-            padding: 10px 20px;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-            font-weight: bold;
-        }
+        /* ინპუტი */
+        .input-box { padding: 20px; background: #111; display: flex; gap: 10px; border-top: 1px solid #222; }
+        input { flex-grow: 1; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #000; color: white; outline: none; }
+        input:focus { border-color: var(--red); }
+        button#sendBtn { background: var(--red); color: white; border: none; padding: 0 25px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        
+        #user-info { font-size: 0.9rem; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>კაიფმანია 🔗</h2>
-        <div class="rooms-list" id="rooms-list">
-            </div>
+<div class="sidebar">
+    <h2>კაიფმანია 🔗</h2>
+    <div class="rooms" id="roomsList"></div>
+    <a href="#" onclick="logout()" class="room-link" style="color: #ff4444; border-top: 1px solid #333;">გასვლა 🚪</a>
+</div>
+
+<div class="chat-area">
+    <div class="chat-header">
+        <span id="activeRoomTitle">აირჩიეთ ოთახი</span>
+        <span id="user-info">იტვირთება...</span>
     </div>
-
-    <div class="main-chat">
-        <div class="chat-header" id="current-room-name">აირჩიეთ ოთახი</div>
-        <div id="chat-box"></div>
-        <div class="input-area">
-            <input type="text" id="msg-input" placeholder="დაწერე რამე...">
-            <button id="send-btn">გაგზავნა</button>
-        </div>
+    <div id="chat-messages"></div>
+    <div class="input-box">
+        <input type="text" id="messageInput" placeholder="დაწერე შეტყობინება...">
+        <button id="sendBtn">გაგზავნა</button>
     </div>
+</div>
 
-    <script>
-        // 1. SUPABASE-ის კონფიგურაცია (შენი მონაცემები ჩასვი აქ!)
-        const SUPABASE_URL = 'შენი_URL';
-        const SUPABASE_KEY = 'შენი_KEY';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+    const supabaseClient = supabase.createClient(
+        "https://ftfciebnywbondaiarnc.supabase.co",
+        "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+    );
 
-        const rooms = [
-            "კაფე-ბარი", "ვიპ საუბრები", "გამოძიება", "შიფროგრამა", "ვიქტორინა",
-            "ჩამოხრჩობანა", "მაფიის ღამე", "ჯოკერი", "ნარდი", "მუსიკა", "იუმორი", 
-            "ადმინისტრაცია", "დახმარება", "ფორუმი"
-        ];
+    const rooms = ["კაფე-ბარი", "ვიპ საუბრები", "გამოძიება", "შიფროგრამა", "ვიქტორინა", "ჩამოხრჩობანა", "მაფიის ღამე", "ჯოკერი", "ნარდი", "მუსიკა", "იუმორი", "ადმინისტრაცია", "დახმარება", "ფორუმი"];
+    
+    let currentRoom = "კაფე-ბარი";
+    let userNickname = "";
 
-        let currentRoom = "კაფე-ბარი";
-        let currentUser = null;
+    // 1. მომხმარებლის შემოწმება
+    async function checkUser() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            window.location.href = "index.html"; // თუ შესული არაა, აგდებს საწყისზე
+        } else {
+            userNickname = user.user_metadata.nickname || "User";
+            document.getElementById('user-info').innerText = "მოგესალმები, " + userNickname;
+            loadRooms();
+            switchRoom(currentRoom);
+        }
+    }
 
-        // ოთახების ღილაკების შექმნა
-        const roomsContainer = document.getElementById('rooms-list');
+    // 2. ოთახების სია
+    function loadRooms() {
+        const list = document.getElementById('roomsList');
         rooms.forEach(room => {
-            const btn = document.createElement('button');
-            btn.className = 'room-btn';
-            btn.innerText = room;
-            btn.onclick = () => switchRoom(room);
-            roomsContainer.appendChild(btn);
-        });
-
-        async function switchRoom(name) {
-            currentRoom = name;
-            document.getElementById('current-room-name').innerText = name;
-            document.getElementById('chat-box').innerHTML = ''; // გასუფთავება
-            loadMessages();
-        }
-
-        // მესიჯების ჩატვირთვა
-        async function loadMessages() {
-            const { data, error } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('room_name', currentRoom)
-                .order('created_at', { ascending: true });
-
-            if (data) data.forEach(msg => displayMessage(msg));
-        }
-
-        function displayMessage(msg) {
-            const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.className = 'message';
-            div.innerHTML = `<div class="user">${msg.username || 'Anonymous'}</div><div>${msg.text}</div>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        // მესიჯის გაგზავნა
-        document.getElementById('send-btn').onclick = async () => {
-            const input = document.getElementById('msg-input');
-            if (!input.value) return;
-
-            const { error } = await supabase.from('messages').insert([
-                { 
-                    text: input.value, 
-                    room_name: currentRoom,
-                    username: 'User' // აქ მერე Auth-დან წამოვიღებთ სახელს
-                }
-            ]);
-
-            if (!error) input.value = '';
-        };
-
-        // Realtime - ახალი მესიჯების მოსმენა
-        supabase
-            .channel('schema-db-changes')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                if (payload.new.room_name === currentRoom) {
-                    displayMessage(payload.new);
-                }
-            })
-            .subscribe();
-
-        // საწყისი ჩატვირთვა
-        switchRoom("კაფე-ბარი");
-    </script>
-</body>
-</html>
+            const a = document.createElement('a');
+            a.className = 'room-link';
+            a.innerText = room;
+            a.onclick = () => switchRoom(room);
+            list.
