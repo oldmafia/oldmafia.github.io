@@ -6,23 +6,29 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; }
+        
+        /* მარცხენა მენიუ - გასწორებული Scroll-ით */
+        .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-header { padding: 25px 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
         .sidebar-avatar { width: 80px; height: 80px; border-radius: 12px; border: 2px solid red; margin: 0 auto 12px; background: #111 center/cover; }
         .user-name { color: red; font-weight: bold; font-size: 20px; }
-        .menu-items { flex-grow: 1; overflow-y: auto; }
-        .menu-item { padding: 13px 25px; color: #999; cursor: pointer; font-size: 14px; border-left: 4px solid transparent; }
-        .menu-item.active { background: #1a0000; color: red; border-left: 4px solid red; }
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; }
+        
+        /* აქ ჩაემატა scroll-ის შესაძლებლობა */
+        .menu-items { flex-grow: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #333 #050505; }
+        .menu-item { padding: 13px 25px; color: #999; cursor: pointer; font-size: 14px; border-left: 4px solid transparent; transition: 0.2s; }
+        .menu-item:hover, .menu-item.active { background: #1a0000; color: red; border-left: 4px solid red; }
+        
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
         .top-bar { padding: 15px 25px; background: #0a0a0a; border-bottom: 1px solid #222; color: red; font-weight: bold; }
+        
         .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg-bubble { background: #0d0d0d; padding: 12px; border-radius: 0 15px 15px 15px; border: 1px solid #1a1a1a; max-width: 80%; position: relative; }
+        .msg-bubble { background: #0d0d0d; padding: 12px; border-radius: 0 15px 15px 15px; border: 1px solid #1a1a1a; max-width: 80%; }
         .msg-time { font-size: 11px; color: #444; float: right; margin-top: 4px; margin-left: 10px; }
+
         .bottom-bar { padding: 15px 20px; background: #0a0a0a; display: flex; gap: 12px; align-items: center; border-top: 1px solid #222; }
         input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 14px 20px; border-radius: 30px; color: #fff; outline: none; }
         
-        /* ნამდვილი კლასიკური თვითმფრინავი */
-        .send-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
+        .send-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 0; }
         .send-btn svg { fill: #007bff; width: 40px; height: 40px; }
     </style>
 </head>
@@ -123,7 +129,6 @@
         }
     }
 
-    // ოთახების გადართვა
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function() {
             document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
