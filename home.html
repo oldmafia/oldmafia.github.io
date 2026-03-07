@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OLD MAFIA CHAT</title>
-
 <style>
 body{
   margin:0;
@@ -28,6 +27,9 @@ body{
 .menu-btn{
   font-size:22px;
   cursor:pointer;
+}
+#room-name{
+  font-weight:bold;
 }
 
 /* SIDEBAR */
@@ -132,34 +134,45 @@ body{
 
 <div class="topbar">
   <div class="menu-btn" onclick="menu()">☰</div>
-  <div>OLD MAFIA CHAT</div>
+  <div id="room-name">არცერთი ოთახი</div>
 </div>
 
 <div class="chat" id="chat"></div>
 
 <div class="input">
   <input id="msg" placeholder="დაწერე მესიჯი...">
-  <button class="send" onclick="send()">✈</button>
+  <button class="send" onclick="sendMsg()">✈</button>
 </div>
 
 <script>
-// ნიკი რეგისტრაციიდან (localStorage)
+// ნიკი რეგისტრაციიდან
 let nick = localStorage.getItem("nick") || "უცნობი";
 
 // ჰამბურგერ მენიუ
 function menu(){ document.getElementById("sidebar").classList.toggle("active"); }
+
+// ოთახების კლიკი
+let chats = {}; // შენახვა თითო ოთახისთვის
+let currentRoom = null;
+
 document.querySelectorAll(".room").forEach(r=>{
-  r.onclick=()=>{ document.getElementById("sidebar").classList.remove("active"); }
+  r.onclick = ()=>{
+    currentRoom = r.textContent;
+    document.getElementById("room-name").textContent = currentRoom;
+    document.getElementById("sidebar").classList.remove("active");
+    // ჩატში ოთახის მესიჯები ჩატვირთე
+    document.getElementById("chat").innerHTML = chats[currentRoom] || "";
+  }
 });
 
 // მესიჯის გაგზავნა
-function send(){
-  let input=document.getElementById("msg");
-  if(input.value=="") return;
-  let chat=document.getElementById("chat");
-  let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  let html=
-  `<div class="message">
+function sendMsg(){
+  let input = document.getElementById("msg");
+  if(input.value.trim()==="" || !currentRoom) return;
+  let chat = document.getElementById("chat");
+  let time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+  let html = `<div class="message">
     <div class="avatar"></div>
     <div class="msg">
       <span class="nick">${nick}</span>
@@ -167,14 +180,20 @@ function send(){
       <div class="text">${input.value}</div>
     </div>
   </div>`;
-  chat.innerHTML+=html;
+
+  chat.innerHTML += html;
+
+  // შენახვა ოთახისთვის
+  if(!chats[currentRoom]) chats[currentRoom] = "";
+  chats[currentRoom] += html;
+
   input.value="";
-  chat.scrollTop=chat.scrollHeight;
+  chat.scrollTop = chat.scrollHeight;
 }
 
 // Enter-ით გაგზავნა
-document.getElementById("msg").addEventListener("keypress",function(e){
-  if(e.key==="Enter") send();
+document.getElementById("msg").addEventListener("keypress", function(e){
+  if(e.key==="Enter") sendMsg();
 });
 </script>
 
