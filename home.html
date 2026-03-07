@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Old Mafia - Final Version</title>
+    <title>Old Mafia - Home</title>
     <style>
+        /* --- ძირითადი სტილები --- */
         body {
             margin: 0;
             padding: 0;
@@ -16,30 +17,30 @@
             overflow: hidden;
         }
 
-        /* საიდბარი */
+        /* --- საიდბარი (Sidebar) --- */
         .sidebar {
             width: 280px;
             background: #050505;
             border-right: 1px solid #1a1a1a;
             display: flex;
             flex-direction: column;
-            transition: 0.3s;
+            transition: 0.3s ease;
             z-index: 1000;
         }
 
         .sidebar-header {
-            padding: 25px 20px;
+            padding: 20px;
             text-align: center;
             border-bottom: 1px solid #1a1a1a;
         }
 
         .sidebar-avatar {
-            width: 70px;
-            height: 70px;
+            width: 75px;
+            height: 75px;
             border-radius: 12px;
             border: 2px solid #ff0000;
             margin: 0 auto 10px;
-            background: url('https://via.placeholder.com/70/111/ff0000?text=User') center/cover;
+            background: #111; /* აქ გამოჩნდება იუზერის ფოტო */
         }
 
         .user-name {
@@ -48,15 +49,19 @@
             font-size: 1.1rem;
         }
 
-        /* მენიუ */
+        /* --- ოთახების სია --- */
         .menu-items {
             flex-grow: 1;
             overflow-y: auto;
             padding: 10px 0;
         }
 
+        /* სქროლის სტილი */
+        .menu-items::-webkit-scrollbar { width: 3px; }
+        .menu-items::-webkit-scrollbar-thumb { background: #ff0000; }
+
         .menu-item {
-            padding: 12px 25px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             color: #bbb;
@@ -64,6 +69,7 @@
             font-size: 14px;
             transition: 0.2s;
             border-left: 3px solid transparent;
+            cursor: pointer;
         }
 
         .menu-item:hover, .menu-item.active {
@@ -72,7 +78,7 @@
             border-left: 3px solid #ff0000;
         }
 
-        /* ჩატის ზონა */
+        /* --- ჩატის ზონა --- */
         .main-content {
             flex-grow: 1;
             display: flex;
@@ -98,7 +104,7 @@
             gap: 15px;
         }
 
-        /* შეტყობინების დიზაინი */
+        /* --- შეტყობინების სტილი --- */
         .msg {
             display: flex;
             gap: 10px;
@@ -121,20 +127,15 @@
             border: 1px solid #1a1a1a;
         }
 
-        .msg-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 15px;
-            margin-top: 5px;
-        }
-
         .msg-time {
             font-size: 10px;
             color: #444;
+            display: block;
+            text-align: right;
+            margin-top: 5px;
         }
 
-        /* ინპუტი */
+        /* --- ქვედა პანელი (Input) --- */
         .bottom-bar {
             padding: 15px;
             background: #0a0a0a;
@@ -162,12 +163,11 @@
             color: #ff0000;
             cursor: pointer;
             transition: 0.3s;
-            display: flex;
-            align-items: center;
         }
 
         .send-btn:hover { transform: scale(1.1) rotate(-10deg); }
 
+        /* --- მობილური ვერსია --- */
         .burger {
             display: none;
             font-size: 24px;
@@ -175,16 +175,28 @@
             background: none;
             border: none;
             margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
         }
 
         @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -280px; height: 100%; }
+            .sidebar { position: fixed; left: -280px; height: 100%; top: 0; }
             .sidebar.open { left: 0; }
             .burger { display: block; }
+            .overlay.show { display: block; }
         }
     </style>
 </head>
 <body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -192,57 +204,83 @@
         <div class="user-name">abu007</div>
     </div>
     <div class="menu-items">
-        <a href="#" class="menu-item">🎭 კაიფმანია</a>
-        <a href="#" class="menu-item active">☕ კაფე-ბარი</a>
-        <a href="#" class="menu-item">👑 ვიპ საუბრები</a>
-        <a href="#" class="menu-item">🕵️ გამოძიება</a>
-        <a href="#" class="menu-item">🔐 შიფროგრამა</a>
-        <a href="#" class="menu-item">❓ ვიქტორინა</a>
-        <a href="#" class="menu-item">🪢 ჩამოხრჩობანა</a> <a href="#" class="menu-item">🌑 მაფიის ღამე</a>
-        <a href="#" class="menu-item">🃏 ჯოკერი</a>
-        <a href="#" class="menu-item">🎲 ნარდი</a>
-        <a href="#" class="menu-item">🎵 მუსიკა</a>
-        <a href="#" class="menu-item">😂 იუმორი</a>
-        <a href="#" class="menu-item">🛠️ ადმინისტრაცია</a>
-        <a href="#" class="menu-item">❓ დახმარება</a>
-        <a href="#" class="menu-item">📝 ფორუმი</a>
-        <a href="#" class="menu-item" style="color:#555; margin-top:20px;">🚪 გასვლა</a>
+        <div class="menu-item active">☕ კაფე-ბარი</div>
+        <div class="menu-item">👑 ვიპ საუბრები</div>
+        <div class="menu-item">🕵️ გამოძიება</div>
+        <div class="menu-item">🔐 შიფროგრამა</div>
+        <div class="menu-item">❓ ვიქტორინა</div>
+        <div class="menu-item">🪢 ჩამოხრჩობანა</div>
+        <div class="menu-item">🌑 მაფიის ღამე</div>
+        <div class="menu-item">🃏 ჯოკერი</div>
+        <div class="menu-item">🎲 ნარდი</div>
+        <div class="menu-item">🎵 მუსიკა</div>
+        <div class="menu-item">😂 იუმორი</div>
+        <div class="menu-item">🚀 კაიფმანია</div>
+        <div class="menu-item">🛠️ ადმინისტრაცია</div>
+        <div class="menu-item">❓ დახმარება</div>
+        <div class="menu-item">📝 ფორუმი</div>
+        <div class="menu-item" style="color:#555; margin-top:20px;">🚪 გასვლა</div>
     </div>
 </div>
 
 <div class="main-content">
     <div class="top-bar">
-        <button class="burger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-        კაფე-ბარი
+        <button class="burger" onclick="toggleMenu()">☰</button>
+        <span id="roomTitle">კაფე-ბარი</span>
     </div>
-    <div class="messages-area" id="chat"></div>
+    
+    <div class="messages-area" id="chatContainer"></div>
+
     <div class="bottom-bar">
         <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
         <button class="send-btn" onclick="send()">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                <path d="M21,16v-2l-8.5-5V3.5c0-0.83-0.67-1.5-1.5-1.5s-1.5,0.67-1.5,1.5V9L2,14v2l8.5-2.5V19L8,21v2l4-1l4,1v-2l-2.5-2v-5.5L22,16z"/>
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+                <path d="M22,16v-2l-8.5-5V3.5c0-0.83-0.67-1.5-1.5-1.5s-1.5,0.67-1.5,1.5V9L2,14v2l8.5-2.5V19L8,21v2l4-1l4,1v-2l-2.5-2v-5.5L22,16z"/>
             </svg>
         </button>
     </div>
 </div>
 
 <script>
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('show');
+    }
+
+    // ოთახების გადართვა
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            const name = this.innerText;
+            document.getElementById('roomTitle').innerText = name;
+            
+            // მობილურზე ავტომატურად შეიკეცოს
+            if(window.innerWidth <= 768) toggleMenu();
+            
+            // აქ შეგიძლია ჩაამატო ამ კონკრეტული ოთახის მესიჯების წამოღება Supabase-დან
+            document.getElementById('chatContainer').innerHTML = ""; 
+        });
+    });
+
     function send() {
         let input = document.getElementById('msgInput');
         if(!input.value.trim()) return;
         
         let time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        let chat = document.getElementById('chatContainer');
+        
         let msgHtml = `
             <div class="msg">
                 <div class="msg-avatar"></div>
                 <div class="msg-bubble">
-                    <div style="color:#ff0000; font-weight:bold; font-size:13px;">abu007</div>
-                    <div style="margin-top:2px;">${input.value}</div>
-                    <div class="msg-info"><span class="msg-time">${time}</span></div>
+                    <div style="color:#ff0000; font-weight:bold; font-size:13px; margin-bottom:2px;">abu007</div>
+                    <div>${input.value}</div>
+                    <span class="msg-time">${time}</span>
                 </div>
             </div>`;
         
-        let chat = document.getElementById('chat');
         chat.innerHTML += msgHtml;
         input.value = "";
         chat.scrollTop = chat.scrollHeight;
