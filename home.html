@@ -2,34 +2,43 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>Old Mafia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia - მთავარი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
         .sidebar { width: 280px; background: #050505; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
         .sidebar-avatar { width: 80px; height: 80px; border-radius: 10px; border: 2px solid red; margin: 0 auto 10px; background: #111 center/cover; }
         .user-name { color: red; font-weight: bold; font-size: 20px; }
+
         .menu-items { flex-grow: 1; overflow-y: auto; }
         .menu-item { padding: 12px 20px; color: #999; cursor: pointer; border-left: 3px solid transparent; }
-        .menu-item.active { background: #1a0000; color: red; border-left: 3px solid red; }
+        .menu-item:hover, .menu-item.active { background: #1a0000; color: red; border-left: 3px solid red; }
+        
         .main-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .top-bar { padding: 15px; background: #0a0a0a; border-bottom: 1px solid #222; color: red; font-weight: bold; }
         .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 80%; }
+        
+        /* მესიჯის ბუშტი და დრო */
+        .msg-bubble { background: #0d0d0d; padding: 10px; border-radius: 0 12px 12px 12px; border: 1px solid #1a1a1a; max-width: 80%; position: relative; }
+        .msg-time { font-size: 10px; color: #555; float: right; margin-top: 5px; margin-left: 10px; }
+        
         .bottom-bar { padding: 15px; background: #0a0a0a; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
         input { flex-grow: 1; background: #111; border: 1px solid #333; padding: 12px; border-radius: 20px; color: #fff; outline: none; }
-        .send-btn { background: none; border: none; cursor: pointer; }
-        .send-btn svg { fill: #007bff; width: 40px; height: 40px; }
+        .send-btn { background: none; border: none; cursor: pointer; transition: 0.2s; }
+        .send-btn:hover { transform: scale(1.1); }
+        .send-btn svg { fill: #007bff; width: 35px; height: 35px; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <div class="sidebar-header">
+    <div class="sidebar-header" onclick="location.href='profile.html'">
         <div class="sidebar-avatar" id="uAvat"></div>
-        <div id="uNick" class="user-name">...</div>
+        <div id="uNick" class="user-name">იტვირთება...</div>
     </div>
-    <div class="menu-items">
+    <div class="menu-items" id="roomList">
         <div class="menu-item active">☕ კაფე-ბარი</div>
         <div class="menu-item">👑 ვიპ საუბრები</div>
         <div class="menu-item">🕵️ გამოძიება</div>
@@ -49,9 +58,10 @@
 </div>
 
 <div class="main-content">
+    <div class="top-bar" id="roomTitle">☕ კაფე-ბარი</div>
     <div class="messages-area" id="chatContainer"></div>
     <div class="bottom-bar">
-        <input type="text" id="msgInput" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') send()">
+        <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
         <button class="send-btn" onclick="send()">
             <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
         </button>
@@ -60,19 +70,22 @@
 
 <script>
     const client = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
+    let currentRoom = '☕ კაფე-ბარი';
     let myProfile = null;
-    let currentRoom = "☕ კაფე-ბარი";
 
     async function init() {
         const { data: { session } } = await client.auth.getSession();
         if (!session) return window.location.href = "index.html";
 
         const { data: profile } = await client.from('profiles').select('*').eq('id', session.user.id).single();
+        
         if (profile) {
             myProfile = profile;
             document.getElementById('uNick').innerText = profile.username;
             if(profile.avatar_url) document.getElementById('uAvat').style.backgroundImage = `url('${profile.avatar_url}')`;
         }
+        
         loadMessages();
     }
 
@@ -80,19 +93,56 @@
         const { data } = await client.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
         const chat = document.getElementById('chatContainer');
         chat.innerHTML = "";
-        if (data) data.forEach(m => {
-            chat.innerHTML += `<div class="msg-bubble"><b style="color:red">${m.username}</b><br>${m.text}</div>`;
-        });
+        if (data) data.forEach(displayMsg);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function displayMsg(msg) {
+        const chat = document.getElementById('chatContainer');
+        const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const nameColor = (myProfile && msg.username === myProfile.username) ? 'yellow' : 'red';
+
+        chat.innerHTML += `
+            <div class="msg">
+                <div class="msg-bubble">
+                    <b style="color:${nameColor};">${msg.username}</b>
+                    <span class="msg-time">${time}</span><br>
+                    <span style="color:#eee;">${msg.text}</span>
+                </div>
+            </div>`;
         chat.scrollTop = chat.scrollHeight;
     }
 
     async function send() {
         const input = document.getElementById('msgInput');
-        if (!input.value.trim()) return;
-        await client.from('messages').insert([{ text: input.value, username: myProfile.username, room_name: currentRoom, user_id: myProfile.id }]);
-        input.value = "";
-        loadMessages();
+        const val = input.value.trim();
+        if (!val || !myProfile) return;
+
+        const { error } = await client.from('messages').insert([{ 
+            text: val, 
+            username: myProfile.username, 
+            room_name: currentRoom,
+            user_id: myProfile.id 
+        }]);
+        
+        if(!error) input.value = "";
     }
+
+    // რეალურ დროში განახლება
+    client.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+        if(p.new.room_name === currentRoom) displayMsg(p.new);
+    }).subscribe();
+
+    // ოთახების გადართვა
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            currentRoom = this.innerText.trim();
+            document.getElementById('roomTitle').innerText = currentRoom;
+            loadMessages();
+        });
+    });
 
     init();
 </script>
