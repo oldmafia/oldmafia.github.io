@@ -79,4 +79,61 @@
         myName = raw.split('@')[0];
 
         document.getElementById('myNick').innerText = myName;
-        document.getElementById('myImg').src = `https://ui-
+        document.getElementById('myImg').src = `https://ui-avatars.com/api/?name=${myName}&background=000&color=f00`;
+
+        loadMsgs();
+
+        // რეალთაიმი - მხოლოდ სხვის მესიჯებს ვამატებთ
+        client.channel('chat').on('postgres_changes', { event: 'INSERT', table: 'messages' }, (p) => {
+            if(p.new.room_name === currentRoom && p.new.user_id !== myId) appendMsg(p.new);
+        }).subscribe();
+    }
+
+    async function loadMsgs() {
+        const list = document.getElementById('msgList');
+        list.innerHTML = "";
+        const { data: msgs } = await client.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+        if(msgs) msgs.forEach(m => appendMsg(m));
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function appendMsg(m) {
+        const list = document.getElementById('msgList');
+        const isMe = m.user_id === myId;
+        const time = new Date(m.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // თუ ბაზიდან ისევ მეილი მოაქვს, ჩვენებისას მაინც მოვაჭრათ @
+        let displayNick = m.username || "სტუმარი";
+        if(displayNick.includes('@')) displayNick = displayNick.split('@')[0];
+
+        const div = document.createElement('div');
+        div.className = `msg-row ${isMe ? 'me' : ''}`;
+        div.innerHTML = `<div class="bubble"><span class="u-nick">${displayNick}</span><span>${m.text}</span><span class="m-time">${time}</span></div>`;
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+    }
+
+    async function sendMsg() {
+        const inp = document.getElementById('msgInput');
+        if(!inp.value.trim()) return;
+        const txt = inp.value; inp.value = "";
+        
+        appendMsg({ user_id: myId, username: myName, text: txt, created_at: new Date() });
+        await client.from('messages').insert([{ user_id: myId, username: myName, text: txt, room_name: currentRoom }]);
+    }
+
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+    function changeRoom(n, el) { 
+        currentRoom = n; 
+        document.getElementById('roomTitle').innerText = n; 
+        document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+        el.classList.add('active');
+        toggleMenu(); 
+        loadMsgs(); 
+    }
+    async function logout() { await client.auth.signOut(); window.location.href = 'index.html'; }
+    document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMsg(); };
+    init();
+</script>
+</body>
+</html>
