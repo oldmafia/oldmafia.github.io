@@ -3,81 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - OLD STYLE</title>
+    <title>კაიფმანია - FINAL FIXED</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff0000; --bg: #000; --panel: #111; --blue: #00a2ff; }
+        :root { --red: #ff0000; --bg: #0a0a0a; --blue: #00a2ff; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: 'Helvetica Neue', sans-serif; background: var(--bg); color: white; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* Sidebar - ზუსტად ისე, როგორც სქრინზეა */
-        .sidebar { width: 250px; background: var(--panel); border-right: 1px solid #333; display: flex; flex-direction: column; flex-shrink: 0; }
-        .p-area { padding: 20px; text-align: center; border-bottom: 1px solid #222; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--red); }
-        .u-nick { margin-top: 10px; font-weight: bold; color: #fff; }
+        /* ზედა ბარი */
+        .navbar { height: 60px; background: #111; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #222; justify-content: space-between; z-index: 1000; }
+        .menu-btn { cursor: pointer; font-size: 24px; color: var(--red); display: flex; align-items: center; gap: 10px; }
+        .active-room-name { font-weight: bold; color: white; }
 
-        .r-list { flex-grow: 1; overflow-y: auto; }
-        .r-item { padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #aaa; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
-        .r-item:hover { background: #1a1a1a; color: white; }
-        .r-item.active { background: rgba(255, 0, 0, 0.2); color: white; border-left: 4px solid var(--red); }
-        .r-item svg { width: 16px; height: 16px; fill: var(--red); }
+        /* ჩამოსაშლელი მენიუ */
+        .dropdown-menu { 
+            position: absolute; top: -100%; left: 0; width: 100%; background: #111; 
+            transition: 0.4s ease; z-index: 999; border-bottom: 2px solid var(--red);
+            max-height: 70vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .dropdown-menu.open { top: 60px; }
 
-        /* გასვლა */
-        .exit-btn { color: #ff4444 !important; border-top: 1px solid #333; margin-top: 10px; }
-        .exit-btn svg { fill: #ff4444 !important; }
+        .room-item { padding: 15px 25px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: 0.2s; }
+        .room-item:hover { background: #1a1a1a; }
+        .room-item span { font-size: 1.1rem; }
+        .room-item.exit { color: #ff4444; border-top: 1px solid #333; }
 
-        /* Chat Area */
-        .chat-main { flex-grow: 1; display: flex; flex-direction: column; }
-        .header { height: 50px; padding: 0 20px; display: flex; align-items: center; background: #080808; border-bottom: 1px solid #222; color: var(--red); font-weight: bold; }
-        #msgs { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        /* ჩატი */
+        #chat-box { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .m-wrap { align-self: flex-start; max-width: 85%; }
+        .m-nick { font-size: 11px; color: var(--red); font-weight: bold; margin-left: 5px; margin-bottom: 2px; }
+        .m-bubble { background: #1a1a1a; border: 1px solid #333; padding: 10px 15px; border-radius: 0 15px 15px 15px; position: relative; min-width: 120px; }
+        .m-text { font-size: 15px; color: #eee; padding-bottom: 15px; }
+        .m-time { position: absolute; bottom: 5px; right: 10px; font-size: 10px; color: #555; }
 
-        /* Message Bubble - დრო შიგნით */
-        .m-wrap { align-self: flex-start; max-width: 80%; }
-        .m-nick { font-size: 11px; color: var(--red); font-weight: bold; margin-bottom: 2px; }
-        .m-bubble { background: #1e1e1e; padding: 10px 15px; border-radius: 0 15px 15px 15px; border: 1px solid #333; position: relative; min-width: 100px; }
-        .m-text { font-size: 14px; color: #ddd; padding-bottom: 12px; word-break: break-word; }
-        .m-time { position: absolute; bottom: 4px; right: 10px; font-size: 10px; color: #666; }
+        /* ინპუტი */
+        .bottom-bar { padding: 15px; background: #111; display: flex; align-items: center; gap: 10px; border-top: 1px solid #222; }
+        .input-wrap { flex-grow: 1; background: #000; border-radius: 30px; border: 1px solid #333; padding: 5px 15px; }
+        input { width: 100%; background: transparent; border: none; padding: 8px; color: white; outline: none; font-size: 16px; }
 
-        /* Input */
-        .input-bar { padding: 15px; background: #000; border-top: 1px solid #222; display: flex; align-items: center; gap: 10px; }
-        .in-wrap { flex-grow: 1; background: #111; border-radius: 20px; border: 1px solid #333; padding: 0 15px; }
-        input { width: 100%; background: transparent; border: none; padding: 10px; color: white; outline: none; }
-
-        /* ✈️ რეალური თვითმფრინავი (SVG) */
-        .plane-send { width: 40px; height: 40px; cursor: pointer; fill: var(--blue); transition: 0.2s; }
-        .plane-send:hover { transform: scale(1.1); filter: brightness(1.2); }
+        /* ✈️ ნამდვილი თვითმფრინავის SVG */
+        .plane-send { width: 45px; height: 45px; cursor: pointer; fill: var(--blue); transition: 0.3s; }
+        .plane-send:hover { transform: scale(1.1) rotate(-5deg); filter: drop-shadow(0 0 5px var(--blue)); }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="p-area">
-            <img id="uPic" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Admin" class="avatar">
-            <div id="uNick" class="u-nick">იტვირთება...</div>
+    <div class="navbar">
+        <div class="menu-btn" onclick="toggleMenu()">
+            <span>☰</span>
+            <span class="active-room-name" id="currentRoom">კაფე-ბარი</span>
         </div>
-        <div class="r-list" id="rContainer"></div>
+        <div id="user-info" style="font-size: 12px; color: #888;"></div>
     </div>
 
-    <div class="chat-main">
-        <div class="header" id="rTitle">კაფე-ბარი</div>
-        <div id="msgs"></div>
-        <div class="input-bar">
-            <div class="in-wrap"><input type="text" id="mIn" placeholder="დაწერე შეტყობინება..."></div>
-            <svg id="mSend" class="plane-send" viewBox="0 0 512 512">
-                <path d="M499.7 31.2c-15.5-11-34.7-10.7-50 1L23.4 300.7c-21.7 15.6-25.2 45.1-7.8 65.4l82.8 96.6c13.2 15.4 33.1 22.8 53.1 19.8l293.9-44.1c11.7-1.8 22.2-7.8 29.8-16.8L506.7 66.8c11-12.9 8.2-32.3-7-35.6zM212.7 334.3l-28.1 82.2c-1.8 5.4-9.3 5.3-10.9-.1L141.1 315c-1.1-3.6 .3-7.5 3.3-9.7l170-120c4-2.8 8.9 1.9 6.2 5.8l-107.9 143.2z"/>
-            </svg>
-        </div>
+    <div class="dropdown-menu" id="menu">
+        <div class="room-item" onclick="changeRoom('კაიფმანია', '✨')"><span>✨</span> კაიფმანია</div>
+        <div class="room-item" onclick="changeRoom('კაფე-ბარი', '☕')"><span>☕</span> კაფე-ბარი</div>
+        <div class="room-item" onclick="changeRoom('ვიპ საუბრები', '👑')"><span>👑</span> ვიპ საუბრები</div>
+        <div class="room-item" onclick="changeRoom('გამოძიება', '🔍')"><span>🔍</span> გამოძიება</div>
+        <div class="room-item" onclick="changeRoom('შიფროგრამა', '⌨')"><span>⌨</span> შიფროგრამა</div>
+        <div class="room-item" onclick="changeRoom('ვიქტორინა', '💡')"><span>💡</span> ვიქტორინა</div>
+        <div class="room-item" onclick="changeRoom('ჩამოხრჩობანა', '😵')"><span>😵</span> ჩამოხრჩობანა</div>
+        <div class="room-item" onclick="changeRoom('მაფიის ღამე', '🌑')"><span>🌑</span> მაფიის ღამე</div>
+        <div class="room-item" onclick="changeRoom('ჯოკერი', '♠')"><span>♠</span> ჯოკერი</div>
+        <div class="room-item" onclick="changeRoom('ნარდი', '🎲')"><span>🎲</span> ნარდი</div>
+        <div class="room-item" onclick="changeRoom('მუსიკა', '🎵')"><span>🎵</span> მუსიკა</div>
+        <div class="room-item" onclick="changeRoom('იუმორი', '😂')"><span>😂</span> იუმორი</div>
+        <div class="room-item" onclick="changeRoom('ადმინისტრაცია', '🛡')"><span>🛡</span> ადმინისტრაცია</div>
+        <div class="room-item" onclick="changeRoom('დახმარება', '❓')"><span>❓</span> დახმარება</div>
+        <div class="room-item" onclick="changeRoom('ფორუმი', '📝')"><span>📝</span> ფორუმი</div>
+        <div class="room-item exit" onclick="exitChat()"><span>🚪</span> გასვლა</div>
+    </div>
+
+    <div id="chat-box"></div>
+
+    <div class="bottom-bar">
+        <div class="input-wrap"><input type="text" id="msgIn" placeholder="დაწერე შეტყობინება..."></div>
+        <svg id="sendBtn" class="plane-send" viewBox="0 0 512 512">
+            <path d="M499.7 31.2c-15.5-11-34.7-10.7-50 1L23.4 300.7c-21.7 15.6-25.2 45.1-7.8 65.4l82.8 96.6c13.2 15.4 33.1 22.8 53.1 19.8l293.9-44.1c11.7-1.8 22.2-7.8 29.8-16.8L506.7 66.8c11-12.9 8.2-32.3-7-35.6zM212.7 334.3l-28.1 82.2c-1.8 5.4-9.3 5.3-10.9-.1L141.1 315c-1.1-3.6 .3-7.5 3.3-9.7l170-120c4-2.8 8.9 1.9 6.2 5.8l-107.9 143.2z"/>
+        </svg>
     </div>
 
     <script>
         const supabaseClient = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        let activeRoom = "კაფე-ბარი";
+        let myNick = "სტუმარი";
 
-        const icons = {
-            chat: '<svg viewBox="0 0 24 24"><path d="M20,2H4V22L6,18H20V16H5.2L4,17.2V4H20V16Z"/></svg>',
-            game: '<svg viewBox="0 0 24 24"><path d="M21,6H3V18H21V6M21,16H3V8H21V16Z"/></svg>',
-            exit: '<svg viewBox="0 0 24 24"><path d="M16,17V14H9V10H16V7L21,12L16,17M14,2V22H5V2H14V4H5V20H14V18H16V20H14V2Z"/></svg>'
-        };
+        function toggleMenu() { document.getElementById('menu').classList.toggle('open'); }
 
-        const rooms = [
-            {n: "კაიფმანია", i: icons.chat}, {n: "კაფე-ბარი", i: icons.chat}, {n: "ვიპ საუბრები", i: icons.chat},
-            {n: "გამო
+        function changeRoom(name, icon) {
+            activeRoom = name;
+            document.getElementById('currentRoom').innerText = icon + " " + name;
+            toggleMenu();
+            loadMessages();
+        }
+
+        async function exitChat() {
+            await supabaseClient.auth.signOut();
+            window.location.href = "index.html";
+        }
+
+        async function init() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                myNick = session.user.user_metadata.nickname || "User";
+                document.getElementById('user-info').innerText = "მოგესალმებით, " + myNick;
+            }
+            loadMessages();
+        }
+
+        async function loadMessages() {
+            const box = document.getElementById('chat-box');
+            box.innerHTML = "";
+            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', activeRoom).order('created_at', { ascending: true });
+            if (data) data.forEach(renderMsg);
+        }
+
+        function renderMsg(m) {
+            const box = document.getElementById('chat-box');
+            const time = new Date(m.created_at).toLocaleTimeString('ka-GE', {hour:'2-digit', minute:'2-digit'});
+            const wrap = document.createElement('div');
+            wrap.className = 'm-wrap';
+            wrap.innerHTML = `<div class="m-nick">${m.username}</div><div class="m-bubble"><div class="m-text">${m.text}</div><div class="m-time">${time}</div></div>`;
+            box.appendChild(wrap);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function send() {
+            const inp = document.getElementById('msgIn');
+            if(!inp.value.trim()) return;
+            const text = inp.value; inp.value = "";
+            await supabaseClient.from('messages').insert([{ text, room_name: activeRoom, username: myNick }]);
+        }
+
+        document.getElementById('sendBtn').onclick = send;
+        document.getElementById('msgIn').onkeypress = (e) => { if(e.key==='Enter') send(); };
+
+        supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+            if(p.new.room_name === activeRoom) renderMsg(p.new);
+        }).subscribe();
+
+        init();
+    </script>
+</body>
+</html>
