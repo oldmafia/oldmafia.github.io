@@ -3,67 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Old Mafia - პროფილი</title>
+    <title>პროფილი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .profile-card { background: #0d0d0d; border: 2px solid #ff0000; padding: 40px; border-radius: 20px; width: 350px; text-align: center; position: relative; }
-        .avatar-big { width: 120px; height: 120px; border-radius: 15px; border: 2px solid #ff0000; margin: 0 auto 20px; background: #111 center/cover; }
-        .role-tag { background: #ff0000; color: white; padding: 4px 12px; border-radius: 5px; font-weight: bold; font-size: 13px; }
-        .info-box { margin-top: 20px; text-align: left; background: #1a1a1a; padding: 15px; border-radius: 10px; }
-        input { width: 90%; background: #000; border: 1px solid #333; color: #fff; padding: 10px; margin-top: 10px; border-radius: 5px; }
-        .btn-save { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px; width: 100%; }
-        .back-link { display: block; margin-top: 15px; color: #555; text-decoration: none; font-size: 13px; }
+        .card { background: #0d0d0d; border: 2px solid #ff0000; padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; margin: 0 auto 15px; background: #111 center/cover; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: none; }
+        button { background: red; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
-
-<div class="profile-card">
-    <div class="avatar-big" id="pAvatar"></div>
-    <h2 id="pNick" style="color:red; margin-bottom:5px;"></h2>
-    <span id="pRole" class="role-tag">მომხმარებელი</span>
-    
-    <div class="info-box">
-        <div>🏆 ქულები: <span id="pPoints" style="color:gold;">0</span></div>
-        <div style="margin-top:15px;">
-            <label style="color:#555; font-size:12px;">სტატუსი:</label>
-            <input type="text" id="pStatus" placeholder="დაწერე სტატუსი...">
-        </div>
+    <div class="card">
+        <div class="avatar" id="pAvat"></div>
+        <input type="file" id="fInput" style="display:none" onchange="upload()">
+        <button onclick="document.getElementById('fInput').click()">🖼️ ფოტოს შეცვლა</button>
+        <h2 id="pNick"></h2>
+        <p>როლი: <b id="pRole" style="color:red"></b></p>
+        <input type="text" id="pStatus" placeholder="სტატუსი...">
+        <button onclick="save()">განახლება</button>
+        <br><br>
+        <a href="home.html" style="color:gray; text-decoration:none;">← უკან დაბრუნება</a>
     </div>
-
-    <button class="btn-save" onclick="save()">განახლება</button>
-    <a href="home.html" class="back-link">← ჩატში დაბრუნება</a>
-</div>
 
 <script>
     const supabaseUrl = "https://ftfciebnywbondaiarnc.supabase.co";
     const supabaseKey = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
     const client = supabase.createClient(supabaseUrl, supabaseKey);
+    let uId = null;
 
-    let userId = null;
-
-    async function loadProfile() {
+    async function load() {
         const { data: { user } } = await client.auth.getUser();
-        if (!user) return window.location.href = "index.html";
-        userId = user.id;
-
-        const { data: profile } = await client.from('profiles').select('*').eq('id', userId).single();
-        if (profile) {
-            document.getElementById('pNick').innerText = profile.nickname;
-            document.getElementById('pRole').innerText = profile.role;
-            document.getElementById('pPoints').innerText = profile.points;
-            document.getElementById('pStatus').value = profile.status || "";
-            document.getElementById('pAvatar').style.backgroundImage = `url('${profile.avatar_url}')`;
-        }
+        if (!user) return location.href="index.html";
+        uId = user.id;
+        const { data: p } = await client.from('profiles').select('*').eq('id', uId).single();
+        document.getElementById('pNick').innerText = p.nickname;
+        document.getElementById('pRole').innerText = p.role;
+        document.getElementById('pStatus').value = p.status || "";
+        document.getElementById('pAvat').style.backgroundImage = `url('${p.avatar_url}')`;
     }
 
     async function save() {
-        const status = document.getElementById('pStatus').value;
-        const { error } = await client.from('profiles').update({ status }).eq('id', userId);
-        if (!error) alert("პროფილი განახლდა!");
+        const st = document.getElementById('pStatus').value;
+        await client.from('profiles').update({ status: st }).eq('id', uId);
+        alert("შენახულია!");
     }
 
-    loadProfile();
+    async function upload() {
+        const file = document.getElementById('fInput').files[0];
+        const fName = uId + "_" + Date.now();
+        const { data, error } = await client.storage.from('avatars').upload(fName, file);
+        if(!error) {
+            const { publicUrl } = client.storage.from('avatars').getPublicUrl(fName).data;
+            await client.from('profiles').update({ avatar_url: publicUrl }).eq('id', uId);
+            document.getElementById('pAvat').style.backgroundImage = `url('${publicUrl}')`;
+            alert("ფოტო განახლდა!");
+        }
+    }
+    load();
 </script>
 </body>
 </html>
