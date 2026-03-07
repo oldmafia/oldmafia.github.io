@@ -3,130 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>კაიფმანია - MOBILE PRO</title>
+    <title>კაიფმანია - CORRECT VERSION</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #ff0000; --bg: #0a0a0a; --panel: #111; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { --red: #ff0000; --bg: #0d0d0d; --blue: #0088ff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Navbar - ჰამბურგერით */
-        .navbar { height: 60px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 15px; position: relative; z-index: 1001; }
-        .hamburger { font-size: 30px; cursor: pointer; color: var(--red); margin-right: 15px; }
-        .room-info { font-weight: bold; font-size: 18px; flex-grow: 1; }
+        /* Header */
+        .header { height: 60px; background: #000; display: flex; align-items: center; padding: 0 15px; border-bottom: 2px solid #222; z-index: 1001; }
+        .burger { font-size: 30px; cursor: pointer; color: var(--red); margin-right: 15px; }
+        .room-name { font-weight: bold; font-size: 18px; color: #fff; }
 
-        /* ჩამოსაშლელი მენიუ (ზემოდან) */
-        .dropdown-menu { 
+        /* Dropdown Menu */
+        .menu { 
             position: absolute; top: -100vh; left: 0; width: 100%; background: #111; 
-            transition: 0.4s ease-in-out; z-index: 1000; border-bottom: 3px solid var(--red);
-            max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+            transition: 0.3s; z-index: 1000; max-height: 80vh; overflow-y: auto; 
+            border-bottom: 3px solid var(--red); box-shadow: 0 10px 30px #000;
         }
-        .dropdown-menu.show { top: 60px; }
+        .menu.open { top: 60px; }
+        .room { padding: 15px 20px; border-bottom: 1px solid #1a1a1a; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 16px; }
+        .room:active { background: #222; }
+        .room.exit { color: #ff4444; border-top: 2px solid #333; }
 
-        .room-item { padding: 15px 20px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 15px; cursor: pointer; }
-        .room-item:hover { background: #1a1a1a; }
-        .room-item.exit { color: #ff4444; border-top: 2px solid #333; }
+        /* Chat Area - Wide */
+        #chat { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #0a0a0a; }
+        .m-wrap { align-self: flex-start; width: 95%; } /* აი აქ არის სიფართოვე */
+        .m-bubble { background: #1a1a1a; border: 1px solid #333; padding: 12px 15px; border-radius: 5px 20px 20px 20px; position: relative; box-shadow: 2px 2px 10px rgba(0,0,0,0.4); }
+        .m-nick { font-size: 12px; color: var(--red); font-weight: bold; margin-bottom: 4px; display: block; }
+        .m-text { font-size: 15px; color: #eee; padding-bottom: 15px; word-break: break-word; line-height: 1.4; }
+        .m-time { position: absolute; bottom: 6px; right: 12px; font-size: 10px; color: #555; }
 
-        /* ჩატი - ფართო ეკრანზე */
-        #messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .m-wrap { align-self: flex-start; max-width: 90%; width: auto; }
-        .m-bubble { 
-            background: #1a1a1a; border: 1px solid #333; padding: 12px 15px; 
-            border-radius: 4px 18px 18px 18px; position: relative; min-width: 140px; 
-        }
-        .m-nick { font-size: 11px; color: var(--red); font-weight: bold; margin-bottom: 3px; display: block; }
-        .m-text { font-size: 15px; color: #eee; padding-bottom: 15px; line-height: 1.4; }
-        .m-time { position: absolute; bottom: 5px; right: 12px; font-size: 10px; color: #555; }
+        /* Input Bar */
+        .footer { padding: 12px; background: #000; display: flex; align-items: center; gap: 10px; border-top: 1px solid #222; }
+        .in-box { flex-grow: 1; background: #111; border: 1px solid #333; border-radius: 25px; padding: 5px 15px; }
+        input { width: 100%; background: transparent; border: none; padding: 10px; color: white; outline: none; font-size: 16px; }
 
-        /* ინპუტი და ნამდვილი თვითმფრინავი */
-        .input-bar { padding: 12px; background: #000; display: flex; align-items: center; gap: 10px; border-top: 1px solid #222; }
-        .in-field { flex-grow: 1; background: #111; border: 1px solid #333; border-radius: 25px; padding: 5px 15px; }
-        input { width: 100%; background: transparent; border: none; padding: 8px; color: white; outline: none; font-size: 16px; }
-
-        /* ✈️ ნამდვილი თვითმფრინავის ფოტო */
-        .plane-img { 
-            width: 50px; height: 50px; cursor: pointer; border-radius: 50%; 
-            object-fit: contain; transition: 0.3s;
-        }
-        .plane-img:hover { transform: scale(1.1) rotate(-10deg); filter: brightness(1.3); }
+        /* Real Plane Image */
+        .send-img { width: 45px; height: 45px; cursor: pointer; transition: 0.2s; }
+        .send-img:hover { transform: scale(1.1); filter: brightness(1.2); }
     </style>
 </head>
 <body>
 
-    <div class="navbar">
-        <div class="hamburger" onclick="toggleMenu()">☰</div>
-        <div class="room-info" id="activeRoomTitle">☕ კაფე-ბარი</div>
+    <div class="header">
+        <div class="burger" onclick="toggle()">☰</div>
+        <div class="room-name" id="curTitle">☕ კაფე-ბარი</div>
     </div>
 
-    <div class="dropdown-menu" id="menu">
-        <div class="room-item" onclick="selectRoom('კაიფმანია', '✨')">✨ კაიფმანია</div>
-        <div class="room-item" onclick="selectRoom('კაფე-ბარი', '☕')">☕ კაფე-ბარი</div>
-        <div class="room-item" onclick="selectRoom('ვიპ საუბრები', '👑')">👑 ვიპ საუბრები</div>
-        <div class="room-item" onclick="selectRoom('გამოძიება', '🔍')">🔍 გამოძიება</div>
-        <div class="room-item" onclick="selectRoom('ჯოკერი', '♠')">♠ ჯოკერი</div>
-        <div class="room-item" onclick="selectRoom('ნარდი', '🎲')">🎲 ნარდი</div>
-        <div class="room-item" onclick="selectRoom('მუსიკა', '🎵')">🎵 მუსიკა</div>
-        <div class="room-item" onclick="selectRoom('იუმორი', '😂')">😂 იუმორი</div>
-        <div class="room-item" onclick="selectRoom('ფორუმი', '💬')">💬 ფორუმი</div>
-        <div class="room-item exit" onclick="exit()">🚪 გასვლა</div>
+    <div class="menu" id="menu">
+        <div class="room" onclick="sel('კაიფმანია', '✨')">✨ კაიფმანია</div>
+        <div class="room" onclick="sel('კაფე-ბარი', '☕')">☕ კაფე-ბარი</div>
+        <div class="room" onclick="sel('ვიპ საუბრები', '👑')">👑 ვიპ საუბრები</div>
+        <div class="room" onclick="sel('გამოძიება', '🔍')">🔍 გამოძიება</div>
+        <div class="room" onclick="sel('ჯოკერი', '♠')">♠ ჯოკერი</div>
+        <div class="room" onclick="sel('ნარდი', '🎲')">🎲 ნარდი</div>
+        <div class="room" onclick="sel('მუსიკა', '🎵')">🎵 მუსიკა</div>
+        <div class="room" onclick="sel('იუმორი', '😂')">😂 იუმორი</div>
+        <div class="room exit" onclick="exit()">🚪 გასვლა</div>
     </div>
 
-    <div id="messages"></div>
+    <div id="chat"></div>
 
-    <div class="input-bar">
-        <div class="in-field"><input type="text" id="mIn" placeholder="დაწერე შეტყობინება..."></div>
-        <img src="https://cdn-icons-png.flaticon.com/512/739/739249.png" class="plane-img" id="mSend" alt="გაგზავნა">
+    <div class="footer">
+        <div class="in-box"><input type="text" id="mIn" placeholder="დაწერე რამე..."></div>
+        <img src="https://cdn-icons-png.flaticon.com/512/739/739249.png" class="send-img" id="mSend">
     </div>
 
     <script>
         const supabaseClient = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-        let currentRoom = "კაფე-ბარი", nickname = "სტუმარი";
+        let activeR = "კაფე-ბარი", nick = "სტუმარი";
 
-        function toggleMenu() { document.getElementById('menu').classList.toggle('show'); }
-
-        function selectRoom(name, emoji) {
-            currentRoom = name;
-            document.getElementById('activeRoomTitle').innerText = emoji + " " + name;
-            toggleMenu();
-            loadMessages();
-        }
-
+        function toggle() { document.getElementById('menu').classList.toggle('open'); }
+        function sel(n, e) { activeR = n; document.getElementById('curTitle').innerText = e + " " + n; toggle(); load(); }
         async function exit() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
 
         async function init() {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) nickname = session.user.user_metadata.nickname || "User";
-            loadMessages();
+            if (session) nick = session.user.user_metadata.nickname || "User";
+            load();
         }
 
-        async function loadMessages() {
-            const box = document.getElementById('messages'); box.innerHTML = "";
-            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-            if (data) data.forEach(render);
+        async function load() {
+            const b = document.getElementById('chat'); b.innerHTML = "";
+            const { data } = await supabaseClient.from('messages').select('*').eq('room_name', activeR).order('created_at', { ascending: true });
+            if (data) data.forEach(draw);
         }
 
-        function render(m) {
-            const box = document.getElementById('messages');
-            const time = new Date(m.created_at).toLocaleTimeString('ka-GE', {hour:'2-digit', minute:'2-digit'});
-            const div = document.createElement('div');
-            div.className = 'm-wrap';
-            div.innerHTML = `<div class="m-bubble"><span class="m-nick">${m.username}</span><div class="m-text">${m.text}</div><div class="m-time">${time}</div></div>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+        function draw(m) {
+            const b = document.getElementById('chat');
+            const t = new Date(m.created_at).toLocaleTimeString('ka-GE', {hour:'2-digit', minute:'2-digit'});
+            const w = document.createElement('div');
+            w.className = 'm-wrap';
+            w.innerHTML = `<div class="m-bubble"><span class="m-nick">${m.username}</span><div class="m-text">${m.text}</div><div class="m-time">${t}</div></div>`;
+            b.appendChild(w);
+            b.scrollTop = b.scrollHeight;
         }
 
         async function send() {
-            const inp = document.getElementById('mIn');
-            if(!inp.value.trim()) return;
-            const text = inp.value; inp.value = "";
-            await supabaseClient.from('messages').insert([{ text, room_name: currentRoom, username: nickname }]);
+            const i = document.getElementById('mIn'); if(!i.value.trim()) return;
+            const text = i.value; i.value = "";
+            await supabaseClient.from('messages').insert([{ text, room_name: activeR, username: nick }]);
         }
 
         document.getElementById('mSend').onclick = send;
         document.getElementById('mIn').onkeypress = (e) => { if(e.key==='Enter') send(); };
 
-        supabaseClient.channel('chat-realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
-            if(p.new.room_name === currentRoom) render(p.new);
+        supabaseClient.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+            if(p.new.room_name === activeR) draw(p.new);
         }).subscribe();
 
         init();
