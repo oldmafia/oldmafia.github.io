@@ -1,206 +1,155 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>კაიფმანია</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - OFFICIAL</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        /* Header */
+        .header { height: 60px; border-bottom: 2px solid red; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; z-index: 1001; }
+        .burger { color: red; font-size: 26px; cursor: pointer; }
+        #roomTitle { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #fff; }
 
-<style>
-body{
-margin:0;
-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-background:radial-gradient(circle,#330000 0%,#000 70%);
-font-family:Arial;
-}
+        /* Sidebar & Rooms  */
+        #sidebar { position: fixed; top: 0; left: -100%; width: 80%; height: 100%; background: #000; transition: 0.3s; z-index: 2000; border-right: 2px solid red; overflow-y: auto; }
+        #sidebar.open { left: 0; }
+        .prof-section { padding: 30px 20px; text-align: center; border-bottom: 1px solid #222; }
+        .prof-pic { width: 70px; height: 70px; border-radius: 50%; border: 2px solid red; margin-bottom: 10px; }
+        
+        .room-item { padding: 15px 25px; border-bottom: 1px solid #111; color: #bbb; cursor: pointer; font-size: 15px; }
+        .room-item.active { color: red; font-weight: bold; border-left: 5px solid red; background: #080808; }
 
-.card-wrapper{
-position:relative;
-width:350px;
-}
+        /* Messages Area */
+        #msgList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #050505; }
+        .msg-row { display: flex; flex-direction: column; align-items: flex-start; max-width: 85%; align-self: flex-start; }
+        
+        .bubble { padding: 10px 14px; border-radius: 18px; background: #111; border: 1px solid #222; border-bottom-left-radius: 2px; position: relative; width: 100%; }
+        .me .bubble { border-color: red; }
+        
+        .u-nick { font-size: 11px; font-weight: bold; color: #ff4d4d; display: block; margin-bottom: 3px; }
+        .m-time { font-size: 9px; color: #555; float: right; margin-top: 5px; margin-left: 10px; }
 
-.card-wrapper::before{
-content:"";
-position:absolute;
-inset:0;
-background:red;
-border-radius:30px;
-transform:rotate(-4deg);
-box-shadow:0 0 80px red;
-z-index:0;
-}
-
-.card{
-position:relative;
-background:#0d0d0d;
-padding:40px 25px;
-border-radius:30px;
-transform:rotate(-2deg);
-z-index:1;
-text-align:center;
-}
-
-h1{
-color:white;
-text-shadow:0 0 20px red;
-margin-bottom:25px;
-}
-
-input{
-width:100%;
-padding:12px;
-margin-bottom:15px;
-border-radius:12px;
-border:none;
-background:#1a1a1a;
-color:white;
-}
-
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:20px;
-background:red;
-color:white;
-font-weight:bold;
-margin-bottom:12px;
-cursor:pointer;
-font-size:16px;
-}
-
-button:hover{
-background:darkred;
-}
-
-.hidden{
-display:none;
-}
-
-#message{
-color:white;
-margin-top:10px;
-min-height:20px;
-}
-</style>
+        /* Input Area */
+        .input-area { padding: 12px; border-top: 1px solid red; display: flex; gap: 10px; background: #000; }
+        .input-box { flex: 1; background: #0a0a0a; border: 1px solid red; border-radius: 25px; padding: 0 15px; height: 45px; display: flex; align-items: center; }
+        input { width: 100%; border: none; background: transparent; color: #fff; outline: none; font-size: 16px; }
+        .send-btn { background: red; color: #000; width: 45px; height: 45px; border-radius: 50%; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    </style>
 </head>
 <body>
 
-<div class="card-wrapper">
-<div class="card">
+    <div class="header">
+        <div class="burger" onclick="toggleMenu()">☰</div>
+        <div id="roomTitle">💬 კაიფმანია</div>
+        <div style="width:26px;"></div>
+    </div>
 
-<h1>კაიფმანია 😎🔥</h1>
+    <div id="sidebar">
+        <div class="prof-section">
+            <img src="" class="prof-pic" id="myImg">
+            <p id="myNick" style="font-weight:bold; color: #fff;"></p>
+        </div>
+        <div id="roomsContainer">
+            <div class="room-item active" onclick="changeRoom('💬 კაიფმანია', this)">💬 კაიფმანია</div>
+            <div class="room-item" onclick="changeRoom('🍷 კაფე-ბარი', this)">🍷 კაფე-ბარი</div>
+            <div class="room-item" onclick="changeRoom('🔐 VIP-საუბრები', this)">🔐 VIP-საუბრები</div>
+            <div class="room-item" onclick="changeRoom('🧩 ვიქტორინა', this)">🧩 ვიქტორინა</div>
+            <div class="room-item" onclick="changeRoom('🔓 შიფროგრამა', this)">🔓 შიფროგრამა</div>
+            <div class="room-item" onclick="changeRoom('🌑 მაფიის ღამე', this)">🌑 მაფიის ღამე</div>
+            <div class="room-item" onclick="changeRoom('🃏 ჯოკერი', this)">🃏 ჯოკერი</div>
+            <div class="room-item" onclick="changeRoom('⚜️ ნარდი', this)">⚜️ ნარდი</div>
+            <div class="room-item" onclick="changeRoom('💖 სიყვარული', this)">💖 სიყვარული</div>
+            <div class="room-item" onclick="changeRoom('🤣 იუმორი', this)">🤣 იუმორი</div>
+            <div class="room-item" onclick="changeRoom('🎵 მელომანია', this)">🎵 მელომანია</div>
+            <div class="room-item" onclick="changeRoom('📜 ფორუმი', this)">📜 ფორუმი</div>
+            <div class="room-item" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
+            <div class="room-item" onclick="changeRoom('🆘 SOS', this)">🆘 SOS</div>
+            <div class="room-item" onclick="location.href='index.html'" style="color:red;">🚪 გასვლა</div>
+            <div style="padding:20px; text-align:center; color:red;" onclick="toggleMenu()">დახურვა ✕</div>
+        </div>
+    </div>
 
-<div id="mainButtons">
-<button id="regBtn">რეგისტრაცია</button>
-<button id="logBtn">შესვლა</button>
-</div>
+    <div id="msgList"></div>
 
-<div id="formSection" class="hidden">
-<input type="text" id="nickname" placeholder="ნიკნეიმი">
-<input type="email" id="email" placeholder="ელფოსტა">
-<input type="password" id="password" placeholder="პაროლი">
-<button id="submitBtn"></button>
-</div>
-
-<p id="message"></p>
-
-</div>
-</div>
+    <div class="input-area">
+        <div class="input-box"><input type="text" id="msgInput" placeholder="დაწერე მესიჯი..." autocomplete="off"></div>
+        <button class="send-btn" onclick="sendMsg()">✈️</button>
+    </div>
 
 <script>
+    const client = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myId, myName, myAvatar, currentRoom = '💬 კაიფმანია';
 
-const { createClient } = supabase;
+    async function init() {
+        const { data: { user } } = await client.auth.getUser();
+        if(!user) return window.location.href = 'index.html';
+        myId = user.id;
 
-const supabaseClient = createClient(
-  "https://ftfciebnywbondaiarnc.supabase.co",
-  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-);
+        const { data: prof } = await client.from('profiles').select('*').eq('id', myId).single();
+        let rawNick = prof?.username || user.user_metadata?.username || user.email.split('@')[0];
+        myName = rawNick.includes('@') ? rawNick.split('@')[0] : rawNick;
+        myAvatar = `https://ui-avatars.com/api/?name=${myName}&background=000&color=f00`;
 
-const mainButtons = document.getElementById("mainButtons");
-const formSection = document.getElementById("formSection");
-const nicknameInput = document.getElementById("nickname");
-const submitBtn = document.getElementById("submitBtn");
-const message = document.getElementById("message");
+        document.getElementById('myNick').innerText = myName;
+        document.getElementById('myImg').src = myAvatar;
 
-document.getElementById("regBtn").addEventListener("click", () => {
-  mainButtons.classList.add("hidden");
-  formSection.classList.remove("hidden");
-  nicknameInput.style.display = "block";
-  submitBtn.innerText = "რეგისტრაცია";
-  submitBtn.onclick = register;
-});
-
-document.getElementById("logBtn").addEventListener("click", () => {
-  mainButtons.classList.add("hidden");
-  formSection.classList.remove("hidden");
-  nicknameInput.style.display = "none";
-  submitBtn.innerText = "შესვლა";
-  submitBtn.onclick = login;
-});
-
-async function register(){
-  const nickname = nicknameInput.value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  if(!nickname || !email || !password){
-    message.innerText = "შეავსე ყველა ველი";
-    return;
-  }
-
-  // 1. მომხმარებლის შექმნა Supabase-ში
-  const { data, error } = await supabaseClient.auth.signUp({
-    email: email,
-    password: password,
-    options: {
-      data: { nickname: nickname }
+        loadMsgs();
+        client.channel('chat').on('postgres_changes', { event: 'INSERT', table: 'messages' }, (p) => {
+            if(p.new.room_name === currentRoom && p.new.user_id !== myId) appendMsg(p.new);
+        }).subscribe();
     }
-  });
 
-  if(error){
-    message.innerText = error.message;
-    return;
-  }
+    async function loadMsgs() {
+        const list = document.getElementById('msgList');
+        const { data: msgs } = await client.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+        list.innerHTML = msgs ? msgs.map(m => renderMsg(m)).join('') : '';
+        list.scrollTop = list.scrollHeight;
+    }
 
-  // 2. ნიკნეიმის ჩაწერა profiles ცხრილში (ეს აგვარებს აბუს პრობლემას)
-  if (data.user) {
-    await supabaseClient.from('profiles').upsert({ 
-      id: data.user.id, 
-      username: nickname 
-    });
-  }
+    function renderMsg(m) {
+        const isMe = m.user_id === myId;
+        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `<div class="msg-row ${isMe ? 'me' : ''}">
+            <div class="bubble">
+                <span class="u-nick">${m.username}</span>
+                <span>${m.text}</span>
+                <span class="m-time">${time}</span>
+            </div>
+        </div>`;
+    }
 
-  window.location.href = "home.html";
-}
+    async function sendMsg() {
+        const inp = document.getElementById('msgInput');
+        if(!inp.value.trim()) return;
+        const { error } = await client.from('messages').insert([{ 
+            user_id: myId, username: myName, text: inp.value, room_name: currentRoom 
+        }]);
+        if(!error) { appendMsg({ user_id: myId, username: myName, text: inp.value, created_at: new Date() }); inp.value = ''; }
+    }
 
-async function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+    function appendMsg(m) {
+        const list = document.getElementById('msgList');
+        list.innerHTML += renderMsg(m);
+        list.scrollTop = list.scrollHeight;
+    }
 
-  if(!email || !password){
-    message.innerText = "შეავსე ყველა ველი";
-    return;
-  }
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+    
+    function changeRoom(name, el) {
+        currentRoom = name;
+        document.getElementById('roomTitle').innerText = name;
+        document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+        el.classList.add('active');
+        toggleMenu();
+        loadMsgs();
+    }
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if(error){
-    message.innerText = error.message;
-    return;
-  }
-
-  window.location.href = "home.html";
-}
-
+    document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMsg(); };
+    init();
 </script>
-
 </body>
 </html>
