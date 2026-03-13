@@ -41,59 +41,52 @@
         </div>
     </div>
 
-    <button onclick="window.location.href='chat.html'" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline; cursor:pointer;">⬅ უკან დაბრუნება</button>
+    <button onclick="location.href='chat.html'" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline; cursor:pointer;">⬅ უკან დაბრუნება</button>
 </div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     
-    // ვიღებთ იუზერს ლინკიდან
-    const params = new URLSearchParams(window.location.search);
-    const target = params.get('user'); 
     const myNick = localStorage.getItem('nickname');
+    const params = new URLSearchParams(window.location.search);
+    let target = params.get('user') || myNick; // თუ ლინკში არ წერია, შენი აჩვენოს
 
     async function loadProfile() {
         if(!target) {
-            document.getElementById('p-nick').innerText = "იუზერი არ არის";
+            document.getElementById('p-nick').innerText = "ავტორიზაცია საჭიროა";
             return;
         }
 
-        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+        let { data: p } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
         
         if(p) {
             document.getElementById('p-nick').innerText = p.username;
             document.getElementById('p-role').innerText = p.role || "Member";
-            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი არ არის";
+            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი ცარიელია";
             if(p.avatar_url) document.getElementById('p-avatar').src = p.avatar_url;
 
-            // თუ ჩემი პროფილია, ვაჩვენოთ რედაქტირება
-            if(myNick && myNick.toLowerCase() === target.toLowerCase()) {
+            // რედაქტირება მხოლოდ საკუთარზე
+            if(myNick && myNick.toLowerCase() === p.username.toLowerCase()) {
                 document.getElementById('my-btns').style.display = 'grid';
             }
 
-            // თუ მე ვარ ადმინი, ვაჩვენოთ ადმინ პანელი სხვის პროფილზე
-            if(myNick) {
-                let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
-                if(me && (me.role === 'Admin' || me.role === 'Owner')) {
-                    if(myNick.toLowerCase() !== target.toLowerCase()) {
-                        document.getElementById('admin-area').style.display = 'block';
-                    }
-                }
+            // ადმინ პანელი
+            let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
+            if(me && (me.role === 'Admin' || me.role === 'Owner') && myNick.toLowerCase() !== p.username.toLowerCase()) {
+                document.getElementById('admin-area').style.display = 'block';
             }
         } else {
-            document.getElementById('p-nick').innerText = "ვერ მოიძებნა";
+            document.getElementById('p-nick').innerText = "იუზერი ვერ მოიძებნა";
         }
     }
 
     async function updateRole(r) {
-        if(confirm("ნამდვილად გსურთ?")) {
-            const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-            if(error) alert("ბაზამ უარი თქვა!"); else location.reload();
-        }
+        const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
+        if(error) alert("შეცდომა!"); else location.reload();
     }
 
     async function editAvatar() {
-        const link = prompt("სურათის ლინკი:");
+        const link = prompt("ფოტოს ლინკი:");
         if(link) {
             await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
             location.reload();
@@ -101,7 +94,7 @@
     }
 
     async function editStatus() {
-        const st = prompt("ახალი სტატუსი:");
+        const st = prompt("სტატუსი:");
         if(st) {
             await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
             location.reload();
@@ -110,6 +103,5 @@
 
     window.onload = loadProfile;
 </script>
-
 </body>
 </html>
