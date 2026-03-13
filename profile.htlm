@@ -37,11 +37,11 @@
             <button onclick="updateRole('Owner')">👑 დამფუძნებლის მინიჭება</button>
             <button onclick="updateRole('Admin')">🛡️ ადმინის მინიჭება</button>
             <button onclick="updateRole('Member')">✨ როლის ჩახსნა</button>
-            <button onclick="updateRole('Banned')" style="color:yellow; border-color: yellow;">🚫 დაბლოკვა</button>
+            <button onclick="updateRole('Ban')">🚫 დაბლოკვა</button>
         </div>
     </div>
 
-    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">⬅ უკან დაბრუნება</button>
+    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline; cursor:pointer;">⬅ უკან დაბრუნება</button>
 </div>
 
 <script>
@@ -51,14 +51,6 @@
     const target = urlParams.get('user'); 
     const myNick = localStorage.getItem('nickname');
 
-    // როლების ქართული ჩვენება ეკრანზე
-    function displayRole(r) {
-        if(r === 'Owner') return "👑 დამფუძნებელი";
-        if(r === 'Admin') return "🛡️ ადმინისტრატორი";
-        if(r === 'Banned') return "🚫 დაბლოკილი";
-        return "🌱 მომხმარებელი";
-    }
-
     async function loadProfile() {
         if(!target) return;
 
@@ -66,16 +58,14 @@
         
         if(p) {
             document.getElementById('p-nick').innerText = p.username;
-            document.getElementById('p-role').innerText = displayRole(p.role);
+            document.getElementById('p-role').innerText = p.role || "Member";
             document.getElementById('p-status').innerText = p.daily_status || "სტატუსი ცარიელია";
             if(p.avatar_url) document.getElementById('p-avatar').src = p.avatar_url;
 
-            // თუ საკუთარ პროფილზე ვარ
             if(myNick && myNick.toLowerCase() === target.toLowerCase()) {
                 document.getElementById('my-btns').style.display = 'grid';
             }
 
-            // ვამოწმებთ ჩემს როლს, რომ ადმინ პანელი გამოჩნდეს
             let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
             if(me && (me.role === 'Admin' || me.role === 'Owner')) {
                 if(myNick.toLowerCase() !== target.toLowerCase()) {
@@ -93,7 +83,7 @@
     }
 
     async function editAvatar() {
-        const link = prompt("ჩასვით სურათის პირდაპირი ლინკი:");
+        const link = prompt("ჩასვით სურათის ლინკი:");
         if(link) {
             await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
             location.reload();
@@ -101,7 +91,7 @@
     }
 
     async function editStatus() {
-        const st = prompt("შეცვალეთ სტატუსი:");
+        const st = prompt("ახალი სტატუსი:");
         if(st) {
             await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
             location.reload();
