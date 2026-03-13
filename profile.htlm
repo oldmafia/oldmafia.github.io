@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>პროფილი - OLD MAFIA</title>
+    <title>OLD MAFIA - პროფილი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { background: #0b0000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
@@ -11,9 +11,9 @@
         .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; object-fit: cover; margin-bottom: 15px; }
         .nick { font-size: 24px; font-weight: bold; color: red; display: block; }
         .role { font-size: 14px; color: gold; margin-bottom: 20px; display: block; }
-        .status { background: #1a0000; padding: 10px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; font-style: italic; min-height: 20px; }
+        .status-text { background: #1a0000; padding: 10px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; font-style: italic; min-height: 20px; color: #ccc; }
         .btn-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 10px; border-radius: 5px; border: 1px solid #500; background: #200; color: white; cursor: pointer; font-size: 11px; }
+        button { padding: 10px; border-radius: 5px; border: 1px solid #500; background: #200; color: white; cursor: pointer; font-size: 11px; font-weight: bold; }
         button:hover { background: red; color: black; }
         .admin-panel { margin-top: 20px; padding-top: 15px; border-top: 1px dashed red; display: none; }
     </style>
@@ -24,7 +24,7 @@
     <img id="p-avatar" src="https://i.ibb.co/v3m6y6R/avatar.png" class="avatar">
     <span id="p-nick" class="nick">...</span>
     <span id="p-role" class="role">...</span>
-    <div id="p-status" class="status">...</div>
+    <div id="p-status" class="status-text">...</div>
 
     <div id="my-btns" class="btn-box" style="display:none;">
         <button onclick="editAvatar()">📷 ფოტოს შეცვლა</button>
@@ -32,22 +32,21 @@
     </div>
 
     <div id="admin-area" class="admin-panel">
-        <p style="color:red; font-size:10px;">მართვა</p>
+        <p style="color:red; font-size:11px; margin-bottom: 10px;">ადმინისტრირება</p>
         <div class="btn-box">
-            <button onclick="updateRole('Admin')">🛡️ ადმინი</button>
-            <button onclick="updateRole('Owner')">👑 დამფუძნებელი</button>
-            <button onclick="updateRole('Member')">✨ ჩვეულებრივი</button>
-            <button onclick="updateRole('Banned')" style="color:yellow;">🚫 დაბლოკვა</button>
+            <button onclick="updateRole('Admin')">🛡️ Admin</button>
+            <button onclick="updateRole('Owner')">👑 Owner</button>
+            <button onclick="updateRole('Member')">✨ Member</button>
+            <button onclick="updateRole('Banned')" style="color:yellow; border-color: yellow;">🚫 Ban</button>
         </div>
     </div>
 
-    <button onclick="location.href='chat.html'" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">უკან დაბრუნება</button>
+    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">⬅ უკან</button>
 </div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     
-    // ვიგებთ ვის პროფილზე ვართ
     const urlParams = new URLSearchParams(window.location.search);
     const target = urlParams.get('user'); 
     const myNick = localStorage.getItem('nickname');
@@ -55,24 +54,23 @@
     async function loadProfile() {
         if(!target) return;
 
-        // 1. მოგვაქვს ამ იუზერის მონაცემები
-        let { data: p } = await _s.from('profiles').select('*').ilike('username', target).maybeSingle();
+        // მონაცემების წამოღება (ზუსტად შენი სვეტების მიხედვით)
+        let { data: p, error } = await _s.from('profiles').select('username, role, avatar_url, daily_status').eq('username', target).maybeSingle();
         
         if(p) {
             document.getElementById('p-nick').innerText = p.username;
             document.getElementById('p-role').innerText = p.role || "Member";
-            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი ცარიელია";
+            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი არ არის";
             if(p.avatar_url) document.getElementById('p-avatar').src = p.avatar_url;
 
-            // თუ ჩემი პროფილია, გამოჩნდეს რედაქტირება
+            // თუ ჩემი პროფილია
             if(myNick && myNick.toLowerCase() === target.toLowerCase()) {
                 document.getElementById('my-btns').style.display = 'grid';
             }
 
-            // 2. ვამოწმებთ ჩემს როლს, რომ ადმინ პანელი გამოჩნდეს
-            let { data: me } = await _s.from('profiles').select('role').ilike('username', myNick).maybeSingle();
+            // ადმინ პანელის შემოწმება
+            let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
             if(me && (me.role === 'Admin' || me.role === 'Owner')) {
-                // საკუთარ თავს რომ არ ჩამოართვას როლი შემთხვევით
                 if(myNick.toLowerCase() !== target.toLowerCase()) {
                     document.getElementById('admin-area').style.display = 'block';
                 }
@@ -80,29 +78,26 @@
         }
     }
 
-    // როლის შეცვლა და დაბლოკვა
     async function updateRole(r) {
-        if(confirm("დარწმუნებული ხარ?")) {
-            const { error } = await _s.from('profiles').update({ role: r }).ilike('username', target);
-            if(error) alert("შეცდომა!");
+        if(confirm("ნამდვილად გსურთ როლის შეცვლა?")) {
+            const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
+            if(error) alert("შეცდომა ბაზასთან!");
             else location.reload();
         }
     }
 
-    // ავატარის შეცვლა ლინკით
     async function editAvatar() {
-        const link = prompt("ჩასვი სურათის Direct Link (imgbb-დან):");
+        const link = prompt("ჩასვით სურათის ლინკი:");
         if(link) {
-            await _s.from('profiles').update({ avatar_url: link }).ilike('username', myNick);
+            await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
             location.reload();
         }
     }
 
-    // სტატუსის შეცვლა
     async function editStatus() {
-        const st = prompt("დაწერე ახალი სტატუსი:");
+        const st = prompt("ახალი სტატუსი:");
         if(st) {
-            await _s.from('profiles').update({ daily_status: st }).ilike('username', myNick);
+            await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
             location.reload();
         }
     }
