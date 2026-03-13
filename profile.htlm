@@ -2,16 +2,15 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OLD MAFIA - პროფილი</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: #0b0000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .profile-card { width: 340px; background: #070000; border: 2px solid red; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 0 20px red; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; object-fit: cover; margin-bottom: 15px; background: #111; }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; object-fit: cover; margin-bottom: 15px; }
         .nick { font-size: 24px; font-weight: bold; color: red; display: block; }
         .role { font-size: 14px; color: gold; margin-bottom: 20px; display: block; }
-        .status-text { background: #1a0000; padding: 10px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; font-style: italic; min-height: 30px; color: #ccc; font-size: 13px; }
+        .status-text { background: #1a0000; padding: 10px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; font-style: italic; min-height: 30px; color: #ccc; }
         .btn-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         button { padding: 10px; border-radius: 5px; border: 1px solid #500; background: #200; color: white; cursor: pointer; font-size: 10px; font-weight: bold; }
         button:hover { background: red; color: black; }
@@ -41,7 +40,7 @@
         </div>
     </div>
 
-    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline; cursor:pointer;">⬅ უკან</button>
+    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">⬅ უკან</button>
 </div>
 
 <script>
@@ -53,43 +52,32 @@
 
     async function loadProfile() {
         if(!target) return;
-
-        // მონაცემების წამოღება
-        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
-        
+        let { data: p } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
         if(p) {
             document.getElementById('p-nick').innerText = p.username;
             document.getElementById('p-role').innerText = p.role || "Member";
-            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი არ არის";
+            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი ცარიელია";
             if(p.avatar_url) document.getElementById('p-avatar').src = p.avatar_url;
-
-            // ვამოწმებთ, არის თუ არა ეს მნახველის პროფილი
-            if(myNick && myNick.toLowerCase() === target.toLowerCase()) {
-                document.getElementById('my-btns').style.display = 'grid';
-            }
-
-            // ვამოწმებთ მნახველის როლს (ადმინია თუ არა)
+            if(myNick && myNick.toLowerCase() === target.toLowerCase()) document.getElementById('my-btns').style.display = 'grid';
+            
             let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
-            if(me && (me.role === 'Admin' || me.role === 'Owner')) {
-                if(myNick.toLowerCase() !== target.toLowerCase()) {
-                    document.getElementById('admin-area').style.display = 'block';
-                }
+            if(me && (me.role === 'Admin' || me.role === 'Owner') && myNick.toLowerCase() !== target.toLowerCase()) {
+                document.getElementById('admin-area').style.display = 'block';
             }
         }
     }
 
     async function updateRole(r) {
-        if(confirm("დარწმუნებული ხართ?")) {
-            const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-            if(error) alert("შეცდომა!"); else location.reload();
-        }
+        if(!confirm("დარწმუნებული ხარ?")) return;
+        const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
+        if(error) { alert("შეცდომა: " + error.message); } else { location.reload(); }
     }
 
     async function editAvatar() {
         const link = prompt("ჩასვით სურათის ლინკი:");
         if(link) {
             const { error } = await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
-            if(error) alert("ვერ შეიცვალა!"); else location.reload();
+            if(error) { alert("შეცდომა: " + error.message); } else { location.reload(); }
         }
     }
 
@@ -97,12 +85,11 @@
         const st = prompt("ახალი სტატუსი:");
         if(st) {
             const { error } = await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
-            if(error) alert("ვერ განახლდა!"); else location.reload();
+            if(error) { alert("შეცდომა: " + error.message); } else { location.reload(); }
         }
     }
 
     window.onload = loadProfile;
 </script>
-
 </body>
 </html>
