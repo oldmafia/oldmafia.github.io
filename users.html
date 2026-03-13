@@ -1,70 +1,81 @@
 <!DOCTYPE html>
-<html lang="ka">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>MAFIA PROFILE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .card { border: 2px solid red; padding: 20px; display: inline-block; border-radius: 15px; width: 300px; }
-        img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; margin-bottom: 10px; }
-        button { display: block; width: 100%; margin: 5px 0; padding: 10px; background: #200; color: white; border: 1px solid red; cursor: pointer; }
-        #adm-area { display: none; margin-top: 15px; border-top: 1px dashed red; padding-top: 10px; }
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
+        .card { border: 2px solid red; padding: 20px; border-radius: 15px; display: inline-block; min-width: 250px; }
+        .btn { display: block; width: 100%; margin: 10px 0; padding: 10px; background: red; color: black; font-weight: bold; border: none; cursor: pointer; }
+        #debug { color: #555; font-size: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <img id="u-img" src="https://i.ibb.co/v3m6y6R/avatar.png">
-        <h1 id="u-nick">...</h1>
+        <h1 id="u-nick">ძებნა...</h1>
         <p id="u-role" style="color:gold"></p>
-        
-        <div id="adm-area">
-            <button onclick="changeRole('Owner')">👑 დამფუძნებელის მინიჭება</button>
-            <button onclick="changeRole('Admin')">🛡️ ადმინის მინიჭება</button>
-            <button onclick="changeRole('Member')">✨ როლის ჩახსნა</button>
-            <button onclick="changeRole('Ban')">🚫 დაბლოკვა</button>
+        <div id="adm" style="display:none;">
+            <button class="btn" onclick="upd('Owner')">👑 დამფუძნებელი</button>
+            <button class="btn" onclick="upd('Admin')">🛡️ ადმინი</button>
+            <button class="btn" onclick="upd('Member')">✨ როლის ჩახსნა</button>
         </div>
-        <button onclick="location.href='chat.html'">უკან</button>
+        <button class="btn" style="background:gray" onclick="history.back()">უკან</button>
     </div>
+
+    <div id="debug"></div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     
-    // ვიღებთ იუზერს ლინკიდან
-    const urlParams = new URLSearchParams(window.location.search);
-    const target = urlParams.get('user');
+    const params = new URLSearchParams(window.location.search);
+    // ვცდილობთ ნიკის ამოღებას ლინკიდან
+    let target = params.get('user');
     const myName = localStorage.getItem('nickname');
 
-    async function start() {
-        if(!target) { document.getElementById('u-nick').innerText = "იუზერი არ არის"; return; }
+    document.getElementById('debug').innerText = "ვეძებ იუზერს: " + target;
 
-        let { data: p } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+    async function load() {
+        if(!target) {
+            document.getElementById('u-nick').innerText = "ლინკში იუზერი არ წერია!";
+            return;
+        }
+
+        // ვეძებთ იუზერს ისე, რომ დიდი და პატარა ასოები არ იყოს მნიშვნელოვანი (ilike)
+        let { data: p, error } = await _s.from('profiles')
+            .select('*')
+            .filter('username', 'ilike', target)
+            .maybeSingle();
+
+        if(error) {
+            document.getElementById('u-nick').innerText = "ბაზის შეცდომა!";
+            document.getElementById('debug').innerText = error.message;
+            return;
+        }
 
         if(p) {
             document.getElementById('u-nick').innerText = p.username;
             document.getElementById('u-role').innerText = p.role || "Member";
-            if(p.avatar_url) document.getElementById('u-img').src = p.avatar_url;
-
-            // ვამოწმებთ, ვინ ვართ ჩვენ
+            
+            // ვამოწმებთ ჩვენს როლს
             if(myName) {
-                let { data: me } = await _s.from('profiles').select('role').eq('username', myName).maybeSingle();
-                if(me && (me.role === 'Admin' || me.role === 'Owner') && myName !== target) {
-                    document.getElementById('adm-area').style.display = 'block';
+                let { data: me } = await _s.from('profiles').select('role').filter('username', 'ilike', myName).maybeSingle();
+                if(me && (me.role === 'Admin' || me.role === 'Owner') && myName.toLowerCase() !== p.username.toLowerCase()) {
+                    document.getElementById('adm').style.display = 'block';
                 }
             }
         } else {
-            document.getElementById('u-nick').innerText = "ვერ ვიპოვნე";
+            document.getElementById('u-nick').innerText = "ვერ მოიძებნა!";
+            document.getElementById('debug').innerText = "ბაზაში სახელი '" + target + "' არ ფიგურირებს.";
         }
     }
 
-    async function changeRole(r) {
-        const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-        if(error) alert("შეცდომა: " + error.message);
-        else location.reload();
+    window.upd = async (r) => {
+        const { error } = await _s.from('profiles').update({ role: r }).filter('username', 'ilike', target);
+        if(error) alert(error.message); else location.reload();
     }
 
-    start();
+    load();
 </script>
 </body>
 </html>
