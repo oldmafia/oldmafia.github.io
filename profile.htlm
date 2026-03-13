@@ -1,75 +1,56 @@
 <!DOCTYPE html>
-<html lang="ka">
+<html>
 <head>
     <meta charset="UTF-8">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { background: #0b0000; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .box { border: 2px solid red; padding: 20px; display: inline-block; border-radius: 15px; background: #000; }
-        .btn { display: block; width: 100%; margin: 10px 0; padding: 10px; background: red; color: white; border: none; cursor: pointer; font-weight: bold; }
-        input { width: 90%; padding: 10px; margin-bottom: 10px; }
-    </style>
+    <title>ტესტი</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
 </head>
-<body>
+<body style="background: black; color: white; font-family: sans-serif; text-align: center; padding: 50px;">
 
-<div class="box">
-    <h2 id="view-nick">იტვირთება...</h2>
-    <p id="view-role" style="color: gold;"></p>
-    <p id="view-status"></p>
-    <hr>
-    <div id="adm" style="display:none;">
-        <button class="btn" onclick="setR('Owner')">👑 დამფუძნებელი</button>
-        <button class="btn" onclick="setR('Admin')">🛡️ ადმინი</button>
-        <button class="btn" onclick="setR('Member')">✨ როლის ჩახსნა</button>
-        <button class="btn" onclick="setR('Ban')">🚫 დაბლოკვა</button>
+    <div style="border: 2px solid red; padding: 20px; display: inline-block;">
+        <h1 id="status">კავშირი მყარდება...</h1>
+        <div id="details"></div>
+        <hr>
+        <button onclick="location.reload()" style="padding: 10px; cursor: pointer;">ხელახლა ცდა</button>
     </div>
-    <button class="btn" style="background: gray;" onclick="location.href='chat.html'">⬅ უკან</button>
-</div>
 
 <script>
-    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    
-    // ვიღებთ იუზერს ლინკიდან (?user=Nick) ან შენს ნიკს
-    const url = new URLSearchParams(window.location.search);
-    const target = url.get('user') || localStorage.getItem('nickname');
-    const me = localStorage.getItem('nickname');
+    async function test() {
+        const status = document.getElementById('status');
+        const details = document.getElementById('details');
 
-    async function start() {
-        if(!target) {
-            document.getElementById('view-nick').innerText = "ნიკი არ არის!";
-            return;
-        }
-
-        // ვკითხულობთ ბაზას
-        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
-        
-        if(error) {
-            alert("ბაზის შეცდომა: " + error.message);
-            return;
-        }
-
-        if(p) {
-            document.getElementById('view-nick').innerText = p.username;
-            document.getElementById('view-role').innerText = "როლი: " + (p.role || "Member");
-            document.getElementById('view-status').innerText = p.daily_status || "სტატუსი არ არის";
-
-            // თუ მე ადმინი ვარ და სხვას ვუყურებ
-            let { data: myP } = await _s.from('profiles').select('role').eq('username', me).maybeSingle();
-            if(myP && (myP.role === 'Admin' || myP.role === 'Owner') && me !== target) {
-                document.getElementById('adm').style.display = 'block';
+        try {
+            // 1. ვამოწმებთ ბიბლიოთეკას
+            if (typeof supabase === 'undefined') {
+                status.innerText = "❌ შეცდომა: Supabase ვერ ჩაიტვირთა!";
+                return;
             }
-        } else {
-            document.getElementById('view-nick').innerText = "იუზერი ვერ მოიძებნა ბაზაში!";
+
+            const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+            
+            status.innerText = "🔍 ბაზასთან კავშირი... [OK]";
+
+            // 2. ვცდილობთ წაკითხვას
+            const myNick = localStorage.getItem('nickname') || "სტუმარი";
+            let { data, error } = await _s.from('profiles').select('username').limit(1);
+
+            if (error) {
+                status.innerText = "❌ ბაზამ უარი თქვა!";
+                details.innerHTML = `<p style="color:red">${error.message}</p>`;
+            } else {
+                status.innerText = "✅ ყველაფერი მუშაობს!";
+                details.innerHTML = `<p>ბაზა დაინახა. შენი ნიკი: <b>${myNick}</b></p>
+                                     <p>თუ ნიკი წერტილებია, ჩატში თავიდან უნდა შეხვიდე!</p>`;
+            }
+
+        } catch (err) {
+            status.innerText = "💥 კოდი გაფუჭდა!";
+            details.innerText = err.message;
         }
     }
 
-    async function setR(newRole) {
-        const { error } = await _s.from('profiles').update({ role: newRole }).eq('username', target);
-        if(error) alert("ვერ შეიცვალა: " + error.message);
-        else location.reload();
-    }
-
-    start();
+    // გაშვება პატარა დაგვიანებით, რომ ბიბლიოთეკა დაჯდეს
+    setTimeout(test, 1000);
 </script>
 </body>
 </html>
