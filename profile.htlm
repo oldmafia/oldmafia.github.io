@@ -7,13 +7,13 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { background: #0b0000; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .profile-card { width: 320px; background: #070000; border: 2px solid red; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 0 20px red; }
+        .profile-card { width: 340px; background: #070000; border: 2px solid red; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 0 20px red; }
         .avatar { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; object-fit: cover; margin-bottom: 15px; }
         .nick { font-size: 24px; font-weight: bold; color: red; display: block; }
         .role { font-size: 14px; color: gold; margin-bottom: 20px; display: block; }
         .status-text { background: #1a0000; padding: 10px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; font-style: italic; min-height: 20px; color: #ccc; }
         .btn-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 10px; border-radius: 5px; border: 1px solid #500; background: #200; color: white; cursor: pointer; font-size: 11px; font-weight: bold; }
+        button { padding: 10px; border-radius: 5px; border: 1px solid #500; background: #200; color: white; cursor: pointer; font-size: 10px; font-weight: bold; }
         button:hover { background: red; color: black; }
         .admin-panel { margin-top: 20px; padding-top: 15px; border-top: 1px dashed red; display: none; }
     </style>
@@ -34,14 +34,14 @@
     <div id="admin-area" class="admin-panel">
         <p style="color:red; font-size:11px; margin-bottom: 10px;">ადმინისტრირება</p>
         <div class="btn-box">
-            <button onclick="updateRole('Admin')">🛡️ Admin</button>
-            <button onclick="updateRole('Owner')">👑 Owner</button>
-            <button onclick="updateRole('Member')">✨ Member</button>
-            <button onclick="updateRole('Banned')" style="color:yellow; border-color: yellow;">🚫 Ban</button>
+            <button onclick="updateRole('Owner')">👑 დამფუძნებლის მინიჭება</button>
+            <button onclick="updateRole('Admin')">🛡️ ადმინის მინიჭება</button>
+            <button onclick="updateRole('Member')">✨ როლის ჩახსნა</button>
+            <button onclick="updateRole('Banned')" style="color:yellow; border-color: yellow;">🚫 დაბლოკვა</button>
         </div>
     </div>
 
-    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">⬅ უკან</button>
+    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">⬅ უკან დაბრუნება</button>
 </div>
 
 <script>
@@ -51,24 +51,31 @@
     const target = urlParams.get('user'); 
     const myNick = localStorage.getItem('nickname');
 
+    // როლების ქართული ჩვენება ეკრანზე
+    function displayRole(r) {
+        if(r === 'Owner') return "👑 დამფუძნებელი";
+        if(r === 'Admin') return "🛡️ ადმინისტრატორი";
+        if(r === 'Banned') return "🚫 დაბლოკილი";
+        return "🌱 მომხმარებელი";
+    }
+
     async function loadProfile() {
         if(!target) return;
 
-        // მონაცემების წამოღება (ზუსტად შენი სვეტების მიხედვით)
-        let { data: p, error } = await _s.from('profiles').select('username, role, avatar_url, daily_status').eq('username', target).maybeSingle();
+        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
         
         if(p) {
             document.getElementById('p-nick').innerText = p.username;
-            document.getElementById('p-role').innerText = p.role || "Member";
-            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი არ არის";
+            document.getElementById('p-role').innerText = displayRole(p.role);
+            document.getElementById('p-status').innerText = p.daily_status || "სტატუსი ცარიელია";
             if(p.avatar_url) document.getElementById('p-avatar').src = p.avatar_url;
 
-            // თუ ჩემი პროფილია
+            // თუ საკუთარ პროფილზე ვარ
             if(myNick && myNick.toLowerCase() === target.toLowerCase()) {
                 document.getElementById('my-btns').style.display = 'grid';
             }
 
-            // ადმინ პანელის შემოწმება
+            // ვამოწმებთ ჩემს როლს, რომ ადმინ პანელი გამოჩნდეს
             let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
             if(me && (me.role === 'Admin' || me.role === 'Owner')) {
                 if(myNick.toLowerCase() !== target.toLowerCase()) {
@@ -79,15 +86,14 @@
     }
 
     async function updateRole(r) {
-        if(confirm("ნამდვილად გსურთ როლის შეცვლა?")) {
+        if(confirm("ნამდვილად გსურთ მოქმედების შესრულება?")) {
             const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-            if(error) alert("შეცდომა ბაზასთან!");
-            else location.reload();
+            if(error) alert("შეცდომა!"); else location.reload();
         }
     }
 
     async function editAvatar() {
-        const link = prompt("ჩასვით სურათის ლინკი:");
+        const link = prompt("ჩასვით სურათის პირდაპირი ლინკი:");
         if(link) {
             await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
             location.reload();
@@ -95,7 +101,7 @@
     }
 
     async function editStatus() {
-        const st = prompt("ახალი სტატუსი:");
+        const st = prompt("შეცვალეთ სტატუსი:");
         if(st) {
             await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
             location.reload();
