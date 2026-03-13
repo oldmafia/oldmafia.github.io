@@ -1,198 +1,81 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>კაიფმანია</title>
-
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-<style>
-body{
-margin:0;
-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-background:radial-gradient(circle,#330000 0%,#000 70%);
-font-family:Arial;
-}
-
-.card-wrapper{
-position:relative;
-width:350px;
-}
-
-.card-wrapper::before{
-content:"";
-position:absolute;
-inset:0;
-background:red;
-border-radius:30px;
-transform:rotate(-4deg);
-box-shadow:0 0 80px red;
-z-index:0;
-}
-
-.card{
-position:relative;
-background:#0d0d0d;
-padding:40px 25px;
-border-radius:30px;
-transform:rotate(-2deg);
-z-index:1;
-text-align:center;
-}
-
-h1{
-color:white;
-text-shadow:0 0 20px red;
-margin-bottom:25px;
-}
-
-input{
-width:100%;
-padding:12px;
-margin-bottom:15px;
-border-radius:12px;
-border:none;
-background:#1a1a1a;
-color:white;
-}
-
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:20px;
-background:red;
-color:white;
-font-weight:bold;
-margin-bottom:12px;
-cursor:pointer;
-font-size:16px;
-}
-
-button:hover{
-background:darkred;
-}
-
-.hidden{
-display:none;
-}
-
-#message{
-color:white;
-margin-top:10px;
-min-height:20px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია - შესვლა</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+        .auth-box { 
+            background: #111; padding: 30px; border-radius: 20px; border: 2px solid red; 
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); text-align: center; width: 300px; 
+        }
+        h2 { color: white; margin-bottom: 20px; }
+        input { 
+            width: 90%; padding: 12px; margin: 10px 0; border-radius: 10px; 
+            border: 1px solid #333; background: #000; color: white; outline: none; 
+        }
+        button { 
+            width: 100%; padding: 12px; margin-top: 10px; border-radius: 10px; 
+            border: none; background: red; color: white; font-weight: bold; cursor: pointer; 
+        }
+        button:hover { background: #b30000; }
+        .toggle-link { color: #888; font-size: 12px; margin-top: 15px; cursor: pointer; display: block; }
+    </style>
 </head>
 <body>
 
-<div class="card-wrapper">
-<div class="card">
-
-<h1>კაიფმანია 😎🔥</h1>
-
-<div id="mainButtons">
-<button id="regBtn">რეგისტრაცია</button>
-<button id="logBtn">შესვლა</button>
-</div>
-
-<div id="formSection" class="hidden">
-<input type="text" id="nickname" placeholder="ნიკნეიმი">
-<input type="email" id="email" placeholder="ელფოსტა">
-<input type="password" id="password" placeholder="პაროლი">
-<button id="submitBtn"></button>
-</div>
-
-<p id="message"></p>
-
-</div>
+<div class="auth-box" id="auth-container">
+    <h2 id="title">კაიფმანია 😎🔥</h2>
+    <input type="text" id="username" placeholder="ნიკი">
+    <input type="password" id="password" placeholder="პაროლი">
+    <button id="main-btn" onclick="handleAuth()">შესვლა</button>
+    <span class="toggle-link" id="toggle-text" onclick="toggleMode()">არ გაქვს აქაუნთი? რეგისტრაცია</span>
 </div>
 
 <script>
+    // Supabase-თან კავშირი
+    const _supabase = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
+    let isLoginMode = true;
 
-const { createClient } = supabase;
-
-const supabaseClient = createClient(
-  "https://ftfciebnywbondaiarnc.supabase.co",
-  "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-);
-
-const mainButtons = document.getElementById("mainButtons");
-const formSection = document.getElementById("formSection");
-const nicknameInput = document.getElementById("nickname");
-const submitBtn = document.getElementById("submitBtn");
-const message = document.getElementById("message");
-
-document.getElementById("regBtn").addEventListener("click", () => {
-  mainButtons.classList.add("hidden");
-  formSection.classList.remove("hidden");
-  nicknameInput.style.display = "block";
-  submitBtn.innerText = "რეგისტრაცია";
-  submitBtn.onclick = register;
-});
-
-document.getElementById("logBtn").addEventListener("click", () => {
-  mainButtons.classList.add("hidden");
-  formSection.classList.remove("hidden");
-  nicknameInput.style.display = "none";
-  submitBtn.innerText = "შესვლა";
-  submitBtn.onclick = login;
-});
-
-async function register(){
-  const nickname = nicknameInput.value;
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  if(!nickname  !email  !password){
-    message.innerText = "შეავსე ყველა ველი";
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signUp({
-    email: email,
-    password: password,
-    options: {
-      data: {
-        nickname: nickname
-      }
+    function toggleMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('title').innerText = isLoginMode ? "კაიფმანია 😎🔥" : "რეგისტრაცია ✨";
+        document.getElementById('main-btn').innerText = isLoginMode ? "შესვლა" : "რეგისტრაცია";
+        document.getElementById('toggle-text').innerText = isLoginMode ? "არ გაქვს აქაუნთი? რეგისტრაცია" : "უკვე გაქვს აქაუნთი? შესვლა";
     }
-  });
 
-  if(error){
-    message.innerText = error.message;
-    return;
-  }
+    async function handleAuth() {
+        const user = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value.trim();
 
-  window.location.href = "home.html";
-}
+        if (!user || !pass) return alert("შეავსე ველები!");
 
-async function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+        if (isLoginMode) {
+            // შესვლის ლოგიკა
+            const { data, error } = await _supabase.from('profiles').select('*').ilike('username', user).maybeSingle();
+            if (data && data.password === pass) {
+                localStorage.setItem('nickname', data.username);
+                window.location.href = 'chat.html'; // გადაგიყვანს ჩატზე
+            } else {
+                alert("ნიკი ან პაროლი არასწორია!");
+            }
+        } else {
+            // რეგისტრაციის ლოგიკა
+            const { data: existing } = await _supabase.from('profiles').select('username').ilike('username', user).maybeSingle();
+            if (existing) return alert("ეს ნიკი უკვე დაკავებულია!");
 
-  if(!email || !password){
-    message.innerText = "შეავსე ყველა ველი";
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if(error){
-    message.innerText = error.message;
-    return;
-  }
-
-  window.location.href = "home.html";
-}
-
+            const { error } = await _supabase.from('profiles').insert([{ username: user, password: pass, role: 'Member' }]);
+            if (!error) {
+                alert("რეგისტრაცია წარმატებულია!");
+                toggleMode();
+            } else {
+                alert("შეცდომა რეგისტრაციისას!");
+            }
+        }
+    }
 </script>
 
 </body>
