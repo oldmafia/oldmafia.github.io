@@ -34,14 +34,14 @@
     <div id="admin-area" class="admin-panel">
         <p style="color:red; font-size:11px; margin-bottom: 10px;">ადმინისტრირება</p>
         <div class="btn-box">
-            <button onclick="updateRole('Owner')">👑 დამფუძნებლის მინიჭება</button>
-            <button onclick="updateRole('Admin')">🛡️ ადმინის მინიჭება</button>
+            <button onclick="updateRole('Owner')">👑 დამფუძნებელი</button>
+            <button onclick="updateRole('Admin')">🛡️ ადმინი</button>
             <button onclick="updateRole('Member')">✨ როლის ჩახსნა</button>
-            <button onclick="updateRole('Ban')" style="color:yellow; border-color:yellow;">🚫 დაბლოკვა</button>
+            <button onclick="updateRole('Ban')">🚫 დაბლოკვა</button>
         </div>
     </div>
 
-    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline;">⬅ უკან</button>
+    <button onclick="history.back()" style="margin-top:20px; background:none; border:none; color:gray; text-decoration:underline; cursor:pointer;">⬅ უკან</button>
 </div>
 
 <script>
@@ -54,7 +54,8 @@
     async function loadProfile() {
         if(!target) return;
 
-        let { data: p } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+        // მონაცემების წამოღება
+        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
         
         if(p) {
             document.getElementById('p-nick').innerText = p.username;
@@ -62,10 +63,12 @@
             document.getElementById('p-status').innerText = p.daily_status || "სტატუსი არ არის";
             if(p.avatar_url) document.getElementById('p-avatar').src = p.avatar_url;
 
+            // ვამოწმებთ, არის თუ არა ეს მნახველის პროფილი
             if(myNick && myNick.toLowerCase() === target.toLowerCase()) {
                 document.getElementById('my-btns').style.display = 'grid';
             }
 
+            // ვამოწმებთ მნახველის როლს (ადმინია თუ არა)
             let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
             if(me && (me.role === 'Admin' || me.role === 'Owner')) {
                 if(myNick.toLowerCase() !== target.toLowerCase()) {
@@ -75,28 +78,26 @@
         }
     }
 
-    // აი ეს ფუნქცია აკეთებს დაბლოკვასაც და როლის შეცვლასაც
     async function updateRole(r) {
         if(confirm("დარწმუნებული ხართ?")) {
             const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-            if(error) alert("შეცდომა!");
-            else location.reload();
+            if(error) alert("შეცდომა!"); else location.reload();
         }
     }
 
     async function editAvatar() {
-        const link = prompt("ფოტოს ლინკი:");
+        const link = prompt("ჩასვით სურათის ლინკი:");
         if(link) {
-            await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
-            location.reload();
+            const { error } = await _s.from('profiles').update({ avatar_url: link }).eq('username', myNick);
+            if(error) alert("ვერ შეიცვალა!"); else location.reload();
         }
     }
 
     async function editStatus() {
         const st = prompt("ახალი სტატუსი:");
         if(st) {
-            await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
-            location.reload();
+            const { error } = await _s.from('profiles').update({ daily_status: st }).eq('username', myNick);
+            if(error) alert("ვერ განახლდა!"); else location.reload();
         }
     }
 
