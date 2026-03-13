@@ -6,40 +6,7 @@
     <title>Old Mafia - ჩატი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: Arial; overflow: hidden; display: flex; height: 100vh; }
-
-        /* გვერდითა მენიუ (Sidebar) */
-        .sidebar {
-            position: fixed;
-            left: -280px; /* თავიდან დამალულია */
-            top: 0;
-            width: 280px;
-            height: 100%;
-            background: #0d0d0d;
-            border-right: 2px solid red;
-            transition: 0.3s;
-            z-index: 100;
-            overflow-y: auto;
-            padding-top: 60px;
-        }
-
-        .sidebar.open { left: 0; }
-
-        /* ოთახების სტილი მენიუში */
-        .room-link {
-            padding: 15px 25px;
-            border-bottom: 1px solid #222;
-            cursor: pointer;
-            display: block;
-            color: #ccc;
-            transition: 0.2s;
-            font-size: 16px;
-        }
-
-        .room-link:hover { background: #1a0000; color: red; }
-
-        /* მთავარი კონტეინერი */
-        .main-chat { flex: 1; display: flex; flex-direction: column; position: relative; }
+        body { margin: 0; background: #000; color: white; font-family: Arial; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
 
         /* ზედა ზოლი */
         .top-bar {
@@ -47,26 +14,69 @@
             padding: 15px;
             display: flex;
             align-items: center;
-            border-bottom: 1px solid red;
+            border-bottom: 2px solid red;
+            z-index: 1001; /* მენიუზე მაღლა რომ იყოს */
         }
 
-        .menu-btn { font-size: 25px; color: red; cursor: pointer; margin-right: 20px; }
-
+        .menu-btn { font-size: 25px; color: red; cursor: pointer; margin-right: 20px; z-index: 1002; }
         .current-room-name { flex: 1; text-align: center; font-weight: bold; font-size: 18px; text-shadow: 0 0 10px red; }
 
+        /* ჩამოსაშლელი მენიუ (ზემოდან ქვემოთ) */
+        .top-menu {
+            position: absolute;
+            top: -100%; /* თავიდან დამალულია ზემოთ */
+            left: 0;
+            width: 100%;
+            background: rgba(13, 13, 13, 0.95);
+            border-bottom: 2px solid red;
+            transition: 0.4s ease-in-out;
+            z-index: 1000;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* ოთახები ლამაზად ჩაჯდება */
+            gap: 10px;
+            padding: 80px 20px 20px 20px; /* ზემოდან ადგილი ღილაკისთვის */
+            box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+        }
+
+        .top-menu.open { top: 0; }
+
+        /* ოთახების ღილაკები მენიუში */
+        .room-link {
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            color: #ccc;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .room-link:hover { border-color: red; color: white; background: #250000; }
+
         /* ჩატის არეალი */
-        #chat-display { flex: 1; overflow-y: auto; padding: 20px; background: radial-gradient(circle, #110000 0%, #000 100%); }
+        #chat-display { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* მესიჯის ბუშტები */
+        .msg { background: #0d0d0d; border: 1px solid #222; padding: 10px; border-radius: 10px; max-width: 80%; align-self: flex-start; }
+        .u-name { color: red; font-weight: bold; font-size: 12px; }
 
         /* წერის ზონა */
         .input-box { padding: 15px; background: #050505; display: flex; gap: 10px; border-top: 1px solid #222; }
         input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #333; background: #111; color: white; outline: none; }
-        .send-btn { background: red; border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; }
+        .send-btn { background: red; border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
     </style>
 </head>
 <body>
 
-    <div id="sidebar" class="sidebar">
+    <div class="top-bar">
+        <div class="menu-btn" onclick="toggleMenu()">☰</div>
+        <div class="current-room-name" id="roomTitle">☕ კაფე-ბარი</div>
+    </div>
+
+    <div id="topMenu" class="top-menu">
         <div class="room-link" onclick="selectRoom('☕ კაფე-ბარი')">☕ კაფე-ბარი</div>
         <div class="room-link" onclick="selectRoom('💎 ვიპ საუბრები')">💎 ვიპ საუბრები</div>
         <div class="room-link" onclick="selectRoom('🕵️ გამოძიება')">🕵️ გამოძიება</div>
@@ -81,37 +91,39 @@
         <div class="room-link" onclick="selectRoom('🛠 ადმინისტრაცია')">🛠 ადმინისტრაცია</div>
         <div class="room-link" onclick="selectRoom('🆘 დახმარება')">🆘 დახმარება</div>
         <div class="room-link" onclick="selectRoom('📢 ფორუმი')">📢 ფორუმი</div>
-        <div class="room-link" onclick="window.location.href='index.html'" style="color: red; border-top: 1px solid red;">🚪 გასვლა</div>
+        <div class="room-link" onclick="location.href='index.html'" style="color: red; background: #300000;">🚪 გასვლა</div>
     </div>
 
-    <div class="main-chat">
-        <div class="top-bar">
-            <div class="menu-btn" onclick="toggleMenu()">☰</div>
-            <div class="current-room-name" id="roomTitle">☕ კაფე-ბარი</div>
-        </div>
+    <div id="chat-display">
+        <p style="color: #444; text-align: center;">აირჩიეთ ოთახი მენიუდან...</p>
+    </div>
 
-        <div id="chat-display">
-            <p style="color: #444; text-align: center;">აირჩიეთ ოთახი მენიუდან...</p>
-        </div>
-
+    <div class="input-area">
         <div class="input-box">
-            <input type="text" placeholder="დაწერე მესიჯი...">
-            <button class="send-btn">➤</button>
+            <input type="text" id="msgInput" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMsg()">
+            <button class="send-btn" onclick="sendMsg()">➤</button>
         </div>
     </div>
 
     <script>
         function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('topMenu').classList.toggle('open');
         }
 
         function selectRoom(name) {
-            // სახელი ეწერება მაღლა
             document.getElementById('roomTitle').innerText = name;
-            // მენიუ იკეცება
-            document.getElementById('sidebar').classList.remove('open');
-            // აქ მოხდება ჩატის გაწმენდა და ახალი მესიჯების ჩატვირთვა (შემდეგ ნაბიჯზე)
+            document.getElementById('topMenu').classList.remove('open'); // იკეცება არჩევისას
             document.getElementById('chat-display').innerHTML = `<p style="color:red; text-align:center;">თქვენ შეხვედით ოთახში: ${name}</p>`;
+            // აქ დაემატება Supabase-დან მესიჯების წამოღება
+        }
+
+        function sendMsg() {
+            const inp = document.getElementById('msgInput');
+            if(!inp.value.trim()) return;
+            const chat = document.getElementById('chat-display');
+            chat.innerHTML += `<div class="msg"><span class="u-name">მე:</span><br>${inp.value}</div>`;
+            inp.value = "";
+            chat.scrollTop = chat.scrollHeight;
         }
     </script>
 
