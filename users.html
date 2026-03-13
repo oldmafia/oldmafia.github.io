@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .card { border: 2px solid red; padding: 20px; display: inline-block; border-radius: 15px; }
+        .error-msg { color: #ff4444; font-size: 12px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1 id="nick">იტვირთება...</h1>
+    <p id="role" style="color:gold"></p>
+    <div id="debug" class="error-msg"></div>
+    <button onclick="location.reload()" style="margin-top:10px;">ხელახლა ცდა</button>
+</div>
+
+<script>
+    const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co";
+    const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    const _s = supabase.createClient(SB_URL, SB_KEY);
+
+    async function load() {
+        const params = new URLSearchParams(window.location.search);
+        let target = params.get('user') || localStorage.getItem('nickname');
+        
+        if (!target) {
+            document.getElementById('nick').innerText = "ნიკი ვერ ვიპოვნე";
+            return;
+        }
+
+        try {
+            const { data, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+
+            if (error) {
+                document.getElementById('nick').innerText = "ბაზის ხარვეზი";
+                document.getElementById('debug').innerText = error.message;
+            } else if (data) {
+                document.getElementById('nick').innerText = data.username;
+                document.getElementById('role').innerText = data.role || "Member";
+            } else {
+                document.getElementById('nick').innerText = "იუზერი არ არსებობს";
+            }
+        } catch (err) {
+            document.getElementById('debug').innerText = "კავშირის შეცდომა!";
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>
