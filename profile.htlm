@@ -4,67 +4,34 @@
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body style="background: #000; color: white; font-family: sans-serif; text-align: center; padding-top: 100px;">
+<body style="background:white; color:black; padding:20px;">
+    <h1 id="status">ვამოწმებ კავშირს...</h1>
+    <div id="out"></div>
 
-    <div style="border: 2px solid red; padding: 20px; display: inline-block; border-radius: 15px;">
-        <img id="u-img" src="" style="width:100px; height:100px; border-radius:50%; border:2px solid red; display:none;">
-        <h1 id="u-nick">კავშირი...</h1>
-        <p id="u-role" style="color: gold;"></p>
-        
-        <div id="adm" style="display:none; border-top: 1px solid red; margin-top: 10px;">
-            <p style="color:red; font-size:10px;">ადმინ პანელი</p>
-            <button onclick="upd('Owner')" style="display:block; width:100%; margin:5px 0;">👑 დამფუძნებელი</button>
-            <button onclick="upd('Admin')" style="display:block; width:100%; margin:5px 0;">🛡️ ადმინი</button>
-            <button onclick="upd('Member')" style="display:block; width:100%; margin:5px 0;">✨ როლის ჩახსნა</button>
-            <button onclick="upd('Ban')" style="display:block; width:100%; margin:5px 0; color:red;">🚫 დაბლოკვა</button>
-        </div>
-        <br>
-        <button onclick="history.back()">⬅ უკან</button>
-    </div>
+    <script>
+        async function check() {
+            const out = document.getElementById('out');
+            const status = document.getElementById('status');
 
-<script>
-    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    
-    const params = new URLSearchParams(window.location.search);
-    const target = params.get('user') || localStorage.getItem('nickname');
-    const myNick = localStorage.getItem('nickname');
+            try {
+                const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+                
+                // ვცდილობთ ნებისმიერი რამის წაკითხვას profiles ცხრილიდან
+                let { data, error } = await _s.from('profiles').select('username').limit(1);
 
-    async function load() {
-        if(!target) { document.getElementById('u-nick').innerText = "ნიკი ვერ ვიპოვნე"; return; }
-
-        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
-
-        if(error) { alert("შეცდომა: " + error.message); return; }
-
-        if(p) {
-            document.getElementById('u-nick').innerText = p.username;
-            document.getElementById('u-role').innerText = p.role || "Member";
-            if(p.avatar_url) {
-                const img = document.getElementById('u-img');
-                img.src = p.avatar_url;
-                img.style.display = 'inline-block';
-            }
-
-            // ადმინის შემოწმება
-            if(myNick) {
-                let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
-                if(me && (me.role === 'Admin' || me.role === 'Owner') && myNick !== target) {
-                    document.getElementById('adm').style.display = 'block';
+                if (error) {
+                    status.innerText = "❌ ბაზამ დააბრუნა შეცდომა:";
+                    out.innerText = JSON.stringify(error, null, 2);
+                } else {
+                    status.innerText = "✅ კავშირი არის!";
+                    out.innerText = "ბაზიდან მონაცემები მოვიდა. ე.ი. კოდი მუშაობს და პრობლემა ქეშირებაშია.";
                 }
+            } catch (e) {
+                status.innerText = "💥 კოდი საერთოდ ვერ გაეშვა:";
+                out.innerText = e.message;
             }
-        } else {
-            document.getElementById('u-nick').innerText = "იუზერი არ არსებობს";
         }
-    }
-
-    async function upd(r) {
-        if(!confirm("გინდა შეცვლა?")) return;
-        const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-        if(error) alert("ვერ შეიცვალა: " + error.message);
-        else location.reload();
-    }
-
-    load();
-</script>
+        check();
+    </script>
 </body>
 </html>
