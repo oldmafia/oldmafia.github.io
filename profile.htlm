@@ -2,55 +2,92 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>ტესტი</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <title>OLD MAFIA - PRO</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0b0000; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { width: 320px; border: 2px solid red; padding: 30px; border-radius: 20px; background: #000; box-shadow: 0 0 20px red; }
+        .ava { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; margin-bottom: 15px; }
+        .nick { color: red; font-size: 26px; font-weight: bold; margin: 10px 0; }
+        .role { color: gold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; border: 1px solid red; background: #200; color: white; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        .btn:hover { background: red; color: black; }
+        .admin-box { margin-top: 20px; padding-top: 15px; border-top: 1px dashed red; display: none; }
+    </style>
 </head>
-<body style="background: black; color: white; font-family: sans-serif; text-align: center; padding: 50px;">
+<body>
 
-    <div style="border: 2px solid red; padding: 20px; display: inline-block;">
-        <h1 id="status">კავშირი მყარდება...</h1>
-        <div id="details"></div>
-        <hr>
-        <button onclick="location.reload()" style="padding: 10px; cursor: pointer;">ხელახლა ცდა</button>
+<div class="card">
+    <img id="u-img" src="https://i.ibb.co/v3m6y6R/avatar.png" class="ava">
+    <div id="u-nick" class="nick">იტვირთება...</div>
+    <div id="u-role" class="role">...</div>
+    
+    <div id="admin-panel" class="admin-box">
+        <p style="font-size: 10px; color: red;">ადმინისტრირება</p>
+        <button class="btn" onclick="changeRole('Owner')">👑 დამფუძნებელი</button>
+        <button class="btn" onclick="changeRole('Admin')">🛡️ ადმინი</button>
+        <button class="btn" onclick="changeRole('Member')">✨ როლის ჩახსნა</button>
+        <button class="btn" onclick="changeRole('Ban')" style="border-color: yellow; color: yellow;">🚫 დაბლოკვა</button>
     </div>
 
+    <button class="btn" style="background:none; border:none; color:gray; text-decoration:underline;" onclick="history.back()">⬅ უკან</button>
+</div>
+
 <script>
-    async function test() {
-        const status = document.getElementById('status');
-        const details = document.getElementById('details');
+    // მონაცემები
+    const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co";
+    const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+    
+    // ვცდილობთ კავშირს
+    const _s = supabase.createClient(SB_URL, SB_KEY);
 
-        try {
-            // 1. ვამოწმებთ ბიბლიოთეკას
-            if (typeof supabase === 'undefined') {
-                status.innerText = "❌ შეცდომა: Supabase ვერ ჩაიტვირთა!";
-                return;
+    // ვინ ვართ და ვის ვუყურებთ
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('user');
+    const myNick = localStorage.getItem('nickname');
+
+    async function init() {
+        if (!target) {
+            document.getElementById('u-nick').innerText = "ნიკი ვერ ვიპოვნე";
+            return;
+        }
+
+        // ბაზიდან ამოღება
+        const { data: profile, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+
+        if (error) {
+            console.error(error);
+            document.getElementById('u-nick').innerText = "ბაზის შეცდომა";
+            return;
+        }
+
+        if (profile) {
+            document.getElementById('u-nick').innerText = profile.username;
+            document.getElementById('u-role').innerText = profile.role || 'Member';
+            if (profile.avatar_url) document.getElementById('u-img').src = profile.avatar_url;
+
+            // ვამოწმებთ, ვართ თუ არა ადმინი
+            if (myNick) {
+                const { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
+                if (me && (me.role === 'Admin' || me.role === 'Owner') && myNick !== target) {
+                    document.getElementById('admin-panel').style.display = 'block';
+                }
             }
-
-            const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-            
-            status.innerText = "🔍 ბაზასთან კავშირი... [OK]";
-
-            // 2. ვცდილობთ წაკითხვას
-            const myNick = localStorage.getItem('nickname') || "სტუმარი";
-            let { data, error } = await _s.from('profiles').select('username').limit(1);
-
-            if (error) {
-                status.innerText = "❌ ბაზამ უარი თქვა!";
-                details.innerHTML = `<p style="color:red">${error.message}</p>`;
-            } else {
-                status.innerText = "✅ ყველაფერი მუშაობს!";
-                details.innerHTML = `<p>ბაზა დაინახა. შენი ნიკი: <b>${myNick}</b></p>
-                                     <p>თუ ნიკი წერტილებია, ჩატში თავიდან უნდა შეხვიდე!</p>`;
-            }
-
-        } catch (err) {
-            status.innerText = "💥 კოდი გაფუჭდა!";
-            details.innerText = err.message;
+        } else {
+            document.getElementById('u-nick').innerText = "არ არსებობს";
         }
     }
 
-    // გაშვება პატარა დაგვიანებით, რომ ბიბლიოთეკა დაჯდეს
-    setTimeout(test, 1000);
+    async function changeRole(newR) {
+        if (!confirm("ნამდვილად გსურთ?")) return;
+        const { error } = await _s.from('profiles').update({ role: newR }).eq('username', target);
+        if (error) alert("შეცდომა: " + error.message);
+        else location.reload();
+    }
+
+    // გაშვება
+    init();
 </script>
+
 </body>
 </html>
