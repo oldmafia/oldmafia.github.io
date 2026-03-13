@@ -1,88 +1,70 @@
 <!DOCTYPE html>
-<html lang="ka">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>OLD MAFIA - პროფილი</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <style>
-        body { background: #0b0000; color: white; font-family: sans-serif; text-align: center; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { width: 330px; border: 2px solid red; padding: 20px; border-radius: 20px; background: #000; box-shadow: 0 0 15px red; }
-        .ava { width: 100px; height: 100px; border-radius: 50%; border: 2px solid red; object-fit: cover; }
-        .nick { color: red; font-size: 24px; font-weight: bold; margin: 10px 0; }
-        .role { color: gold; font-size: 14px; margin-bottom: 20px; }
-        .btn { display: block; width: 100%; padding: 10px; margin: 5px 0; border: 1px solid red; background: #200; color: white; cursor: pointer; border-radius: 5px; font-size: 12px; }
-        .btn:hover { background: red; color: #000; }
-        #adm { margin-top: 15px; padding-top: 10px; border-top: 1px dashed red; display: none; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body style="background: #000; color: white; font-family: sans-serif; text-align: center; padding-top: 100px;">
 
-<div class="card">
-    <img id="u-img" src="https://i.ibb.co/v3m6y6R/avatar.png" class="ava">
-    <div id="u-nick" class="nick">იტვირთება...</div>
-    <div id="u-role" class="role">...</div>
-    
-    <div id="adm">
-        <p style="font-size: 10px; color: red;">ადმინისტრირება</p>
-        <button class="btn" onclick="upd('Owner')">👑 დამფუძნებელი</button>
-        <button class="btn" onclick="upd('Admin')">🛡️ ადმინი</button>
-        <button class="btn" onclick="upd('Member')">✨ როლის ჩახსნა</button>
-        <button class="btn" onclick="upd('Ban')" style="color:yellow;">🚫 დაბლოკვა</button>
+    <div style="border: 2px solid red; padding: 20px; display: inline-block; border-radius: 15px;">
+        <img id="u-img" src="" style="width:100px; height:100px; border-radius:50%; border:2px solid red; display:none;">
+        <h1 id="u-nick">კავშირი...</h1>
+        <p id="u-role" style="color: gold;"></p>
+        
+        <div id="adm" style="display:none; border-top: 1px solid red; margin-top: 10px;">
+            <p style="color:red; font-size:10px;">ადმინ პანელი</p>
+            <button onclick="upd('Owner')" style="display:block; width:100%; margin:5px 0;">👑 დამფუძნებელი</button>
+            <button onclick="upd('Admin')" style="display:block; width:100%; margin:5px 0;">🛡️ ადმინი</button>
+            <button onclick="upd('Member')" style="display:block; width:100%; margin:5px 0;">✨ როლის ჩახსნა</button>
+            <button onclick="upd('Ban')" style="display:block; width:100%; margin:5px 0; color:red;">🚫 დაბლოკვა</button>
+        </div>
+        <br>
+        <button onclick="history.back()">⬅ უკან</button>
     </div>
 
-    <button class="btn" style="background:none; border:none; color:gray; text-decoration:underline;" onclick="history.back()">⬅ უკან</button>
-</div>
-
 <script>
-    // დავიცადოთ, სანამ ბიბლიოთეკა ჩაიტვირთება
-    window.onload = async function() {
-        const URL = "https://ftfciebnywbondaiarnc.supabase.co";
-        const KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-        
-        // ვამოწმებთ, საერთოდ არსებობს თუ არა supabase
-        if (typeof supabase === 'undefined') {
-            document.getElementById('u-nick').innerText = "ბიბლიოთეკის შეცდომა";
-            return;
-        }
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('user') || localStorage.getItem('nickname');
+    const myNick = localStorage.getItem('nickname');
 
-        const _s = supabase.createClient(URL, KEY);
-        const params = new URLSearchParams(window.location.search);
-        const target = params.get('user') || localStorage.getItem('nickname');
-        const myNick = localStorage.getItem('nickname');
+    async function load() {
+        if(!target) { document.getElementById('u-nick').innerText = "ნიკი ვერ ვიპოვნე"; return; }
 
-        if (!target) {
-            document.getElementById('u-nick').innerText = "ნიკი არ არის";
-            return;
-        }
+        let { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
 
-        // მონაცემების წამოღება
-        const { data: p, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+        if(error) { alert("შეცდომა: " + error.message); return; }
 
-        if (p) {
+        if(p) {
             document.getElementById('u-nick').innerText = p.username;
-            document.getElementById('u-role').innerText = p.role || 'Member';
-            if (p.avatar_url) document.getElementById('u-img').src = p.avatar_url;
+            document.getElementById('u-role').innerText = p.role || "Member";
+            if(p.avatar_url) {
+                const img = document.getElementById('u-img');
+                img.src = p.avatar_url;
+                img.style.display = 'inline-block';
+            }
 
             // ადმინის შემოწმება
-            if (myNick) {
-                const { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
-                if (me && (me.role === 'Admin' || me.role === 'Owner') && myNick !== target) {
+            if(myNick) {
+                let { data: me } = await _s.from('profiles').select('role').eq('username', myNick).maybeSingle();
+                if(me && (me.role === 'Admin' || me.role === 'Owner') && myNick !== target) {
                     document.getElementById('adm').style.display = 'block';
                 }
             }
         } else {
-            document.getElementById('u-nick').innerText = "ვერ მოიძებნა";
+            document.getElementById('u-nick').innerText = "იუზერი არ არსებობს";
         }
+    }
 
-        // ფუნქცია გლობალურად რომ გამოჩნდეს
-        window.upd = async function(newR) {
-            if (!confirm("დარწმუნებული ხარ?")) return;
-            const { error: err } = await _s.from('profiles').update({ role: newR }).eq('username', target);
-            if (err) alert("შეცდომა: " + err.message);
-            else location.reload();
-        };
-    };
+    async function upd(r) {
+        if(!confirm("გინდა შეცვლა?")) return;
+        const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
+        if(error) alert("ვერ შეიცვალა: " + error.message);
+        else location.reload();
+    }
+
+    load();
 </script>
-
 </body>
 </html>
