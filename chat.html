@@ -6,11 +6,11 @@
     <title>Old Mafia - ჩატი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: radial-gradient(circle, #200000 0%, #000 80%); color: white; font-family: Arial; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { margin: 0; background: #000; color: white; font-family: Arial; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-        /* ზედა ზოლი ნეონის ნათებით */
+        /* ზედა ზოლი */
         .top-bar {
-            background: #000;
+            background: #050505;
             padding: 15px 20px;
             display: flex;
             align-items: center;
@@ -19,56 +19,86 @@
             z-index: 1001;
         }
 
-        .menu-btn { font-size: 28px; color: red; cursor: pointer; text-shadow: 0 0 10px red; transition: 0.3s; }
-        .menu-btn:hover { transform: scale(1.1); }
-        .current-room-name { flex: 1; text-align: center; font-weight: bold; font-size: 20px; text-shadow: 0 0 15px red; letter-spacing: 1px; }
+        .menu-btn { font-size: 28px; color: red; cursor: pointer; text-shadow: 0 0 10px red; }
+        .current-room-name { flex: 1; text-align: center; font-weight: bold; font-size: 20px; text-shadow: 0 0 15px red; }
 
-        /* ვიწრო მენიუ მარცხნივ - "ფარდასავით" ჩამოდის */
+        /* მენიუ, რომელიც ბოლომდე ჩამოდის */
         .top-menu {
-            position: absolute; top: -110%; left: 10px; width: 260px; max-height: 75vh;
-            background: rgba(10, 0, 0, 0.95); border: 2px solid red; border-top: none;
-            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; overflow-y: auto;
-            padding: 80px 10px 20px 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px;
-            border-bottom-right-radius: 30px; box-shadow: 0 10px 40px rgba(255, 0, 0, 0.5);
+            position: absolute; 
+            top: -100%; /* დამალულია */
+            left: 0; 
+            width: 280px; /* ვიწრო სვეტი */
+            height: 100vh; /* ბოლომდე ჩამოდის */
+            background: rgba(5, 5, 5, 0.98); 
+            border-right: 2px solid red;
+            transition: 0.5s ease-in-out; 
+            z-index: 1000; 
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(255, 0, 0, 0.3);
         }
+
         .top-menu.open { top: 0; }
 
+        /* ავატარის ადგილი მენიუს თავში */
+        .menu-header {
+            padding: 80px 20px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid #300;
+            background: linear-gradient(to bottom, #1a0000, #050505);
+        }
+
+        .user-avatar-main {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid red;
+            box-shadow: 0 0 15px red;
+            margin-bottom: 10px;
+        }
+
+        .user-name-main {
+            display: block;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+
+        /* ოთახების სია */
+        .rooms-list { padding: 15px; display: flex; flex-direction: column; gap: 5px; }
+
         .room-link {
-            padding: 12px 20px; background: #000; border: 1px solid #300; border-radius: 12px;
-            cursor: pointer; color: #aaa; font-size: 14px; transition: 0.3s; text-align: left;
+            padding: 12px 15px;
+            background: #111;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #ccc;
+            font-size: 14px;
+            transition: 0.3s;
+            border-left: 3px solid transparent;
         }
-        .room-link:hover { background: #400; color: white; border-color: red; box-shadow: 0 0 10px red; transform: translateX(5px); }
 
-        /* ჩატი ავატარებით და ლამაზი ბუშტებით */
-        #chat-display { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
-        
-        .msg { display: flex; gap: 12px; align-items: flex-start; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid red; box-shadow: 0 0 8px red; object-fit: cover; }
-        
-        .msg-content { 
-            background: linear-gradient(135deg, #1a0000 0%, #050505 100%); 
-            border: 1px solid #400; padding: 12px 16px; border-radius: 4px 18px 18px 18px; 
-            max-width: 75%; box-shadow: 4px 4px 15px rgba(0,0,0,0.7);
+        .room-link:hover { 
+            background: #200; 
+            color: white; 
+            border-left-color: red;
+            padding-left: 20px;
         }
-        
-        .u-name { color: red; font-weight: bold; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .u-text { color: #f0f0f0; font-size: 15px; line-height: 1.5; }
+
+        /* ჩატი */
+        #chat-display { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { display: flex; gap: 10px; align-items: flex-start; }
+        .avatar-small { width: 40px; height: 40px; border-radius: 50%; border: 1px solid red; }
+        .msg-bubble { background: #0d0d0d; border: 1px solid #222; padding: 10px 15px; border-radius: 4px 15px 15px 15px; max-width: 80%; }
+        .u-name { color: red; font-weight: bold; font-size: 11px; display: block; }
 
         /* წერის ზონა */
-        .input-box { padding: 20px; background: #000; display: flex; gap: 12px; border-top: 2px solid #200; }
-        input { 
-            flex: 1; padding: 14px 20px; border-radius: 30px; border: 1px solid #400; 
-            background: #100; color: white; outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: red; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
-        
-        .send-btn { 
-            background: red; border: none; width: 50px; height: 50px; border-radius: 50%; 
-            color: white; cursor: pointer; box-shadow: 0 0 15px red; transition: 0.3s;
-        }
-        .send-btn:hover { transform: rotate(-10deg) scale(1.1); }
+        .input-box { padding: 15px; background: #000; display: flex; gap: 10px; border-top: 2px solid #200; }
+        input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #333; background: #111; color: white; outline: none; }
+        .send-btn { background: red; border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; box-shadow: 0 0 10px red; }
+
     </style>
 </head>
 <body>
@@ -79,27 +109,34 @@
     </div>
 
     <div id="topMenu" class="top-menu">
-        <div class="room-link" onclick="selectRoom('☕ კაფე-ბარი')">☕ კაფე-ბარი</div>
-        <div class="room-link" onclick="selectRoom('💎 ვიპ საუბრები')">💎 ვიპ საუბრები</div>
-        <div class="room-link" onclick="selectRoom('🕵️ გამოძიება')">🕵️ გამოძიება</div>
-        <div class="room-link" onclick="selectRoom('🔐 შიფროგრამა')">🔐 შიფროგრამა</div>
-        <div class="room-link" onclick="selectRoom('❓ ვიქტორინა')">❓ ვიქტორინა</div>
-        <div class="room-link" onclick="selectRoom('😵 ჩამოხრჩობანა')">😵 ჩამოხრჩობანა</div>
-        <div class="room-link" onclick="selectRoom('🕴 მაფიის ღამე')">🕴 მაფიის ღამე</div>
-        <div class="room-link" onclick="selectRoom('🃏 ჯოკერი')">🃏 ჯოკერი</div>
-        <div class="room-link" onclick="selectRoom('🎲 ნარდი')">🎲 ნარდი</div>
-        <div class="room-link" onclick="selectRoom('🎵 მუსიკა')">🎵 მუსიკა</div>
-        <div class="room-link" onclick="selectRoom('😂 იუმორი')">😂 იუმორი</div>
-        <div class="room-link" onclick="selectRoom('🛠 ადმინისტრაცია')">🛠 ადმინისტრაცია</div>
-        <div class="room-link" onclick="selectRoom('🆘 დახმარება')">🆘 დახმარება</div>
-        <div class="room-link" onclick="selectRoom('📢 ფორუმი')">📢 ფორუმი</div>
-        <div class="room-link" onclick="logout()" style="color: red; border: 1px solid red; font-weight: bold; text-align: center;">🚪 გასვლა</div>
+        <div class="menu-header">
+            <img src="https://i.ibb.co/v3m6y6R/avatar.png" class="user-avatar-main" id="myAvatar">
+            <span class="user-name-main" id="myNickDisplay">ნიკი</span>
+        </div>
+        
+        <div class="rooms-list">
+            <div class="room-link" onclick="selectRoom('☕ კაფე-ბარი')">☕ კაფე-ბარი</div>
+            <div class="room-link" onclick="selectRoom('💎 ვიპ საუბრები')">💎 ვიპ საუბრები</div>
+            <div class="room-link" onclick="selectRoom('🕵️ გამოძიება')">🕵️ გამოძიება</div>
+            <div class="room-link" onclick="selectRoom('🔐 შიფროგრამა')">🔐 შიფროგრამა</div>
+            <div class="room-link" onclick="selectRoom('❓ ვიქტორინა')">❓ ვიქტორინა</div>
+            <div class="room-link" onclick="selectRoom('😵 ჩამოხრჩობანა')">😵 ჩამოხრჩობანა</div>
+            <div class="room-link" onclick="selectRoom('🕴 მაფიის ღამე')">🕴 მაფიის ღამე</div>
+            <div class="room-link" onclick="selectRoom('🃏 ჯოკერი')">🃏 ჯოკერი</div>
+            <div class="room-link" onclick="selectRoom('🎲 ნარდი')">🎲 ნარდი</div>
+            <div class="room-link" onclick="selectRoom('🎵 მუსიკა')">🎵 მუსიკა</div>
+            <div class="room-link" onclick="selectRoom('😂 იუმორი')">😂 იუმორი</div>
+            <div class="room-link" onclick="selectRoom('🛠 ადმინისტრაცია')">🛠 ადმინისტრაცია</div>
+            <div class="room-link" onclick="selectRoom('🆘 დახმარება')">🆘 დახმარება</div>
+            <div class="room-link" onclick="selectRoom('📢 ფორუმი')">📢 ფორუმი</div>
+            <div class="room-link" onclick="logout()" style="color: red; border: 1px solid red; margin-top: 10px; text-align: center;">🚪 გასვლა</div>
+        </div>
     </div>
 
     <div id="chat-display"></div>
 
     <div class="input-box">
-        <input type="text" id="msgInput" placeholder="დაწერე რამე, ჯემო..." onkeypress="if(event.key==='Enter') sendMsg()">
+        <input type="text" id="msgInput" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') sendMsg()">
         <button class="send-btn" onclick="sendMsg()">➤</button>
     </div>
 
@@ -107,7 +144,8 @@
         const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
         let myNick = localStorage.getItem('nickname') || "სტუმარი";
         let currentRoom = "☕ კაფე-ბარი";
-        const defaultAvatar = "https://i.ibb.co/v3m6y6R/avatar.png";
+
+        document.getElementById('myNickDisplay').innerText = myNick;
 
         function toggleMenu() { document.getElementById('topMenu').classList.toggle('open'); }
 
@@ -122,20 +160,17 @@
             const { data } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
             const chat = document.getElementById('chat-display');
             chat.innerHTML = "";
-            data?.forEach(m => renderMessage(m));
+            data?.forEach(m => {
+                chat.innerHTML += `
+                    <div class="msg">
+                        <img src="https://i.ibb.co/v3m6y6R/avatar.png" class="avatar-small">
+                        <div class="msg-bubble">
+                            <span class="u-name">${m.user_nam}</span>
+                            <span class="u-text">${m.text}</span>
+                        </div>
+                    </div>`;
+            });
             chat.scrollTop = chat.scrollHeight;
-        }
-
-        function renderMessage(m) {
-            const chat = document.getElementById('chat-display');
-            chat.innerHTML += `
-                <div class="msg">
-                    <img src="${defaultAvatar}" class="avatar">
-                    <div class="msg-content">
-                        <span class="u-name">${m.user_nam}</span>
-                        <span class="u-text">${m.text}</span>
-                    </div>
-                </div>`;
         }
 
         async function sendMsg() {
@@ -149,8 +184,7 @@
 
         _s.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
             if(payload.new.room_name === currentRoom) {
-                renderMessage(payload.new);
-                document.getElementById('chat-display').scrollTop = document.getElementById('chat-display').scrollHeight;
+                loadMsgs();
             }
         }).subscribe();
 
