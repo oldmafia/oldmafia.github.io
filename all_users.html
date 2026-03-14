@@ -10,123 +10,35 @@
         * { box-sizing: border-box; }
         body { background: #030000; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* მარცხენა მენიუ (ოთახები) */
-        .sidebar-left { width: 250px; background: #050000; border-right: 2px solid var(--dark-red); display: flex; flex-direction: column; }
+        /* მარცხენა მუდმივი მენიუ (ოთახები - რაც ისედაც გაქვს) */
+        .sidebar-left { 
+            width: 250px; background: #050000; border-right: 2px solid var(--dark-red); 
+            display: flex; flex-direction: column; flex-shrink: 0;
+        }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid var(--dark-red); color: var(--bright-red); font-weight: bold; }
         .menu-item { padding: 12px 20px; color: #bbb; text-decoration: none; display: block; border-bottom: 1px solid #111; font-size: 14px; }
-        .menu-item:hover { background: #150000; color: white; }
 
-        /* მთავარი ნაწილი */
+        /* მთავარი შუა ნაწილი (არქივი) */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        
-        /* ტოპბარი: კონვერტით და ჰამბურგერით */
         .topbar { 
             height: 60px; background: black; border-bottom: 1px solid var(--dark-red); 
             display: flex; align-items: center; padding: 0 15px; justify-content: space-between; 
         }
-        .top-icons { display: flex; align-items: center; gap: 15px; }
-        .icon-btn { font-size: 24px; cursor: pointer; text-decoration: none; color: white; }
-        .hamburger-green { font-size: 28px; color: #0f0; cursor: pointer; }
 
-        /* წევრების ბარათები (140px) */
-        #users-container { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 20px; }
-        .user-card { width: 140px; padding: 15px; background: rgba(15, 0, 0, 0.8); border: 1px solid var(--dark-red); border-radius: 12px; text-align: center; cursor: pointer; }
-        .avatar-wrapper { position: relative; width: 70px; height: 70px; margin: 0 auto 10px; }
-        .u-avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-red); }
-        .status-dot { position: absolute; bottom: 3px; right: 3px; width: 12px; height: 12px; background: #555; border: 2px solid black; border-radius: 50%; }
-        .status-dot.online { background: #0f0; box-shadow: 0 0 8px #0f0; }
+        /* მარჯვენა ტოპ-იკონები */
+        .right-icons { display: flex; align-items: center; gap: 18px; }
+        .inbox-btn { font-size: 22px; text-decoration: none; }
+        .hamburger-online { font-size: 26px; color: #0f0; cursor: pointer; }
 
-        /* მარჯვენა ონლაინ სიდბარი */
+        /* მარჯვენა გამოსასვლელი მენიუ (ონლაინებისთვის) */
         .sidebar-right { 
             position: fixed; top: 0; right: -280px; width: 280px; height: 100%; 
             background: #080000; border-left: 2px solid var(--dark-red); transition: 0.3s; z-index: 3000; 
         }
         .sidebar-right.active { right: 0; }
-        .online-user-row { display: flex; align-items: center; gap: 10px; padding: 12px 15px; border-bottom: 1px solid #111; }
-        .online-user-row img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #0f0; }
+        .online-user { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #111; }
+        .online-user img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #0f0; }
 
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; }
-        .overlay.active { display: block; }
-
-        @media (max-width: 768px) { .sidebar-left { display: none; } }
-    </style>
-</head>
-<body>
-
-<div class="overlay" id="overlay" onclick="toggleOnline()"></div>
-
-<div class="sidebar-left">
-    <div class="sidebar-header">🏘️ ოთახები</div>
-    <div class="menu-list">
-        <a href="chat.html" class="menu-item">☕ კაფე-ბარი</a>
-        <a href="online.html" class="menu-item" style="color:#0f0;">🟢 ონლაინ გვერდი</a>
-        <a href="profile.html" class="menu-item">👤 ჩემი პროფილი</a>
-    </div>
-</div>
-
-<div class="main-content">
-    <div class="topbar">
-        <a href="chat.html" class="icon-btn">🏠</a>
-        <div style="font-weight:bold; color:var(--bright-red);">🗂️ არქივი</div>
-        
-        <div class="top-icons">
-            <a href="inbox.html" class="icon-btn">📩</a> <div class="hamburger-green" onclick="toggleOnline()">☰</div> </div>
-    </div>
-
-    <div id="users-container">იტვირთება...</div>
-</div>
-
-<div class="sidebar-right" id="online-sidebar">
-    <div style="padding:20px; color:#0f0; font-weight:bold; text-align:center; border-bottom:1px solid var(--dark-red);">🟢 ახლა საიტზე</div>
-    <div id="online-list-data"></div>
-</div>
-
-<script>
-    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-
-    function toggleOnline() {
-        document.getElementById('online-sidebar').classList.toggle('active');
-        document.getElementById('overlay').classList.toggle('active');
-        if(document.getElementById('online-sidebar').classList.contains('active')) loadOnlineList();
-    }
-
-    async function loadUsers() {
-        const { data: users } = await _s.from('profiles').select('*');
-        const container = document.getElementById('users-container');
-        container.innerHTML = "";
-        const now = new Date();
-
-        users?.sort((a,b) => a.username.localeCompare(b.username)).forEach(u => {
-            const lastSeen = u.last_online ? new Date(u.last_online) : null;
-            const isOnline = lastSeen && (now - lastSeen) < 300000;
-            container.innerHTML += `
-                <div class="user-card" onclick="location.href='profile.html?user=${u.username}'">
-                    <div class="avatar-wrapper">
-                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="u-avatar">
-                        <div class="status-dot ${isOnline ? 'online' : ''}"></div>
-                    </div>
-                    <div style="color:yellow; font-weight:bold; font-size:13px;">${u.username}</div>
-                    <div style="color:#888; font-size:10px;">${u.role || 'Member'}</div>
-                </div>`;
-        });
-    }
-
-    async function loadOnlineList() {
-        const { data: users } = await _s.from('profiles').select('*');
-        const list = document.getElementById('online-list-data');
-        list.innerHTML = "";
-        const now = new Date();
-
-        users?.filter(u => (now - new Date(u.last_online)) < 300000).forEach(u => {
-            list.innerHTML += `
-                <div class="online-user-row" onclick="location.href='profile.html?user=${u.username}'">
-                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                    <div style="color:${u.role === 'Owner' ? 'red' : 'white'}; font-size:14px;">${u.username}</div>
-                </div>`;
-        });
-    }
-
-    loadUsers();
-</script>
-</body>
-</html>
+        /* წევრების ბარათები (შენი 140px) */
+        #users-container { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 20px; }
+        .user-card { width: 140px; padding: 15px; background: rgba(15, 0, 0, 0.8); border: 1px solid var(--dark-red); border-radius: 12px; text-align: center; }
