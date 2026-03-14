@@ -3,84 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INBOX - OLD MAFIA</title>
+    <title>პირადი - OLD MAFIA</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
-        .header { padding: 15px; background: #000; border-bottom: 2px solid #4a0000; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
-        .back-btn { background: #111; border: 1px solid #4a0000; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .chat-title { color: #ff0000; font-weight: bold; text-shadow: 0 0 10px #ff0000; }
+        * { box-sizing: border-box; }
+        :root {
+            --dark-red: #4a0000;
+            --bright-red: #ff0000;
+            --bg-black: #050000;
+            --text-glow: 0 0 10px rgba(255, 0, 0, 0.7);
+        }
+        body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; }
         
-        #pm-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px; border-radius: 10px; max-width: 80%; border: 1px solid #222; }
-        .sent { align-self: flex-end; background: #300; border-color: #600; }
-        .received { align-self: flex-start; background: #111; border-color: #333; }
+        /* ჰედერი */
+        .header { padding: 15px; text-align: center; border-bottom: 2px solid var(--dark-red); background: black; display: flex; align-items: center; justify-content: space-between; }
+        .back-btn { color: white; text-decoration: none; font-size: 20px; cursor: pointer; }
+        .title { color: var(--bright-red); font-weight: bold; text-shadow: var(--text-glow); flex: 1; }
 
-        .input-area { padding: 15px; display: flex; gap: 10px; background: #000; border-top: 1px solid #222; }
-        input { flex: 1; background: #0a0a0a; border: 1px solid #4a0000; color: white; padding: 12px; border-radius: 20px; outline: none; }
-        button { background: #ff0000; border: none; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px #ff0000; }
+        /* კონტეინერები */
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; display: none; padding: 10px; }
+        #inbox-view.active, #chat-view.active { display: block; }
+
+        /* ინბოქსის სია (ისტორიები) */
+        .history-item {
+            background: rgba(20, 0, 0, 0.9);
+            border: 1px solid var(--dark-red);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        .unread-dot { width: 10px; height: 10px; background: var(--bright-red); border-radius: 50%; box-shadow: 0 0 8px var(--bright-red); }
+
+        /* ჩატის ვიზუალი */
+        .msg { margin-bottom: 10px; max-width: 80%; padding: 10px; border-radius: 10px; position: relative; }
+        .msg.sent { background: var(--dark-red); margin-left: auto; border-bottom-right-radius: 2px; }
+        .msg.received { background: #222; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #333; }
+        .msg-time { font-size: 9px; color: #888; margin-top: 4px; display: block; text-align: right; }
+
+        /* ინპუტი ჩატში */
+        .input-area { padding: 10px; background: black; border-top: 1px solid var(--dark-red); display: none; gap: 10px; }
+        .input-area.active { display: flex; }
+        .input-area input { flex: 1; background: #111; border: 1px solid var(--dark-red); color: white; padding: 10px; border-radius: 20px; outline: none; }
+        .send-btn { background: var(--dark-red); border: none; color: white; padding: 10px 15px; border-radius: 50%; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <button class="back-btn" onclick="location.href='chat.html'">← უკან</button>
-    <div class="chat-title" id="chat-with-title">INBOX</div>
-    <div></div>
+    <div class="back-btn" onclick="goBack()">⬅</div>
+    <div class="title" id="view-title">ინბოქსი</div>
+    <div style="width: 30px;"></div>
 </div>
 
-<div id="pm-messages"></div>
+<div id="inbox-view" class="active"></div>
 
-<div class="input-area">
-    <input type="text" id="pm-text" placeholder="დაწერე პირადი შეტყობინება...">
-    <button onclick="sendPM()">გაგზავნა</button>
+<div id="chat-view"></div>
+
+<div class="input-area" id="chat-input">
+    <input type="text" id="msg-text" placeholder="დაწერე მესიჯი...">
+    <button class="send-btn" onclick="sendMessage()">✈</button>
 </div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    const myNick = localStorage.getItem('nickname');
-    const chatWith = localStorage.getItem('chatWith');
+    let myNick = localStorage.getItem('nickname');
+    let activeChatPartner = null;
 
-    async function initInbox() {
-        if (!myNick || !chatWith) { location.href = 'chat.html'; return; }
-        document.getElementById('chat-with-title').innerText = "მიწერა: " + chatWith;
-        loadPMs();
-        
-        // რეალურ დროში მესიჯების მოსვლა
-        _s.channel('pvt_chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, loadPMs).subscribe();
+    if (!myNick) location.href = 'index.html';
+
+    // 1. ინბოქსის (ისტორიების) ჩატვირთვა
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages')
+            .select('*')
+            .or(`sender.eq.${myNick},receiver.eq.${myNick}`)
+            .order('created_at', { ascending: false });
+
+        const historyDiv = document.getElementById('inbox-view');
+        historyDiv.innerHTML = "";
+
+        if (!msgs || msgs.length === 0) {
+            historyDiv.innerHTML = "<p style='text-align:center; color:#444;'>ისტორია ცარიელია</p>";
+            return;
+        }
+
+        // ვაჯგუფებთ დიალოგებს პარტნიორების მიხედვით
+        const chats = {};
+        msgs.forEach(m => {
+            const partner = (m.sender === myNick) ? m.receiver : m.sender;
+            if (!chats[partner]) {
+                chats[partner] = { lastMsg: m.text, time: m.created_at, unread: (m.receiver === myNick && !m.is_read) };
+            }
+        });
+
+        for (const partner in chats) {
+            historyDiv.innerHTML += `
+                <div class="history-item" onclick="openChat('${partner}')">
+                    <img src="https://i.ibb.co/v3m6y6R/avatar.png" style="width:40px; border-radius:50%;">
+                    <div style="flex:1">
+                        <div style="font-weight:bold; color:var(--bright-red)">${partner}</div>
+                        <div style="font-size:12px; color:#888">${chats[partner].lastMsg}</div>
+                    </div>
+                    ${chats[partner].unread ? '<div class="unread-dot"></div>' : ''}
+                </div>`;
+        }
     }
 
-    async function loadPMs() {
-        // მესიჯების წამოღება სადაც მე ვარ გამგზავნი ან მიმღები
-        const { data } = await _s.from('private_messages')
+    // 2. კონკრეტული ჩატის გახსნა
+    async function openChat(partner) {
+        activeChatPartner = partner;
+        document.getElementById('view-title').innerText = partner;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('chat-input').classList.add('active');
+
+        // მოვნიშნოთ წაკითხულად
+        await _s.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', partner);
+        
+        loadPrivateMessages();
+    }
+
+    // 3. მესიჯების გამოტანა ჩატში
+    async function loadPrivateMessages() {
+        if (!activeChatPartner) return;
+        
+        const { data: msgs } = await _s.from('private_messages')
             .select('*')
-            .or(`and(sender.eq.${myNick},receiver.eq.${chatWith}),and(sender.eq.${chatWith},receiver.eq.${myNick})`)
+            .or(`and(sender.eq.${myNick},receiver.eq.${activeChatPartner}),and(sender.eq.${activeChatPartner},receiver.eq.${myNick})`)
             .order('created_at', { ascending: true });
 
-        const box = document.getElementById('pm-messages');
-        box.innerHTML = "";
-        data?.forEach(m => {
-            const type = m.sender === myNick ? 'sent' : 'received';
-            box.innerHTML += `<div class="msg ${type}">${m.text}</div>`;
+        const chatDiv = document.getElementById('chat-view');
+        chatDiv.innerHTML = "";
+
+        msgs?.forEach(m => {
+            const type = (m.sender === myNick) ? 'sent' : 'received';
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            chatDiv.innerHTML += `
+                <div class="msg ${type}">
+                    ${m.text}
+                    <span class="msg-time">${time}</span>
+                </div>`;
         });
-        box.scrollTop = box.scrollHeight;
-
-        // წაკითხულად მონიშვნა
-        await _s.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', chatWith);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    async function sendPM() {
-        const txt = document.getElementById('pm-text');
-        if (!txt.value.trim()) return;
+    // 4. მესიჯის გაგზავნა
+    async function sendMessage() {
+        const inp = document.getElementById('msg-text');
+        const text = inp.value.trim();
+        if (!text || !activeChatPartner) return;
 
-        await _s.from('private_messages').insert([
-            { sender: myNick, receiver: chatWith, text: txt.value.trim(), is_read: false }
-        ]);
-        txt.value = "";
-        loadPMs();
+        const { error } = await _s.from('private_messages').insert([{
+            sender: myNick,      // შენი ნიკი ავტომატურად იწერება აქ
+            receiver: activeChatPartner,
+            text: text,
+            is_read: false
+        }]);
+
+        if (!error) {
+            inp.value = "";
+            loadPrivateMessages();
+        }
     }
 
-    window.onload = initInbox;
+    function goBack() {
+        if (activeChatPartner) {
+            activeChatPartner = null;
+            document.getElementById('view-title').innerText = "ინბოქსი";
+            document.getElementById('chat-view').classList.remove('active');
+            document.getElementById('chat-input').classList.remove('active');
+            document.getElementById('inbox-view').classList.add('active');
+            loadInbox();
+        } else {
+            location.href = 'chat.html';
+        }
+    }
+
+    window.onload = loadInbox;
+    // რეალურ დროში განახლება
+    _s.channel('pms').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, () => {
+        if (activeChatPartner) loadPrivateMessages();
+        else loadInbox();
+    }).subscribe();
 </script>
 </body>
 </html>
