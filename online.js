@@ -1,5 +1,5 @@
 (function() {
-    // 1. სტილები - მუქი ჩრდილით და სწორი პოზიციით
+    // 1. სტილები (ინტერფეისი და ციფრის დიზაინი)
     const style = document.createElement('style');
     style.innerHTML = `
         .sidebar-right { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s ease; z-index: 4000; border-left: 2px solid #4a0000; display: flex; flex-direction: column; font-family: sans-serif; }
@@ -11,19 +11,19 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .menu-btn-right { cursor: pointer; font-size: 24px; color: #ff0000; position: absolute; right: 15px; top: 15px; z-index: 1001; }
         
-        /* კონვერტის ნოთიფიკაციის ციფრი */
-        #new-msg-count { 
-            position: absolute; top: -8px; right: -8px; 
+        /* კონვერტის ნოთიფიკაციის წითელი წრე */
+        #msg-badge-final { 
+            position: absolute; top: -5px; right: -5px; 
             background: #ff0000; color: white; border-radius: 50%; 
             width: 22px; height: 22px; font-size: 12px; 
             display: none; align-items: center; justify-content: center; 
-            font-weight: bold; border: 2px solid #fff; 
-            box-shadow: 0 4px 10px rgba(0,0,0,1); z-index: 10001;
+            font-weight: bold; border: 2px solid white; 
+            box-shadow: 0 0 10px rgba(0,0,0,1); 
         }
     `;
     document.head.appendChild(style);
 
-    // 2. გვერდითა მენიუ (ონლაინები)
+    // 2. ონლაინების გვერდითა პანელი
     const sidebar = document.createElement('div');
     sidebar.id = 'sidebar-right';
     sidebar.className = 'sidebar-right';
@@ -60,40 +60,41 @@
         });
     };
 
-    // 3. კონვერტის ღილაკი - გამოწეული მარცხნივ (right: 80px)
-    const inboxDiv = document.createElement('div');
-    inboxDiv.id = 'floating-inbox-v2';
-    inboxDiv.innerHTML = `
-        <div style="position: relative; width: 55px; height: 55px; background: #800000; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff0000; box-shadow: 0 8px 25px rgba(0,0,0,1);">
+    // 3. კონვერტის ღილაკი (თვითმფრინავის მარცხნივ)
+    const inboxBtn = document.createElement('div');
+    inboxBtn.id = 'main-inbox-trigger';
+    inboxBtn.innerHTML = `
+        <div style="position: relative; width: 55px; height: 55px; background: #600000; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff0000; box-shadow: 0 10px 20px rgba(0,0,0,0.9);">
             <span style="font-size: 24px;">✉️</span>
-            <div id="new-msg-count">0</div>
+            <div id="msg-badge-final">0</div>
         </div>
     `;
-    inboxDiv.style = "position: fixed; bottom: 30px; right: 80px; cursor: pointer; z-index: 10000; transition: 0.3s;";
-    inboxDiv.onclick = () => window.location.href = 'inbox.html';
-    document.body.appendChild(inboxDiv);
+    // right: 85px რომ არ დაეფაროს თვითმფრინავს
+    inboxBtn.style = "position: fixed; bottom: 25px; right: 85px; cursor: pointer; z-index: 10000;";
+    inboxBtn.onclick = () => window.location.href = 'inbox.html';
+    document.body.appendChild(inboxBtn);
 
-    // 4. ციფრის განახლების ლოგიკა
-    async function checkMessages() {
-        if (typeof myNick === 'undefined') return;
-        try {
-            const { count, error } = await _s
-                .from('direct_messages')
-                .select('*', { count: 'exact', head: true })
-                .eq('receiver_id', myNick)
-                .eq('is_read', false);
+    // 4. წაუკითხავი მესიჯების თვლა (შენი ბაზის მიხედვით)
+    async function updateUnreadBadge() {
+        if (typeof myNick === 'undefined' || !myNick) return;
+        
+        // ვიყენებთ 'private_messages' და 'receiver' სვეტს, როგორც ინბოქსში გაქვს
+        const { count, error } = await _s
+            .from('private_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver', myNick)
+            .eq('is_read', false);
 
-            const badge = document.getElementById('new-msg-count');
-            if (!error && count > 0) {
-                badge.innerText = count;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        } catch (e) { console.error(e); }
+        const badge = document.getElementById('msg-badge-final');
+        if (!error && count > 0) {
+            badge.innerText = count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
     }
 
-    // ზედა ზოლის ღილაკი 👥
+    // 👥 ღილაკი ტოპბარში
     const topbar = document.querySelector('.topbar');
     if (topbar) {
         const btn = document.createElement('div');
@@ -107,9 +108,10 @@
         if (!sidebar.contains(e.target) && sidebar.classList.contains('active')) sidebar.classList.remove('active');
     });
 
+    // ინტერვალები
     setInterval(updateMyPresence, 30000);
     setInterval(loadOnlineUsers, 15000);
-    setInterval(checkMessages, 3000); // ყოველ 3 წამში ამოწმებს
+    setInterval(updateUnreadBadge, 4000); // ყოველ 4 წამში ამოწმებს ბაზას
     
-    setTimeout(() => { updateMyPresence(); loadOnlineUsers(); checkMessages(); }, 1000);
+    setTimeout(() => { updateMyPresence(); loadOnlineUsers(); updateUnreadBadge(); }, 1000);
 })();
