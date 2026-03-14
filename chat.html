@@ -9,8 +9,7 @@
         * { box-sizing: border-box; }
         :root {
             --dark-red: #4a0000; --deep-red: #800000; --bright-red: #ff0000;
-            --blood-red: #660000; --bg-black: #030000; --text-glow: 0 0 10px rgba(255, 0, 0, 0.7);
-            --shadow-red: rgba(138, 0, 0, 0.5);
+            --blood-red: #660000; --bg-black: #030000;
         }
         body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
@@ -20,27 +19,35 @@
         
         .chat-area { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: radial-gradient(circle at center, #1a0000 0%, #030000 100%); }
         .msg-container { display: flex; align-items: flex-start; gap: 10px; max-width: 95%; }
-        .msg-avatar { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--dark-red); object-fit: cover; cursor: pointer; }
         
+        .avatar-wrapper { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+        .msg-avatar { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--dark-red); object-fit: cover; cursor: pointer; }
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: #0f0; border: 2px solid black; border-radius: 50%; display: none; }
+        .online-dot.active { display: block; box-shadow: 0 0 8px #0f0; }
+
         .bubble { background: rgba(15, 0, 0, 0.85); border: 1px solid var(--blood-red); padding: 10px 14px; border-radius: 4px 18px 18px 18px; position: relative; }
         .m-nick { font-weight: bold; color: #ff3333; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .m-time { font-size: 10px; color: #666; font-weight: normal; }
-        .del-msg { color: #444; cursor: pointer; font-size: 12px; margin-left: 8px; }
-        .del-msg:hover { color: red; }
+        .del-msg { color: #444; cursor: pointer; font-size: 14px; margin-left: 8px; }
 
         .input-zone { background: black; padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--dark-red); }
         .input-zone input { flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--blood-red); background: #080000; color: white; outline: none; }
         .send-btn { background: var(--dark-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: cyan; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; }
 
+        #floating-inbox { position: fixed; bottom: 85px; right: 20px; width: 55px; height: 55px; background: #4a0000; border: 2px solid #ff0000; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2000; cursor: pointer; box-shadow: 0 0 15px rgba(255,0,0,0.5); transition: 0.3s; }
+        #floating-inbox:hover { transform: scale(1.1); }
+
         .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-right: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3500; }
         .overlay.active { display: block; }
+        
         .sidebar-header { padding: 25px 15px; text-align: center; border-bottom: 2px solid var(--dark-red); }
         .sidebar-header img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--dark-red); object-fit: cover; cursor: pointer; }
         
         .rooms-list { flex: 1; overflow-y: auto; padding: 10px 0; }
         .room-item { padding: 12px 20px; cursor: pointer; color: #999; border-bottom: 1px solid #150000; font-size: 14px; }
+        .room-item:hover { background: #1a0000; }
         .room-item.active { background: var(--dark-red); color: white; font-weight: bold; }
 
         .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; }
@@ -50,6 +57,7 @@
 </head>
 <body>
 
+<div id="floating-inbox" onclick="location.href='inbox.html'"><span>✉️</span></div>
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
 <div class="sidebar" id="sidebar">
@@ -75,7 +83,7 @@
         <div class="room-item" onclick="changeRoom('🏛️ ფორუმი', this)">🏛️ ფორუმი</div>
         <div class="room-item" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
         <div class="room-item" onclick="changeRoom('🆘 დახმარება', this)">🆘 დახმარება</div>
-        <div class="room-item" onclick="window.location.href='all_users.html'">🗂️ ყველა წევრი</div>
+        <div class="room-item" style="color:cyan" onclick="window.location.href='all_users.html'">🗂️ ყველა წევრი</div>
     </div>
     <div style="padding:15px; text-align:center; color:var(--bright-red); cursor:pointer; font-weight:bold; border-top:1px solid #111;" onclick="logout()">🚪 გასვლა</div>
 </div>
@@ -127,21 +135,48 @@
             document.getElementById('my-nick-label').innerText = p.username;
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
+            updateOnline(); setInterval(updateOnline, 30000);
         }
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-    async function deleteMsg(id) {
-        if (confirm("წავშალოთ მესიჯი?")) await _s.from('messages').delete().eq('id', id);
+    async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
+
+    async function loadMessages() {
+        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+        const { data: profs } = await _s.from('profiles').select('*');
+        const box = document.getElementById("chat"); box.innerHTML = "";
+        const now = new Date();
+
+        msgs?.forEach(m => {
+            const p = profs?.find(u => u.username === m.user_name);
+            const authorRole = p?.role || "Member";
+            const time = new Date(m.created_at).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
+            let onlineClass = (p?.last_online && (now - new Date(p.last_online) < 60000)) ? "active" : "";
+
+            let delBtn = "";
+            if (myRole === "Owner" || (myRole === "Admin" && authorRole !== "Owner")) {
+                delBtn = `<span class="del-msg" onclick="deleteMsg(${m.id}, '${authorRole}')">🗑️</span>`;
+            }
+            
+            box.innerHTML += `<div class="msg-container">
+                <div class="avatar-wrapper">
+                    <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')">
+                    <div class="online-dot ${onlineClass}"></div>
+                </div>
+                <div class="bubble">
+                    <span class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name} <span class="m-time">${time}</span> ${delBtn}</span>
+                    <div style="color:#ddd; margin-top:3px;">${m.text}</div>
+                </div>
+            </div>`;
+        });
+        box.scrollTop = box.scrollHeight;
     }
 
-    async function setRole(r) {
-        const t = document.getElementById('targetName').innerText;
-        if (confirm(`შეუცვალოთ ${t}-ს როლი: ${r}?`)) {
-            await _s.from('profiles').update({ role: r }).eq('username', t);
-            alert("განახლდა!"); closeModal(); location.reload();
-        }
+    async function deleteMsg(id, authorRole) {
+        if (myRole === "Admin" && authorRole === "Owner") return alert("დამფუძნებლის მესიჯს ვერ წაშლით!");
+        if (confirm("წავშალოთ?")) await _s.from('messages').delete().eq('id', id);
     }
 
     async function openProfile(n) {
@@ -156,31 +191,11 @@
             document.getElementById('send-pm-btn').onclick = () => { localStorage.setItem('chatWith', n); location.href = 'inbox.html'; };
 
             const adm = document.getElementById('adminOptions');
-            if (myRole === "Owner" || (myRole === "Admin" && p.role !== "Owner")) adm.style.display = "block";
+            if (n !== myNick && (myRole === "Owner" || (myRole === "Admin" && p.role !== "Owner"))) adm.style.display = "block";
             else adm.style.display = "none";
 
             document.getElementById('userModal').style.display = "flex";
         }
-    }
-
-    async function loadMessages() {
-        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-        const { data: profs } = await _s.from('profiles').select('*');
-        const box = document.getElementById("chat"); box.innerHTML = "";
-        msgs?.forEach(m => {
-            const p = profs?.find(u => u.username === m.user_name);
-            const time = new Date(m.created_at).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const delBtn = (myRole === "Owner" || myRole === "Admin") ? `<span class="del-msg" onclick="deleteMsg(${m.id})">🗑️</span>` : "";
-            
-            box.innerHTML += `<div class="msg-container">
-                <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')">
-                <div class="bubble">
-                    <span class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name} <span class="m-time">${time}</span> ${delBtn}</span>
-                    <div style="color:#ddd; margin-top:3px;">${m.text}</div>
-                </div>
-            </div>`;
-        });
-        box.scrollTop = box.scrollHeight;
     }
 
     async function sendMsg() {
@@ -194,6 +209,12 @@
         currentRoom = n; document.getElementById('room-name').innerText = n; 
         document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active'); toggleMenu(); loadMessages(); 
+    }
+
+    async function setRole(r) {
+        const t = document.getElementById('targetName').innerText;
+        await _s.from('profiles').update({ role: r }).eq('username', t);
+        alert("განახლდა!"); closeModal(); location.reload();
     }
 
     async function changeStatus() {
@@ -213,9 +234,6 @@
 
     function logout() { localStorage.removeItem('nickname'); location.reload(); }
     window.onload = init;
-</script> 
-
-<script src="online.js"></script>
-
+</script>
 </body>
 </html>
