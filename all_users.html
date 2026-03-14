@@ -3,117 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OLD MAFIA - არქივი</title>
+    <title>OLD MAFIA - წევრები</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        :root { --dark-red: #4a0000; --bright-red: #ff0000; }
         * { box-sizing: border-box; }
-        body { background: #030000; color: white; font-family: sans-serif; margin: 0; padding: 15px; }
+        body { background: #030000; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* ზედა პანელი */
-        .top-nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid #4a0000;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-        .back-link { color: #ff0000; text-decoration: none; font-weight: bold; font-size: 18px; }
-        .page-title { color: white; font-size: 18px; margin: 0; }
+        /* მარცხენა მენიუ (ოთახები) */
+        .sidebar-left { width: 240px; background: #050000; border-right: 2px solid var(--dark-red); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid var(--dark-red); color: var(--bright-red); font-weight: bold; }
+        .menu-item { padding: 12px 20px; color: #bbb; text-decoration: none; display: block; font-size: 14px; border-bottom: 1px solid #110000; }
+        .menu-item:hover { background: #150000; color: white; border-left: 4px solid var(--bright-red); }
 
-        /* მომხმარებლების კონტეინერი */
-        #users-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-        }
+        /* მთავარი კონტენტი */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .topbar { height: 60px; background: black; border-bottom: 1px solid var(--dark-red); display: flex; align-items: center; padding: 0 15px; justify-content: space-between; }
 
-        /* მომხმარებლის ბარათი (შენი სტილით) */
-        .user-card {
-            width: 140px; 
-            padding: 15px;
-            background: rgba(15, 0, 0, 0.8);
-            border: 1px solid #4a0000;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.3s;
+        /* მარჯვენა ონლაინ მენიუ */
+        .sidebar-right { 
+            position: fixed; top: 0; right: -260px; width: 260px; height: 100%; 
+            background: #080000; border-left: 2px solid var(--dark-red); transition: 0.3s; z-index: 3000; 
         }
-        .user-card:hover { border-color: #ff0000; transform: translateY(-5px); }
+        .sidebar-right.active { right: 0; }
+        .online-header { padding: 15px; background: #110000; color: #0f0; font-weight: bold; text-align: center; border-bottom: 1px solid var(--dark-red); }
+        
+        /* წევრების ბარათები */
+        #users-container { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 20px; }
+        
+        .user-card { width: 140px; padding: 15px; background: rgba(15, 0, 0, 0.8); border: 1px solid var(--dark-red); border-radius: 12px; text-align: center; }
+        .avatar-wrapper { position: relative; width: 70px; height: 70px; margin: 0 auto 10px; }
+        .u-avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 1px solid var(--dark-red); }
+        .status-dot { position: absolute; bottom: 3px; right: 3px; width: 12px; height: 12px; background: #555; border: 2px solid black; border-radius: 50%; }
+        .status-dot.online { background: #0f0; box-shadow: 0 0 8px #0f0; }
 
-        /* ავატარი და ონლაინ წერტილი (შენი სტილით) */
-        .avatar-wrapper {
-            position: relative;
-            width: 70px;
-            height: 70px;
-            margin: 0 auto 10px;
-        }
-        .u-avatar {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #4a0000;
-        }
-        .status-dot {
-            position: absolute;
-            bottom: 3px;
-            right: 3px;
-            width: 13px;
-            height: 13px;
-            background: #555; /* ოფლაინი */
-            border: 2px solid black;
-            border-radius: 50%;
-        }
-        .status-dot.online {
-            background: #0f0;
-            box-shadow: 0 0 8px #0f0;
-        }
+        /* ონლაინ სიის ელემენტები */
+        .online-item { padding: 10px; border-bottom: 1px solid #1a0000; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+        .online-item img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--dark-red); }
 
-        .u-name { color: yellow; font-weight: bold; font-size: 14px; margin: 5px 0; overflow: hidden; }
-        .u-role { color: #888; font-size: 10px; text-transform: uppercase; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500; }
+        .overlay.active { display: block; }
 
-        /* მობილურზე მორგება */
-        @media (max-width: 380px) {
-            .user-card { width: 130px; padding: 10px; }
+        @media (max-width: 768px) {
+            .sidebar-left { display: none; } /* მობილურზე მარცხენა დავმალოთ რომ ადგილი დარჩეს */
         }
     </style>
 </head>
 <body>
 
-<div class="top-nav">
-    <a href="chat.html" class="back-link">← უკან</a>
-    <h2 class="page-title">📂 სრული არქივი</h2>
-    <div style="width: 40px;"></div> </div>
+<div class="overlay" id="overlay" onclick="toggleOnline()"></div>
 
-<div id="users-container">იტვირთება...</div>
+<div class="sidebar-left">
+    <div class="sidebar-header">🏘️ ოთახები</div>
+    <div class="menu-list">
+        <a href="chat.html" class="menu-item">☕ კაფე-ბარი</a>
+        <a href="chat.html?room=Mafia" class="menu-item">🔫 მაფია</a>
+        <a href="profile.html" class="menu-item">👤 ჩემი პროფილი</a>
+        <div class="menu-item" onclick="localStorage.clear(); location.href='index.html'" style="color:red; cursor:pointer;">🚪 გასვლა</div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="topbar">
+        <div style="font-weight:bold; color:var(--bright-red);">📂 წევრების არქივი</div>
+        <div style="font-size:24px; color:#0f0; cursor:pointer;" onclick="toggleOnline()">👥</div>
+    </div>
+    <div id="users-container">იტვირთება...</div>
+</div>
+
+<div class="sidebar-right" id="online-sidebar">
+    <div class="online-header">🟢 ახლა საიტზე</div>
+    <div id="online-list-content" style="overflow-y:auto; height: calc(100% - 50px);"></div>
+</div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
 
-    async function loadUsers() {
+    function toggleOnline() {
+        document.getElementById('online-sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+        if(document.getElementById('online-sidebar').classList.contains('active')) loadOnlineList();
+    }
+
+    async function loadAll() {
         const { data: users } = await _s.from('profiles').select('*');
         const container = document.getElementById('users-container');
         container.innerHTML = "";
-        
         const now = new Date();
 
-        // დავალაგოთ როლების მიხედვით
         const order = { 'Owner': 1, 'Admin': 2, 'Member': 3 };
         users.sort((a, b) => (order[a.role] || 3) - (order[b.role] || 3));
 
         users.forEach(u => {
-            // ონლაინ სტატუსის შემოწმება (5 წუთი)
             const lastSeen = u.last_online ? new Date(u.last_online) : null;
             const isOnline = lastSeen && (now - lastSeen) < 300000;
-            const dotClass = isOnline ? "online" : "";
-
+            
             container.innerHTML += `
                 <div class="user-card" onclick="location.href='profile.html?user=${u.username}'">
                     <div class="avatar-wrapper">
                         <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="u-avatar">
-                        <div class="status-dot ${dotClass}"></div>
+                        <div class="status-dot ${isOnline ? 'online' : ''}"></div>
                     </div>
                     <div class="u-name">${u.username}</div>
                     <div class="u-role">${u.role || 'Member'}</div>
@@ -122,10 +111,26 @@
         });
     }
 
-    loadUsers();
-    // განახლება ყოველ 30 წამში
-    setInterval(loadUsers, 30000);
-</script>
+    async function loadOnlineList() {
+        const { data: users } = await _s.from('profiles').select('*');
+        const cont = document.getElementById('online-list-content');
+        cont.innerHTML = "";
+        const now = new Date();
 
+        users.filter(u => {
+            const lastSeen = u.last_online ? new Date(u.last_online) : null;
+            return lastSeen && (now - lastSeen) < 300000;
+        }).forEach(u => {
+            cont.innerHTML += `
+                <div class="online-item">
+                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                    <span style="color:${u.role === 'Owner' ? 'red' : 'white'}">${u.username}</span>
+                </div>
+            `;
+        });
+    }
+
+    loadAll();
+</script>
 </body>
 </html>
