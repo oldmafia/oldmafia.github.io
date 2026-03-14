@@ -48,10 +48,24 @@
         .input-area { padding: 10px; background: black; border-top: 1px solid var(--dark-red); display: none; gap: 10px; }
         .input-area.active { display: flex; }
         .input-area input { flex: 1; background: #111; border: 1px solid var(--dark-red); color: white; padding: 10px; border-radius: 20px; outline: none; }
-        .send-btn { background: var(--dark-red); border: none; color: white; padding: 10px 15px; border-radius: 50%; cursor: pointer; }
-    </style>
-</head>
-<body>
+        .send-btn { 
+    background: var(--dark-red); 
+    border: none; 
+    width: 45px; 
+    height: 45px; 
+    border-radius: 50%; 
+    color: cyan; 
+    cursor: pointer; 
+    font-size: 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: 0.3s;
+    box-shadow: 0 0 10px rgba(138, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+.send-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px cyan; }
+        <body>
 
 <div class="header">
     <div class="back-btn" onclick="goBack()">⬅</div>
@@ -79,10 +93,10 @@
     async function loadInbox() {
         const { data: msgs } = await _s.from('private_messages')
             .select('*')
-            .or(`sender.eq.${myNick},receiver.eq.${myNick}`)
-            .order('created_at', { ascending: false });
-
-        const historyDiv = document.getElementById('inbox-view');
+           <div class="input-area" id="chat-input">
+    <input type="text" id="msg-text" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" onclick="sendMessage()">✈</button>
+</div>
         historyDiv.innerHTML = "";
 
         if (!msgs || msgs.length === 0) {
