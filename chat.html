@@ -160,7 +160,31 @@
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
         const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; }
     }
+async function toggleEmojiPicker() {
+    const picker = document.getElementById('emoji-picker');
+    const list = document.getElementById('emoji-list');
+    picker.style.display = (picker.style.display === 'none' || picker.style.display === '') ? 'block' : 'none';
 
+    if (picker.style.display === 'block' && list.innerHTML === "") {
+        const { data: emojiData } = await _s.from('emojis').select('name');
+        const storageBase = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+
+        emojiData?.forEach(emoji => {
+            const code = emoji.name.replace('.gif', '');
+            const img = document.createElement('img');
+            img.src = `${storageBase}${emoji.name}`;
+            img.style.width = "38px";
+            img.style.margin = "5px";
+            img.style.cursor = "pointer";
+            img.onclick = () => {
+                const input = document.getElementById('msg-input');
+                input.value += ` :${code}: `;
+                input.focus();
+            };
+            list.appendChild(img);
+        });
+    }
+}
     async function loadOnline() {
         const list = document.getElementById('online-list-content'); list.innerHTML = "...";
         const { data: users } = await _s.from('profiles').select('*');
@@ -180,47 +204,45 @@
                          renderGrp("👤 წევრები", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), "#0f0");
     }
 
-    async function loadMessages() {
-        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-        const { data: profs } = await _s.from('profiles').select('*');
-        const box = document.getElementById("chat"); box.innerHTML = "";
-        const now = new Date();
-        
-        msgs?.forEach(m => {
-            const p = profs?.find(u => u.username === m.user_name);
-            let active = (p?.last_online && (now - new Date(p.last_online) < 300000)) ? "active" : "";
-            
-            // საათის ფორმატირება
-            const d = new Date(m.created_at);
-            const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
+  async function loadMessages() {
+    const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
+    const { data: profs } = await _s.from('profiles').select('*');
+    const box = document.getElementById("chat");
+    box.innerHTML = "";
+    const storageBase = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
 
-            // წაშლის უფლების შემოწმება
-            let delBtn = "";
-            if (myRole === "Owner") {
-                delBtn = `<span class="del-msg" onclick="deleteMsg(${m.id})">🗑️</span>`;
-            } else if (myRole === "Admin" && p?.role !== "Owner") {
-                delBtn = `<span class="del-msg" onclick="deleteMsg(${m.id})">🗑️</span>`;
-            }
+    msgs?.forEach(m => {
+        const p = profs?.find(u => u.username === m.user_name);
+        let active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
+        const d = new Date(m.created_at);
+        const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
 
-            box.innerHTML += `<div class="msg-container">
-                <div class="avatar-wrapper">
-                    <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
-                    <div class="online-dot ${active}"></div>
-                </div>
-                <div class="bubble">
-                    <div class="m-nick" onclick="openProfile('${m.user_name}')">
-                        <span>${m.user_name}</span>
-                        ${delBtn}
-                    </div>
-                    <div class="m-text">${m.text}</div>
-                    <div class="m-footer">
-                        <span class="m-time">${timeStr}</span>
-                    </div>
-                </div>
-            </div>`;
+        let formattedText = m.text;
+        formattedText = formattedText.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => {
+            return `<img src="${storageBase}${name}.gif" class="chat-emoji" onerror="this.replaceWith('${match}')">`;
         });
-        box.scrollTop = box.scrollHeight;
-    }
+
+        let delBtn = "";
+        if (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) {
+            delBtn = `<span class="del-msg" onclick="deleteMsg(${m.id})">🗑️</span>`;
+        }
+
+        box.innerHTML += `<div class="msg-container">
+            <div class="avatar-wrapper">
+                <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')">
+                <div class="online-dot ${active}"></div>
+            </div>
+            <div class="bubble">
+                <div class="m-nick" onclick="openProfile('${m.user_name}')"><span>${m.user_name}</span> ${delBtn}</div>
+                <div class="m-text">${formattedText}</div>
+                <div class="m-footer"><span class="m-time">${timeStr}</span></div>
+            </div>
+        </div>`;
+    });
+    box.scrollTop = box.scrollHeight;
+}
+                   
+    
 
     async function sendMsg() {
         const i = document.getElementById("msg-input"); if (!i.value.trim() || myRole === "Banned") return;
