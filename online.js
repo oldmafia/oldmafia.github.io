@@ -1,5 +1,5 @@
 (function() {
-    // 1. სტილები (ონლაინების და კონვერტის)
+    // 1. სტილები (ონლაინების, კონვერტის და მუქი ჩრდილის)
     const style = document.createElement('style');
     style.innerHTML = `
         .sidebar-right { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s ease; z-index: 4000; border-left: 2px solid #4a0000; display: flex; flex-direction: column; font-family: sans-serif; }
@@ -11,31 +11,25 @@
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .menu-btn-right { cursor: pointer; font-size: 24px; color: #ff0000; position: absolute; right: 15px; top: 15px; z-index: 1001; }
         
-        /* კონვერტის ნოთიფიკაციის სტილი */
-        #msg-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: none; align-items: center; justify-content: center; font-weight: bold; border: 1.5px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        /* კონვერტის ნოთიფიკაციის და ჩრდილის სტილი */
+        #msg-badge { position: absolute; top: -5px; right: -5px; background: #ff0000; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: none; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .inbox-shadow { box-shadow: 0 10px 20px rgba(0,0,0,0.9), 0 0 15px rgba(255,0,0,0.2) !important; }
     `;
     document.head.appendChild(style);
 
-    // 2. ონლაინების გვერდითა მენიუ
+    // 2. ონლაინების მენიუ
     const sidebar = document.createElement('div');
     sidebar.id = 'sidebar-right';
     sidebar.className = 'sidebar-right';
-    sidebar.innerHTML = `
-        <div style="padding: 20px; border-bottom: 1px solid #4a0000; text-align: center;">
-            <h3 style="color:#ff0000; margin:0; font-size: 16px;">🟢 ონლაინშია</h3>
-        </div>
-        <div id="user-list-container" class="user-list"></div>
-    `;
+    sidebar.innerHTML = `<div style="padding: 20px; border-bottom: 1px solid #4a0000; text-align: center;"><h3 style="color:#ff0000; margin:0; font-size: 16px;">🟢 ონლაინშია</h3></div><div id="user-list-container" class="user-list"></div>`;
     document.body.appendChild(sidebar);
 
-    // 3. ონლაინ სტატუსის განახლება
     async function updateMyPresence() {
         if (typeof myNick !== 'undefined') {
             await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
         }
     }
 
-    // 4. იუზერების სია
     window.loadOnlineUsers = async function() {
         const { data: users, error } = await _s.from('profiles').select('*');
         if (error) return;
@@ -54,33 +48,34 @@
             if (onlineUsers.length > 0) {
                 container.innerHTML += `<div class="role-group-title">${roleMap[role]}</div>`;
                 onlineUsers.forEach(u => {
-                    container.innerHTML += `
-                        <div class="user-item">
-                            <div class="status-dot-online"></div>
-                            <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1px solid #444;">
-                            <span style="color: ${role === 'Owner' ? '#ff0' : (role === 'Admin' ? '#f55' : '#ccc')}">${u.username}</span>
-                        </div>`;
+                    container.innerHTML += `<div class="user-item"><div class="status-dot-online"></div><img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1px solid #444;"><span style="color: ${role === 'Owner' ? '#ff0' : (role === 'Admin' ? '#f55' : '#ccc')}">${u.username}</span></div>`;
                 });
             }
         });
     };
 
-    // 5. კონვერტის (Inbox) ღილაკი და ციფრი
+    // 3. კონვერტის ღილაკი (გამოწეული მარცხნივ + მუქი ჩრდილი)
     const inboxBtn = document.createElement('div');
     inboxBtn.innerHTML = `
-        <div style="position: relative; width: 50px; height: 50px; background: #800000; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff0000; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
-            ✉️
+        <div class="inbox-shadow" style="position: relative; width: 55px; height: 55px; background: #600000; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff0000; transition: 0.3s;">
+            <span style="font-size: 24px;">✉️</span>
             <div id="msg-badge">0</div>
         </div>
     `;
-    inboxBtn.style = "position: fixed; bottom: 90px; right: 20px; cursor: pointer; z-index: 10000;";
+    // right: 85px გამოწევს მარცხნივ, bottom: 25px დასვამს გაგზავნის ველის გასწვრივ
+    inboxBtn.style = "position: fixed; bottom: 25px; right: 85px; cursor: pointer; z-index: 10000;";
     inboxBtn.onclick = () => window.location.href = 'inbox.html';
     document.body.appendChild(inboxBtn);
 
-    // 6. წაუკითხავი მესიჯების დათვლა
+    // 4. მესიჯების ციფრის განახლება
     async function updateUnreadCount() {
         if (typeof myNick === 'undefined') return;
-        const { count, error } = await _s.from('direct_messages').select('*', { count: 'exact', head: true }).eq('receiver_id', myNick).eq('is_read', false);
+        const { count, error } = await _s
+            .from('direct_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', myNick)
+            .eq('is_read', false);
+
         const badge = document.getElementById('msg-badge');
         if (!error && count > 0) {
             badge.innerText = count;
@@ -90,7 +85,7 @@
         }
     }
 
-    // 7. ღილაკი ზედა ზოლში (👥)
+    // ღილაკი 👥
     const topbar = document.querySelector('.topbar');
     if (topbar) {
         const btn = document.createElement('div');
@@ -104,10 +99,9 @@
         if (!sidebar.contains(e.target) && sidebar.classList.contains('active')) sidebar.classList.remove('active');
     });
 
-    // ინტერვალები
     setInterval(updateMyPresence, 30000);
     setInterval(loadOnlineUsers, 15000);
-    setInterval(updateUnreadCount, 5000); // 5 წამში ერთხელ ამოწმებს ახალ მესიჯს
+    setInterval(updateUnreadCount, 4000); // ყოველ 4 წამში შეამოწმებს SMS-ს
     
     setTimeout(() => { updateMyPresence(); loadOnlineUsers(); updateUnreadCount(); }, 1000);
 })();
