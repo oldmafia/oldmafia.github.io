@@ -2,51 +2,102 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ყველა წევრი - OLD MAFIA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --dark-red: #4a0000; --bright-red: #ff0000; }
-        body { background: #050000; color: white; font-family: sans-serif; margin: 0; padding: 20px; }
-        .header { display: flex; align-items: center; border-bottom: 2px solid var(--dark-red); padding-bottom: 10px; margin-bottom: 20px; }
-        .back-btn { cursor: pointer; color: var(--bright-red); font-size: 24px; margin-right: 20px; text-decoration: none; }
-        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-        .user-card { background: #111; border: 1px solid #333; padding: 15px; border-radius: 10px; text-align: center; transition: 0.3s; }
-        .user-card:hover { border-color: var(--bright-red); transform: translateY(-5px); }
-        .user-card img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--dark-red); margin-bottom: 10px; }
-        .user-name { font-weight: bold; display: block; margin-bottom: 5px; }
-        .user-role { font-size: 10px; text-transform: uppercase; color: #666; }
+        :root { --dark-red: #4a0000; --bright-red: #ff0000; --glow: 0 0 10px rgba(255, 0, 0, 0.5); }
+        body { background: #050000; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        
+        .header { display: flex; align-items: center; border-bottom: 2px solid var(--dark-red); padding-bottom: 15px; margin-bottom: 25px; }
+        .back-btn { cursor: pointer; color: var(--bright-red); font-size: 28px; margin-right: 20px; text-decoration: none; transition: 0.3s; }
+        .back-btn:hover { transform: scale(1.2); text-shadow: var(--glow); }
+
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+        
+        .user-card { 
+            background: #0a0a0a; 
+            border: 1px solid #1a1a1a; 
+            padding: 20px; 
+            border-radius: 12px; 
+            text-align: center; 
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .user-card:hover { 
+            border-color: var(--bright-red); 
+            transform: translateY(-8px); 
+            box-shadow: 0 0 20px rgba(138, 0, 0, 0.3);
+        }
+        
+        .user-card img { 
+            width: 70px; 
+            height: 70px; 
+            border-radius: 50%; 
+            border: 2px solid var(--dark-red); 
+            margin-bottom: 12px;
+            object-fit: cover;
+        }
+        
+        .user-name { font-weight: bold; display: block; margin-bottom: 5px; font-size: 16px; letter-spacing: 0.5px; }
+        .user-role { font-size: 11px; text-transform: uppercase; color: #555; font-weight: bold; letter-spacing: 1px; }
+        
+        #loader { text-align: center; color: var(--bright-red); margin-top: 50px; font-size: 18px; }
     </style>
 </head>
 <body>
+
     <div class="header">
         <a href="chat.html" class="back-btn">←</a>
-        <h2>🗂️ მაფიოზების სრული არქივი</h2>
+        <h2 style="margin:0; text-shadow: var(--glow);">🗂️ მაფიოზების სრული არქივი</h2>
     </div>
-    <div id="users-grid" class="user-grid">ჩატვირთვა...</div>
+
+    <div id="loader">იტვირთება მონაცემები...</div>
+    <div id="users-grid" class="user-grid"></div>
 
     <script>
-        // აქ ჩასვი შენი Supabase-ის მონაცემები (როგორც chat.html-ში გაქვს)
-        const _s = supabase.createClient('შენი_URL', 'შენი_KEY');
+        // შენი Supabase მონაცემები
+        const SB_URL = "https://eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI.supabase.co"; // შენი URL-ის დასაწყისი აქ უნდა იყოს
+        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+
+        // კლიენტის ინიციალიზაცია
+        const _s = supabase.createClient(
+            "https://zsqvupwstzshvbgclmvu.supabase.co", // აქ ჩემი მაგალითია, შენი რეალური URL ჩაწერე თუ ეს არაა
+            SB_KEY
+        );
 
         async function loadAllUsers() {
-            const { data: users, error } = await _s.from('profiles').select('*').order('username');
-            if (error) return;
+            try {
+                const { data: users, error } = await _s.from('profiles').select('*').order('username');
+                
+                document.getElementById('loader').style.display = 'none';
 
-            const grid = document.getElementById('users-grid');
-            grid.innerHTML = "";
+                if (error) {
+                    document.getElementById('users-grid').innerHTML = "<p style='color:red'>შეცდომა: " + error.message + "</p>";
+                    return;
+                }
 
-            users.forEach(u => {
-                const role = u.role || 'Member';
-                grid.innerHTML += `
-                    <div class="user-card">
-                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                        <span class="user-name" style="color:${role === 'Owner' ? '#ff0' : (role === 'Admin' ? '#f55' : '#ccc')}">
-                            ${u.username}
-                        </span>
-                        <span class="user-role">${role}</span>
-                    </div>`;
-            });
+                const grid = document.getElementById('users-grid');
+                grid.innerHTML = "";
+
+                users.forEach(u => {
+                    const role = u.role || 'Member';
+                    let nameColor = '#ccc';
+                    if(role === 'Owner') nameColor = '#ff0';
+                    else if(role === 'Admin') nameColor = '#f55';
+
+                    grid.innerHTML += `
+                        <div class="user-card">
+                            <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+                            <span class="user-name" style="color:${nameColor}">${u.username}</span>
+                            <span class="user-role">${role}</span>
+                        </div>`;
+                });
+            } catch (err) {
+                document.getElementById('loader').innerHTML = "მოხდა გაუთვალისწინებელი შეცდომა.";
+            }
         }
+
         loadAllUsers();
     </script>
 </body>
