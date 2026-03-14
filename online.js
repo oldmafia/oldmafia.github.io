@@ -86,5 +86,5 @@
 const oldInbox = document.createElement('div');
 oldInbox.innerHTML = '✉️';
 oldInbox.onclick = () => window.location.href = 'inbox.html';
-oldInbox.style = "position: fixed; bottom: 35px; right: 50px; width: 50px; height: 50px; background: #800000; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; border: 2px solid #ff0000; font-size: 22px; box-shadow: 0 0 10px rgba(0,0,0,0.5);";
+oldInbox.style = "position: fixed; bottom: 50px; right: 50px; width: 50px; height: 50px; background: #800000; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; border: 2px solid #ff0000; font-size: 22px; box-shadow: 0 0 10px rgba(0,0,0,0.5);";
 document.body.appendChild(oldInbox);
