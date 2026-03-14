@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>ყველა წევრი - OLD MAFIA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --dark-red: #4a0000; --bright-red: #ff0000; }
+        body { background: #050000; color: white; font-family: sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; align-items: center; border-bottom: 2px solid var(--dark-red); padding-bottom: 10px; margin-bottom: 20px; }
+        .back-btn { cursor: pointer; color: var(--bright-red); font-size: 24px; margin-right: 20px; text-decoration: none; }
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .user-card { background: #111; border: 1px solid #333; padding: 15px; border-radius: 10px; text-align: center; transition: 0.3s; }
+        .user-card:hover { border-color: var(--bright-red); transform: translateY(-5px); }
+        .user-card img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--dark-red); margin-bottom: 10px; }
+        .user-name { font-weight: bold; display: block; margin-bottom: 5px; }
+        .user-role { font-size: 10px; text-transform: uppercase; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="chat.html" class="back-btn">←</a>
+        <h2>🗂️ მაფიოზების სრული არქივი</h2>
+    </div>
+    <div id="users-grid" class="user-grid">ჩატვირთვა...</div>
+
+    <script>
+        // აქ ჩასვი შენი Supabase-ის მონაცემები (როგორც chat.html-ში გაქვს)
+        const _s = supabase.createClient('შენი_URL', 'შენი_KEY');
+
+        async function loadAllUsers() {
+            const { data: users, error } = await _s.from('profiles').select('*').order('username');
+            if (error) return;
+
+            const grid = document.getElementById('users-grid');
+            grid.innerHTML = "";
+
+            users.forEach(u => {
+                const role = u.role || 'Member';
+                grid.innerHTML += `
+                    <div class="user-card">
+                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                        <span class="user-name" style="color:${role === 'Owner' ? '#ff0' : (role === 'Admin' ? '#f55' : '#ccc')}">
+                            ${u.username}
+                        </span>
+                        <span class="user-role">${role}</span>
+                    </div>`;
+            });
+        }
+        loadAllUsers();
+    </script>
+</body>
+</html>
