@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ინბოქსი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        :root {
+            --dark-red: #4a0000;
+            --bright-red: #ff0000;
+            --bg-black: #050000;
+            --text-glow: 0 0 10px rgba(255, 0, 0, 0.7);
+        }
+        body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; overflow-x: hidden; }
+        
+        .header { 
+            padding: 20px; 
+            text-align: center; 
+            border-bottom: 2px solid var(--dark-red); 
+            box-shadow: 0 5px 20px rgba(138, 0, 0, 0.5); 
+            background: black;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h2 { margin: 0; color: var(--bright-red); text-shadow: var(--text-glow); letter-spacing: 2px; }
+
+        .inbox-list { padding: 15px; max-width: 600px; margin: auto; min-height: 80vh; }
+        
+        .msg-card {
+            background: rgba(15, 0, 0, 0.9);
+            border: 1px solid var(--dark-red);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+        }
+        .msg-card:hover { transform: scale(1.02); border-color: var(--bright-red); box-shadow: 0 0 15px var(--dark-red); }
+        
+        /* ალისფერი ზოლი წაუკითხავ მესიჯებზე */
+        .msg-card.unread { 
+            border-left: 4px solid var(--bright-red); 
+            background: rgba(35, 0, 0, 0.8); 
+        }
+
+        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 1px solid var(--dark-red); object-fit: cover; }
+        .info { flex: 1; }
+        .name { font-weight: bold; color: var(--bright-red); margin-bottom: 4px; font-size: 15px; }
+        .text-preview { font-size: 13px; color: #bbb; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .time { font-size: 10px; color: #555; }
+
+        .back-link { position: absolute; left: 15px; top: 22px; color: #888; text-decoration: none; font-size: 13px; transition: 0.3s; }
+        .back-link:hover { color: white; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="chat.html" class="back-link">⬅ ჩატში</a>
+    <h2>ინბოქსი</h2>
+</div>
+
+<div class="inbox-list" id="inbox-list">
+    <p style="text-align:center; color:#444; margin-top:50px;">იტვირთება შეტყობინებები...</p>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname');
+
+    async function loadInbox() {
+        if (!myNick) return;
+
+        // ვიღებთ მესიჯებს, სადაც მიმღები ვარ მე
+        const { data: msgs, error } = await _s
+            .from('private_messages')
+            .select('*')
+            .eq('receiver', myNick)
+            .order('created_at', { ascending: false });
+
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
+
+        const list = document.getElementById('inbox-list');
+        list.innerHTML = "";
+
+        if (!msgs || msgs.length === 0) {
+            list.innerHTML = "<p style='text-align:center; color:#555; margin-top:50px;'>ინბოქსი ცარიელია</p>";
+            return;
+        }
+
+        // ვაჯგუფებთ მესიჯებს გამომგზავნის მიხედვით (მხოლოდ ბოლო მესიჯი რომ ჩანდეს)
+        const lastMsgs = {};
+        msgs.forEach(m => {
+            if (!lastMsgs[m.sender]) lastMsgs[m.sender] = m;
+        });
+
+        Object.values(lastMsgs).forEach(m => {
+            const prof = profiles?.find(p => p.username === m.sender);
+            const isUnread = !m.is_read;
+            const time = new Date(m.created_at).toLocaleDateString();
+
+            list.innerHTML += `
+                <div class="msg-card ${isUnread ? 'unread' : ''}" onclick="openChat('${m.sender}')">
+                    <img src="${prof?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="avatar">
+                    <div class="info">
+                        <div class="name">${m.sender}</div>
+                        <div class="text-preview">${m.text}</div>
+                    </div>
+                    <div class="time">${time}</div>
+                </div>
+            `;
+        });
+    }
+
+    async function openChat(sender) {
+        // როცა ხსნი, ამ გამომგზავნის ყველა მესიჯი იშლება "წაუკითხავებიდან"
+        await _s.from('private_messages')
+            .update({ is_read: true })
+            .eq('receiver', myNick)
+            .eq('sender', sender);
+            
+        alert("გადავდივართ " + sender + "-თან პირადში (აქ ჩასვი შენი PM გვერდის ლინკი)");
+        location.reload(); // სიის გასაახლებლად
+    }
+
+    window.onload = loadInbox;
+</script>
+</body>
+</html>
