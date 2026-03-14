@@ -1,0 +1,71 @@
+(function() {
+    // 1. ვამატებთ მხოლოდ კონვერტის სტილს, რომ შენი საიტი არ აირიოს
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #fixed-msg-btn {
+            position: fixed !important;
+            bottom: 30px !important;
+            right: 85px !important;
+            width: 55px !important;
+            height: 55px !important;
+            background: #4a0000 !important;
+            border: 2px solid #ff0000 !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 999999 !important;
+            box-shadow: 0 0 20px #000 !important;
+            cursor: pointer !important;
+        }
+        @media screen and (max-width: 600px) {
+            #fixed-msg-btn { bottom: 100px !important; right: 20px !important; }
+        }
+        #msg-count-final {
+            position: absolute !important;
+            top: -5px !important;
+            right: -5px !important;
+            background: #ff0000 !important;
+            color: white !important;
+            font-size: 11px !important;
+            width: 20px !important;
+            height: 20px !important;
+            border-radius: 50% !important;
+            display: none;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1.5px solid #fff !important;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 2. ვქმნით ღილაკს
+    const btn = document.createElement('div');
+    btn.id = 'fixed-msg-btn';
+    btn.innerHTML = '<span style="font-size:24px;">✉️</span><div id="msg-count-final">0</div>';
+    btn.onclick = () => location.href = 'inbox.html';
+    document.body.appendChild(btn);
+
+    // 3. ციფრების ლოგიკა (შენი ბაზის მიხედვით)
+    async function updateBadge() {
+        const myNick = localStorage.getItem('nickname');
+        if (!myNick || typeof _s === 'undefined') return;
+
+        const { count, error } = await _s
+            .from('private_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver', myNick)
+            .eq('is_read', false);
+
+        const badge = document.getElementById('msg-count-final');
+        if (badge && !error && count > 0) {
+            badge.innerText = count;
+            badge.style.display = 'flex';
+        } else if (badge) {
+            badge.style.display = 'none';
+        }
+    }
+
+    setInterval(updateBadge, 5000);
+    setTimeout(updateBadge, 1500);
+})();
