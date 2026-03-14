@@ -1,105 +1,37 @@
-<!DOCTYPE html>
-<html lang="ka">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>მაფიოზების არქივი - OLD MAFIA</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --dark-red: #4a0000; --bright-red: #ff0000; --glow: 0 0 15px rgba(255, 0, 0, 0.4); }
-        body { background: #050000; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        
-        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--dark-red); padding-bottom: 15px; margin-bottom: 25px; }
-        .back-btn { cursor: pointer; color: var(--bright-red); font-size: 28px; text-decoration: none; transition: 0.3s; padding: 5px 15px; }
-        .back-btn:hover { text-shadow: var(--glow); transform: scale(1.1); }
+/* მომხმარებლის ბარათის ზომა ტელეფონისთვის */
+.user-card {
+    width: 140px; /* ცოტა დავაპატარავოთ */
+    padding: 15px;
+    margin: 8px;
+    display: inline-block;
+    vertical-align: top;
+}
 
-        .search-input { width: 220px; padding: 10px 15px; background: #111; border: 1px solid var(--dark-red); border-radius: 20px; color: white; outline: none; }
-        .search-input:focus { border-color: var(--bright-red); box-shadow: var(--glow); }
-
-        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-        
-        .user-card { 
-            background: rgba(15, 0, 0, 0.8); 
-            border: 1px solid #222; 
-            padding: 15px; 
-            border-radius: 12px; 
-            text-align: center; 
-            cursor: pointer;
-            transition: 0.3s ease;
-        }
-        .user-card:hover { border-color: var(--bright-red); transform: translateY(-5px); background: #110000; }
-        
-        .user-card img { width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--dark-red); margin-bottom: 10px; object-fit: cover; }
-        .user-name { font-weight: bold; display: block; margin-bottom: 4px; font-size: 15px; }
-        .user-role { font-size: 10px; text-transform: uppercase; color: #666; font-weight: bold; }
-        
-        #loader { text-align: center; color: var(--bright-red); margin-top: 50px; font-size: 18px; }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <a href="chat.html" class="back-btn">← უკან</a>
-        <h2 style="margin:0; font-size: 20px;">🗂️ სრული სია</h2>
-        <input type="text" id="searchInput" class="search-input" placeholder="ძებნა..." oninput="filterUsers()">
-    </div>
-
-    <div id="loader">იტვირთება მაფიოზები...</div>
-    <div id="users-grid" class="user-grid"></div>
-
-    <script>
-        // შენი Supabase-ის მონაცემები (გადმოტანილი chat.html-იდან)
-        const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co";
-        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-        const _s = supabase.createClient(SB_URL, SB_KEY);
-
-        let allUsers = [];
-
-        async function loadUsers() {
-            try {
-                const { data, error } = await _s.from('profiles').select('*').order('username');
-                if (error) throw error;
-
-                allUsers = data;
-                document.getElementById('loader').style.display = 'none';
-                renderUsers(allUsers);
-            } catch (err) {
-                document.getElementById('loader').innerHTML = "შეცდომა ბაზასთან კავშირისას.";
-                console.error(err);
-            }
-        }
-
-        function renderUsers(users) {
-            const grid = document.getElementById('users-grid');
-            grid.innerHTML = "";
-
-            users.forEach(u => {
-                const role = u.role || 'Member';
-                let nameColor = '#ccc';
-                if(role === 'Owner') nameColor = '#ff0';
-                else if(role === 'Admin') nameColor = '#f55';
-
-                const card = document.createElement('div');
-                card.className = 'user-card';
-                // გადასვლა პროფილზე
-                card.onclick = () => window.location.href = `profile.html?u=${u.username}`;
-                
-                card.innerHTML = `
-                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
-                    <span class="user-name" style="color:${nameColor}">${u.username}</span>
-                    <span class="user-role">${role}</span>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function filterUsers() {
-            const term = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allUsers.filter(u => u.username.toLowerCase().includes(term));
-            renderUsers(filtered);
-        }
-
-        loadUsers();
-    </script>
-</body>
-</html>
+/* ონლაინ წერტილის სტილი */
+.avatar-wrapper {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 10px;
+}
+.u-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4a0000;
+}
+.status-dot {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 12px;
+    height: 12px;
+    background: #555; /* ნაგულისხმევად ნაცრისფერი (ოფლაინი) */
+    border: 2px solid black;
+    border-radius: 50%;
+}
+.status-dot.online {
+    background: #0f0;
+    box-shadow: 0 0 8px #0f0;
+}
