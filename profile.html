@@ -1,50 +1,92 @@
 <!DOCTYPE html>
-<html>
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .box { border: 2px solid red; padding: 20px; display: inline-block; border-radius: 15px; background: #050000; }
-        .btn { display: block; width: 100%; padding: 10px; margin-top: 5px; background: #200; color: white; border: 1px solid red; cursor: pointer; }
-        #adm { display: none; margin-top: 15px; border-top: 1px dashed red; }
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding-top: 30px; }
+        .box { border: 2px solid red; padding: 25px; display: inline-block; border-radius: 20px; background: #050000; min-width: 300px; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
+        
+        /* ავატარის სტილი */
+        .p-img { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #00c3ff; object-fit: cover; margin-bottom: 15px; background: #111; }
+        
+        h1 { margin: 5px 0; color: #ff3333; }
+        .status { color: #00ff00; font-style: italic; margin-bottom: 15px; display: block; }
+        .role-tag { color: gold; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .btn { display: block; width: 100%; padding: 12px; margin-top: 8px; background: #1a0000; color: white; border: 1px solid red; cursor: pointer; border-radius: 8px; transition: 0.3s; font-weight: bold; }
+        .btn:hover { background: red; }
+        .btn-green { border-color: green; color: #0f0; }
+        .btn-green:hover { background: green; color: white; }
+        
+        #adm { display: none; margin-top: 15px; border-top: 1px dashed red; padding-top: 10px; }
+        .adm-btn { background: #300; border: 1px solid gold; color: gold; padding: 5px 10px; margin: 2px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
+
     <div class="box">
+        <img id="avatar" class="p-img" src="https://i.ibb.co/v3m6y6R/avatar.png">
+        
         <h1 id="n">იტვირთება...</h1>
-        <p id="r" style="color:gold"></p>
+        <span id="st" class="status">იტვირთება...</span>
+        <p id="r" class="role-tag"></p>
+
+        <button class="btn btn-green" onclick="alert('PM ფუნქცია მალე დაემატება')">✉️ მიწერა (PM)</button>
+        
         <div id="adm">
-            <button onclick="up('Owner')">👑 Owner</button>
-            <button onclick="up('Admin')">🛡️ Admin</button>
-            <button onclick="up('Member')">✨ Reset</button>
+            <p style="font-size: 10px; color: gray;">ადმინ პანელი</p>
+            <button class="adm-btn" onclick="up('Owner')">👑 Owner</button>
+            <button class="adm-btn" onclick="up('Admin')">🛡️ Admin</button>
+            <button class="adm-btn" onclick="up('Member')">✨ Reset</button>
+            <button class="btn" style="border-color: #555; font-size: 12px;" onclick="alert('დაბლოკილია')">🚫 დაბლოკვა</button>
         </div>
-        <button onclick="location.href='chat.html'">უკან</button>
+
+        <button class="btn" style="margin-top: 20px; background: #333;" onclick="location.href='chat.html'">უკან</button>
     </div>
 
 <script>
+    // შენი Supabase მონაცემები
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
     const p = new URLSearchParams(window.location.search);
     const target = p.get('user') || localStorage.getItem('nickname');
     const me = localStorage.getItem('nickname');
 
     async function start() {
-        let { data: u } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+        // 1. მოგვაქვს ტარგეტ მომხმარებლის სრული ინფო
+        let { data: u, error } = await _s.from('profiles').select('*').eq('username', target).maybeSingle();
+        
         if(u) {
             document.getElementById('n').innerText = u.username;
+            document.getElementById('st').innerText = u.status || "Old Mafia-ს წევრი 🌱";
             document.getElementById('r').innerText = u.role || "Member";
             
-            let { data: my } = await _s.from('profiles').select('role').eq('username', me).maybeSingle();
-            if(my && (my.role === 'Admin' || my.role === 'Owner') && me !== target) {
+            // ავატარის შემოწმება და ჩასმა
+            if(u.avatar_url) {
+                document.getElementById('avatar').src = u.avatar_url;
+            }
+
+            // 2. ვამოწმებთ ჩემს როლს, რომ გამოჩნდეს ადმინ პანელი
+            let { data: myUser } = await _s.from('profiles').select('role').eq('username', me).maybeSingle();
+            
+            // თუ მე ვარ ადმინი/ოუნერი და სხვის პროფილს ვუყურებ
+            if(myUser && (myUser.role === 'Admin' || myUser.role === 'Owner') && me !== target) {
                 document.getElementById('adm').style.display = 'block';
             }
-        } else { document.getElementById('n').innerText = "ვერ მოიძებნა"; }
+        } else { 
+            document.getElementById('n').innerText = "ვერ მოიძებნა"; 
+            document.getElementById('st').innerText = "";
+        }
     }
 
-    async function up(role) {
-        await _s.from('profiles').update({ role: role }).eq('username', target);
-        location.reload();
+    // როლის შეცვლის ფუნქცია
+    async function up(newRole) {
+        const { error } = await _s.from('profiles').update({ role: newRole }).eq('username', target);
+        if(error) alert("შეცდომა: " + error.message);
+        else location.reload();
     }
+
     start();
 </script>
 </body>
