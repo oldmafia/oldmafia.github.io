@@ -6,91 +6,106 @@
     <title>OLD MAFIA - ყველა წევრი</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #030000; color: white; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
+        * { box-sizing: border-box; }
+        body { background: #030000; color: white; font-family: sans-serif; margin: 0; overflow-x: hidden; }
         
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; border-bottom: 2px solid #4a0000; padding-bottom: 10px; }
-        .back-btn { color: #ff0000; text-decoration: none; font-size: 18px; cursor: pointer; font-weight: bold; }
+        /* ტოპბარი */
+        .topbar { 
+            background: black; padding: 10px 15px; display: flex; align-items: center; 
+            border-bottom: 2px solid #4a0000; height: 60px; position: sticky; top: 0; z-index: 1000;
+        }
+        .menu-btn { cursor: pointer; font-size: 25px; color: #ff0000; margin-right: 15px; }
+        .back-btn { color: #ff0000; text-decoration: none; font-size: 14px; font-weight: bold; cursor: pointer; margin-left: auto; }
+
+        /* სიდბარი (მენიუ) */
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-right: 3px solid #4a0000; display: flex; flex-direction: column; }
+        .sidebar.active { left: 0; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3500; }
+        .overlay.active { display: block; }
         
-        #users-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .sidebar-header { padding: 25px 15px; text-align: center; border-bottom: 2px solid #4a0000; }
+        .sidebar-header img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #4a0000; object-fit: cover; }
+        
+        .menu-item { padding: 15px 20px; cursor: pointer; color: #999; border-bottom: 1px solid #150000; font-size: 14px; text-decoration: none; display: block; }
+        .menu-item:hover { background: #1a0000; color: white; }
+
+        /* კონტეინერი */
+        #users-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 20px 10px; }
 
         /* მომხმარებლის ბარათი */
         .user-card {
-            width: 140px; 
-            padding: 15px;
-            margin: 5px;
-            background: rgba(15, 0, 0, 0.8);
-            border: 1px solid #4a0000;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s;
+            width: 140px; padding: 15px; background: rgba(15, 0, 0, 0.8);
+            border: 1px solid #4a0000; border-radius: 12px; cursor: pointer; text-align: center;
         }
-        .user-card:hover { transform: scale(1.05); border-color: #ff0000; }
 
         /* ავატარი და ონლაინ წერტილი */
-        .avatar-wrapper {
-            position: relative;
-            width: 70px;
-            height: 70px;
-            margin: 0 auto 10px;
-        }
-        .u-avatar {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #4a0000;
-        }
+        .avatar-wrapper { position: relative; width: 70px; height: 70px; margin: 0 auto 10px; }
+        .u-avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #4a0000; }
         .status-dot {
-            position: absolute;
-            bottom: 3px;
-            right: 3px;
-            width: 12px;
-            height: 12px;
-            background: #555; /* ოფლაინი */
-            border: 2px solid black;
-            border-radius: 50%;
+            position: absolute; bottom: 3px; right: 3px; width: 12px; height: 12px;
+            background: #555; border: 2px solid black; border-radius: 50%;
         }
-        .status-dot.online {
-            background: #0f0;
-            box-shadow: 0 0 8px #0f0;
-        }
+        .status-dot.online { background: #0f0; box-shadow: 0 0 8px #0f0; }
 
-        .u-name { color: yellow; font-weight: bold; font-size: 14px; margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .u-role { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .u-name { color: yellow; font-weight: bold; font-size: 14px; margin: 5px 0; }
+        .u-role { color: #888; font-size: 10px; text-transform: uppercase; }
 
-        /* მობილურზე მორგება */
-        @media (max-width: 400px) {
-            .user-card { width: 130px; padding: 10px; }
-        }
+        @media (max-width: 360px) { .user-card { width: 130px; } }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div class="back-btn" onclick="location.href='chat.html'">← უკან</div>
-    <h3 style="margin:0; color:#ff0000;">🗂️ სრული სია</h3>
-    <div style="width:50px;"></div>
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <img id="my-avatar" src="https://i.ibb.co/v3m6y6R/avatar.png">
+        <div id="my-nick" style="font-weight:bold; color:#ff0000; margin-top:5px;">...</div>
+    </div>
+    <a href="chat.html" class="menu-item">💬 ჩატში დაბრუნება</a>
+    <a href="online.html" class="menu-item" style="color:#0f0;">🟢 ვინ არის ონლაინ?</a>
+    <a href="profile.html" class="menu-item">👤 ჩემი პროფილი</a>
+    <div class="menu-item" onclick="localStorage.clear(); location.href='index.html'">🚪 გასვლა</div>
+</div>
+
+<div class="topbar">
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <div style="color:#ff0000; font-weight:bold;">🗂️ სრული სია</div>
+    <div class="back-btn" onclick="location.href='chat.html'">უკან ←</div>
 </div>
 
 <div id="users-container">იტვირთება...</div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('nickname');
+
+    function toggleMenu() { 
+        document.getElementById('sidebar').classList.toggle('active'); 
+        document.getElementById('overlay').classList.toggle('active'); 
+    }
+
+    async function init() {
+        if (myNick) {
+            const { data: p } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
+            if (p) {
+                document.getElementById('my-nick').innerText = p.username;
+                document.getElementById('my-avatar').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
+            }
+        }
+        loadAllUsers();
+    }
 
     async function loadAllUsers() {
-        const { data: users, error } = await _s.from('profiles').select('*');
-        if (error) { console.error(error); return; }
-
+        const { data: users } = await _s.from('profiles').select('*');
         const container = document.getElementById('users-container');
         container.innerHTML = "";
         const now = new Date();
 
-        // დალაგება როლების მიხედვით
         const order = { 'Owner': 1, 'Admin': 2, 'Member': 3 };
         users.sort((a, b) => (order[a.role] || 3) - (order[b.role] || 3));
 
         users.forEach(u => {
-            // ონლაინის შემოწმება (ბოლო 5 წუთი)
             const lastSeen = u.last_online ? new Date(u.last_online) : null;
             const isOnline = lastSeen && (now - lastSeen) < 300000;
             const dotClass = isOnline ? "online" : "";
@@ -108,9 +123,7 @@
         });
     }
 
-    loadAllUsers();
-    // განახლდეს ყოველ 30 წამში, რომ ონლაინები სწორად ჩანდეს
-    setInterval(loadAllUsers, 30000);
+    window.onload = init;
 </script>
 </body>
 </html>
