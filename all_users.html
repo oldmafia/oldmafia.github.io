@@ -3,48 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OLD MAFIA - არქივი</title>
+    <title>OLD MAFIA - არქივი და ონლაინ</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root { --dark-red: #4a0000; --bright-red: #ff0000; }
         * { box-sizing: border-box; }
         body { background: #030000; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* მარცხენა მენიუ (ოთახები) */
+        /* მარცხენა მუდმივი მენიუ (ოთახები) */
         .sidebar-left { width: 250px; background: #050000; border-right: 2px solid var(--dark-red); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid var(--dark-red); color: var(--bright-red); font-weight: bold; }
-        .menu-item { padding: 12px 20px; color: #bbb; text-decoration: none; display: block; font-size: 14px; border-bottom: 1px solid #110000; }
-        .menu-item:hover { background: #150000; color: white; }
+        @media (max-width: 768px) { .sidebar-left { display: none; } } /* ტელეფონზე დავმალოთ */
 
-        /* მთავარი კონტენტი */
+        /* მთავარი ნაწილი */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .topbar { height: 60px; background: black; border-bottom: 1px solid var(--dark-red); display: flex; align-items: center; padding: 0 15px; justify-content: space-between; }
 
-        /* მარჯვენა ონლაინ მენიუ (ჰამბურგერიდან რაც გამოდის) */
+        /* მარჯვენა ონლაინ მენიუ */
         .sidebar-right { 
             position: fixed; top: 0; right: -280px; width: 280px; height: 100%; 
             background: #080000; border-left: 2px solid var(--dark-red); transition: 0.3s; z-index: 3000; 
         }
         .sidebar-right.active { right: 0; }
-        .online-header { padding: 20px; background: #110000; color: #0f0; font-weight: bold; text-align: center; border-bottom: 1px solid var(--dark-red); }
 
-        /* წევრების ბარათები (შენი სტილით) */
+        /* წევრების ბარათები (შენი 140px ზომით) */
         #users-container { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 20px 10px; }
         .user-card { width: 140px; padding: 15px; background: rgba(15, 0, 0, 0.8); border: 1px solid var(--dark-red); border-radius: 12px; text-align: center; cursor: pointer; }
+        
         .avatar-wrapper { position: relative; width: 70px; height: 70px; margin: 0 auto 10px; }
         .u-avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 1px solid var(--dark-red); }
         .status-dot { position: absolute; bottom: 3px; right: 3px; width: 12px; height: 12px; background: #555; border: 2px solid black; border-radius: 50%; }
         .status-dot.online { background: #0f0; box-shadow: 0 0 8px #0f0; }
-        .u-name { color: yellow; font-weight: bold; font-size: 13px; margin: 5px 0; }
-
-        /* ონლაინ სიის სტილი */
-        .online-user { padding: 10px 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #1a0000; }
-        .online-user img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--dark-red); }
 
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; }
         .overlay.active { display: block; }
 
-        @media (max-width: 768px) { .sidebar-left { display: none; } }
+        /* ონლაინ სიის დიზაინი */
+        .online-user-row { display: flex; align-items: center; gap: 10px; padding: 10px 15px; border-bottom: 1px solid #111; }
+        .online-user-row img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--dark-red); }
     </style>
 </head>
 <body>
@@ -52,25 +47,22 @@
 <div class="overlay" id="overlay" onclick="toggleOnline()"></div>
 
 <div class="sidebar-left">
-    <div class="sidebar-header">🏘️ ოთახები</div>
-    <div class="menu-list">
-        <a href="chat.html" class="menu-item">☕ კაფე-ბარი</a>
-        <a href="chat.html?room=Mafia" class="menu-item">🔫 მაფია</a>
-        <a href="profile.html" class="menu-item">👤 ჩემი პროფილი</a>
-        <div class="menu-item" onclick="localStorage.clear(); location.href='index.html'" style="color:red; cursor:pointer;">🚪 გასვლა</div>
-    </div>
+    <div style="padding:20px; color:var(--bright-red); font-weight:bold; border-bottom:1px solid var(--dark-red);">🏘️ ოთახები</div>
+    <a href="chat.html" style="padding:15px; color:#bbb; text-decoration:none; display:block; border-bottom:1px solid #111;">☕ კაფე-ბარი</a>
+    <a href="profile.html" style="padding:15px; color:#bbb; text-decoration:none; display:block;">👤 პროფილი</a>
 </div>
 
 <div class="main-content">
     <div class="topbar">
-        <div style="font-weight:bold; color:var(--bright-red);">📂 არქივი</div>
-        <div style="font-size:28px; color:#0f0; cursor:pointer;" onclick="toggleOnline()">☰</div>
+        <a href="chat.html" style="color:var(--bright-red); text-decoration:none;">←</a>
+        <div style="font-weight:bold;">🗂️ ყველა წევრი</div>
+        <div style="font-size:25px; color:#0f0; cursor:pointer;" onclick="toggleOnline()">👥</div>
     </div>
-    <div id="users-container">იტვირთება...</div>
+    <div id="users-container"></div>
 </div>
 
 <div class="sidebar-right" id="online-sidebar">
-    <div class="online-header">🟢 ონლაინ წევრები</div>
+    <div style="padding:20px; color:#0f0; font-weight:bold; text-align:center; border-bottom:1px solid var(--dark-red);">🟢 ონლაინ</div>
     <div id="online-list-data"></div>
 </div>
 
@@ -80,49 +72,51 @@
     function toggleOnline() {
         document.getElementById('online-sidebar').classList.toggle('active');
         document.getElementById('overlay').classList.toggle('active');
-        if(document.getElementById('online-sidebar').classList.contains('active')) loadOnline();
+        if(document.getElementById('online-sidebar').classList.contains('active')) updateOnlineList();
     }
 
-    async function loadAll() {
+    async function loadData() {
         const { data: users } = await _s.from('profiles').select('*');
         const container = document.getElementById('users-container');
         container.innerHTML = "";
         const now = new Date();
 
-        users.sort((a,b) => (a.username > b.username ? 1 : -1)).forEach(u => {
+        users?.forEach(u => {
             const lastSeen = u.last_online ? new Date(u.last_online) : null;
             const isOnline = lastSeen && (now - lastSeen) < 300000;
+
             container.innerHTML += `
                 <div class="user-card" onclick="location.href='profile.html?user=${u.username}'">
                     <div class="avatar-wrapper">
                         <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="u-avatar">
                         <div class="status-dot ${isOnline ? 'online' : ''}"></div>
                     </div>
-                    <div class="u-name">${u.username}</div>
-                    <div style="color:#888; font-size:10px;">${u.role || 'Member'}</div>
+                    <div style="color:yellow; font-weight:bold; font-size:13px;">${u.username}</div>
+                    <div style="color:#666; font-size:10px;">${u.role || 'Member'}</div>
                 </div>`;
         });
     }
 
-    async function loadOnline() {
+    async function updateOnlineList() {
         const { data: users } = await _s.from('profiles').select('*');
         const list = document.getElementById('online-list-data');
         list.innerHTML = "";
         const now = new Date();
 
-        users.filter(u => {
+        users?.filter(u => {
             const ls = u.last_online ? new Date(u.last_online) : null;
             return ls && (now - ls) < 300000;
         }).forEach(u => {
             list.innerHTML += `
-                <div class="online-user">
+                <div class="online-user-row">
                     <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                    <div style="color:${u.role === 'Owner' ? 'red' : 'white'}">${u.username}</div>
+                    <div style="color:${u.role === 'Owner' ? 'red' : 'white'}; font-size:14px;">${u.username}</div>
                 </div>`;
         });
     }
 
-    loadAll();
+    loadData();
+    setInterval(loadData, 30000); // 30 წამში ერთხელ განაახლოს წერტილები
 </script>
 </body>
 </html>
