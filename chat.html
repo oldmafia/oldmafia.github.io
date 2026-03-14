@@ -36,6 +36,7 @@
 
         #floating-inbox { position: fixed; bottom: 85px; right: 20px; width: 55px; height: 55px; background: #4a0000; border: 2px solid #ff0000; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2000; cursor: pointer; box-shadow: 0 0 15px rgba(255,0,0,0.5); transition: 0.3s; }
         #floating-inbox:hover { transform: scale(1.1); }
+        #pm-count { position: absolute; top: -5px; right: -5px; background: cyan; color: black; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: none; align-items: center; justify-content: center; font-weight: bold; border: 2px solid black; }
 
         .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-right: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
@@ -57,7 +58,10 @@
 </head>
 <body>
 
-<div id="floating-inbox" onclick="location.href='inbox.html'"><span>✉️</span></div>
+<div id="floating-inbox" onclick="location.href='inbox.html'">
+    <span>✉️</span>
+    <div id="pm-count">0</div>
+</div>
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
 <div class="sidebar" id="sidebar">
@@ -136,12 +140,19 @@
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
             updateOnline(); setInterval(updateOnline, 30000);
+            checkPMs(); setInterval(checkPMs, 5000);
         }
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
     async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
+
+    async function checkPMs() {
+        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
+        const b = document.getElementById('pm-count');
+        if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'flex' : 'none'; }
+    }
 
     async function loadMessages() {
         const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
@@ -153,7 +164,9 @@
             const p = profs?.find(u => u.username === m.user_name);
             const authorRole = p?.role || "Member";
             const time = new Date(m.created_at).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
-            let onlineClass = (p?.last_online && (now - new Date(p.last_online) < 60000)) ? "active" : "";
+            
+            let onlineClass = "";
+            if (p?.last_online && (now - new Date(p.last_online) < 300000)) onlineClass = "active";
 
             let delBtn = "";
             if (myRole === "Owner" || (myRole === "Admin" && authorRole !== "Owner")) {
@@ -185,7 +198,7 @@
             document.getElementById('targetName').innerText = p.username;
             document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
             document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-            document.getElementById('targetStatusDisplay').innerText = p.status_text ? "💬 " + p.status_text : "სტატუსი ცარიელია";
+            document.getElementById('targetStatusDisplay').innerText = p.status ? "💬 " + p.status : "სტატუსი ცარიელია";
             
             document.getElementById('send-pm-btn').style.display = (n === myNick) ? "none" : "block";
             document.getElementById('send-pm-btn').onclick = () => { localStorage.setItem('chatWith', n); location.href = 'inbox.html'; };
@@ -219,7 +232,7 @@
 
     async function changeStatus() {
         const s = prompt("შეიყვანე ახალი სტატუსი:");
-        if (s !== null) { await _s.from('profiles').update({ status_text: s }).eq('username', myNick); location.reload(); }
+        if (s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
     }
 
     async function uploadAvatar(el) {
