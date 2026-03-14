@@ -108,7 +108,12 @@
 
 <div class="chat-area" id="chat"></div>
 
+<div id="emoji-picker" style="display:none; position:fixed; bottom:80px; left:5%; width:90%; background:rgba(0,0,0,0.95); border:2px solid #800000; border-radius:15px; padding:10px; z-index:10000; max-height:200px; overflow-y:auto;">
+    <div id="emoji-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap:10px;"></div>
+</div>
+
 <div class="input-zone">
+    <button onclick="toggleEmojiPicker()" style="background:none; border:none; font-size:20px; cursor:pointer; padding:0 5px;">😊</button>
     <input type="text" id="msg-input" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMsg()">
     <button class="send-btn" onclick="sendMsg()">✈</button>
 </div>
