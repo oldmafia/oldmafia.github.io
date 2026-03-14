@@ -62,7 +62,7 @@
             document.getElementById('user-r').innerText = translateRole(user.role);
             
             if(user.avatar_url) document.getElementById('avatar-img').src = user.avatar_url;
-            if(user.status_text) document.getElementById('user-st').innerText = user.status_text;
+            if(user.status) document.getElementById('user-st').innerText = user.status;
 
             // დამალე PM ღილაკი საკუთარ თავზე
             if(myNick === targetUser) {
