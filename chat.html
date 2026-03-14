@@ -32,36 +32,70 @@
         .bubble { background: rgba(15, 0, 0, 0.85); border: 1px solid var(--blood-red); padding: 10px 14px; border-radius: 4px 18px 18px 18px; position: relative; box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.9); }
         .m-nick { font-weight: bold; color: #ff3333; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; text-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
         .m-time { font-size: 10px; color: #666; font-weight: normal; }
-        .del-btn { color: #444; font-size: 12px; cursor: pointer; margin-left: 8px; }
+
+        /* 🔥 მცურავი კონვერტი (ზუსტად სურათის მიხედვით) */
+        .inbox-float {
+            position: fixed;
+            right: 20px;
+            bottom: 95px; /* თვითმფრინავის ზემოთ */
+            width: 60px;
+            height: 60px;
+            background: #ff0000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .inbox-float:hover { transform: scale(1.1); box-shadow: 0 0 30px #ff0000; }
+        .icon-mail { font-size: 28px; color: white; }
+
+        /* 🔴 ალისფერი ციფრი კონვერტზე */
+        .float-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: white;
+            color: #ff0000;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ff0000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
 
         /* მესიჯის შეყვანა */
         .input-zone { background: black; padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--dark-red); box-shadow: 0 -5px 20px var(--shadow-red); }
         .input-zone input { flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--blood-red); background: #080000; color: white; outline: none; }
         .send-btn { background: var(--dark-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: cyan; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; }
 
-        /* Sidebar - გვერდითა მენიუ */
+        /* Sidebar */
         .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s ease-in-out; z-index: 4000; display: flex; flex-direction: column; border-right: 3px solid var(--dark-red); box-shadow: 5px 0 25px var(--shadow-red); }
         .sidebar.active { left: 0; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3500; }
         .overlay.active { display: block; }
-        
         .sidebar-header { padding: 25px 15px; text-align: center; border-bottom: 2px solid var(--dark-red); flex-shrink: 0; }
         .sidebar-header img { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--dark-red); object-fit: cover; cursor: pointer; }
-        
         .rooms-list { flex: 1; overflow-y: auto; padding: 10px 0; }
         .room-item { padding: 12px 20px; cursor: pointer; color: #999; font-size: 14px; border-bottom: 1px solid #150000; }
-        .room-item:hover { background: #1a0000; color: white; }
         .room-item.active { background: var(--dark-red); color: white; font-weight: bold; }
 
-        /* კონვერტის სტილი Sidebar-ში */
         .inbox-sidebar-btn { padding: 15px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-top: 1px solid #222; background: #080000; }
         .badge-count { background: red; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; display: none; }
 
-        /* პროფილის ფანჯარა */
+        /* Modal */
         .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; }
         .modal-content { background: #080000; border: 2px solid var(--dark-red); padding: 25px; border-radius: 25px; width: 320px; text-align: center; box-shadow: 0 0 30px var(--shadow-red); }
         .modal-btn { display: block; width: 100%; padding: 12px; margin: 7px 0; border: 1px solid var(--blood-red); background: #110000; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        .modal-btn:hover { background: var(--dark-red); }
     </style>
 </head>
 <body>
@@ -93,7 +127,7 @@
         <div class="inbox-sidebar-btn" onclick="location.href='inbox.html'">
             <span style="font-size: 20px;">✉️</span>
             <span style="flex: 1; color: white;">პირადი სმს</span>
-            <span id="unread-count" class="badge-count">0</span>
+            <span id="unread-count-side" class="badge-count">0</span>
         </div>
     </div>
 
@@ -107,6 +141,11 @@
 
 <div class="chat-area" id="chat"></div>
 
+<div class="inbox-float" onclick="location.href='inbox.html'">
+    <span class="icon-mail">✉</span>
+    <span id="unread-count-float" class="float-badge" style="display:none;">0</span>
+</div>
+
 <div class="input-zone">
     <input type="text" id="msg-input" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMsg()">
     <button class="send-btn" onclick="sendMsg()">✈</button>
@@ -117,11 +156,8 @@
         <img id="targetAvatar" src="" style="width:85px; height:85px; border-radius:50%; border:2px solid var(--dark-red); object-fit: cover;">
         <h3 id="targetName" style="color:var(--bright-red); margin: 10px 0;">ნიკი</h3>
         <p id="targetRoleLabel" style="font-size:12px; color:#aaa; margin-top:-5px;"></p>
-        
         <div id="targetStatusDisplay" style="font-size:13px; color:#0c0; font-style:italic; margin: 15px 0; min-height: 20px;"></div>
-        
         <button id="send-pm-btn" class="modal-btn" style="background: #004444; color: cyan; border-color: cyan;">✉️ მიწერა</button>
-
         <div id="adminOptions" style="display:none; border-top: 1px solid var(--dark-red); margin-top: 10px; padding-top: 10px;">
             <div id="role-assign-box" style="display:none;">
                 <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინისტრატორი</button>
@@ -161,9 +197,16 @@
 
     async function updateUnreadBadge() {
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const badge = document.getElementById('unread-count');
-        if (count > 0) { badge.innerText = count; badge.style.display = 'block'; }
-        else { badge.style.display = 'none'; }
+        const floatBadge = document.getElementById('unread-count-float');
+        const sideBadge = document.getElementById('unread-count-side');
+        
+        if (count > 0) {
+            floatBadge.innerText = count; floatBadge.style.display = 'flex';
+            sideBadge.innerText = count; sideBadge.style.display = 'block';
+        } else {
+            floatBadge.style.display = 'none';
+            sideBadge.style.display = 'none';
+        }
     }
 
     async function openProfile(n) {
@@ -172,13 +215,10 @@
             document.getElementById('targetName').innerText = p.username;
             document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
             document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-            
-            // სტატუსის გამოსწორებული ლოგიკა
             const sBox = document.getElementById('targetStatusDisplay');
             sBox.innerText = p.status_text ? "💬 " + p.status_text : "სტატუსი არ არის";
             sBox.style.color = p.status_text ? "#0c0" : "#666";
 
-            // მიწერის ღილაკი
             const pmBtn = document.getElementById('send-pm-btn');
             if (n === myNick) pmBtn.style.display = "none";
             else {
@@ -186,7 +226,6 @@
                 pmBtn.onclick = () => { localStorage.setItem('chatWith', n); location.href = 'inbox.html'; };
             }
 
-            // ადმინ პანელი
             const options = document.getElementById('adminOptions');
             const roleBox = document.getElementById('role-assign-box');
             if (n === myNick || p.role === "Owner") options.style.display = "none";
@@ -195,14 +234,6 @@
             else options.style.display = "none";
             
             document.getElementById('userModal').style.display = "flex";
-        }
-    }
-
-    async function changeStatus() {
-        const s = prompt("შეიყვანე ახალი სტატუსი:");
-        if (s !== null) {
-            await _s.from('profiles').update({ status_text: s }).eq('username', myNick);
-            location.reload();
         }
     }
 
@@ -248,6 +279,14 @@
             location.reload();
         };
         reader.readAsDataURL(file);
+    }
+
+    async function changeStatus() {
+        const s = prompt("შეიყვანე ახალი სტატუსი:");
+        if (s !== null) {
+            await _s.from('profiles').update({ status_text: s }).eq('username', myNick);
+            location.reload();
+        }
     }
 
     function logout() { localStorage.removeItem('nickname'); location.reload(); }
