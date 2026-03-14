@@ -50,7 +50,7 @@
         .room-item:hover { background: #1a0000; color: white; }
         .room-item.active { background: var(--dark-red); color: white; font-weight: bold; box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); }
 
-        /* Inbox Style in Sidebar */
+        /* Inbox Sidebar Button */
         .inbox-sidebar-btn { 
             padding: 15px 20px; 
             border-top: 1px solid #222; 
@@ -62,6 +62,7 @@
             transition: 0.3s;
         }
         .inbox-sidebar-btn:hover { background: #1a0000; }
+        .inbox-icon { width: 22px; height: 22px; filter: drop-shadow(0 0 5px red); }
         .badge-count { 
             background: var(--bright-red); 
             color: white; 
@@ -109,7 +110,7 @@
     </div>
 
     <div class="inbox-sidebar-btn" onclick="location.href='inbox.html'">
-        <span style="font-size:20px; color:var(--bright-red);">✉️</span>
+        <img src="https://cdn-icons-png.flaticon.com/512/561/561127.png" class="inbox-icon">
         <span style="flex:1;">პირადი სმს</span>
         <span id="unread-count" class="badge-count">0</span>
     </div>
@@ -134,7 +135,7 @@
         <img id="targetAvatar" src="" style="width:85px; height:85px; border-radius:50%; border:2px solid var(--dark-red); object-fit: cover;">
         <h3 id="targetName" style="color:var(--bright-red); margin: 10px 0; text-shadow: var(--text-glow);">ნიკი</h3>
         <p id="targetRoleLabel" style="font-size:12px; color:#aaa; margin-top:-5px;"></p>
-        <div id="targetStatusDisplay" style="font-size:13px; color:#0c0; font-style:italic; margin: 10px 0;"></div>
+        <div id="targetStatusDisplay" style="font-size:13px; color:#0c0; font-style:italic; margin: 10px 0; min-height: 20px;"></div>
         
         <div id="adminOptions" style="display:none; border-top: 1px solid var(--dark-red); margin-top: 10px; padding-top: 10px;">
             <div id="role-assign-box" style="display:none;">
@@ -170,34 +171,17 @@
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
         }
         loadMessages();
-        updateUnreadBadge(); // პირველადი შემოწმება
+        updateUnreadBadge();
 
-        // Realtime: ჩატის მესიჯები
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
-        
-        // ✨ Realtime: პირადი მესიჯებისBadge-ისთვის
-        _s.channel('inbox_badge').on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'private_messages' 
-        }, updateUnreadBadge).subscribe();
+        _s.channel('inbox_badge').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, updateUnreadBadge).subscribe();
     }
 
-    // ✨ ალისფერი ციფრის განახლების ფუნქცია
     async function updateUnreadBadge() {
-        const { count, error } = await _s
-            .from('private_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('receiver', myNick)
-            .eq('is_read', false);
-
+        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
         const badge = document.getElementById('unread-count');
-        if (count > 0) {
-            badge.innerText = count;
-            badge.style.display = 'block';
-        } else {
-            badge.style.display = 'none';
-        }
+        if (count > 0) { badge.innerText = count; badge.style.display = 'block'; }
+        else { badge.style.display = 'none'; }
     }
 
     async function uploadAvatar(el) {
@@ -227,10 +211,7 @@
         msgs?.forEach(m => {
             const p = profs?.find(u => u.username === m.user_name);
             const time = new Date(m.created_at).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
-            
-            let canDelete = false;
-            if (myRole === "Owner") canDelete = true;
-            else if (myRole === "Admin" && p?.role !== "Owner") canDelete = true;
+            let canDelete = (myRole === "Owner") || (myRole === "Admin" && p?.role !== "Owner");
 
             box.innerHTML += `
                 <div class="msg-container">
@@ -254,22 +235,18 @@
             document.getElementById('targetName').innerText = p.username;
             document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
             document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-            document.getElementById('targetStatusDisplay').innerText = p.status_text ? `💬 ${p.status_text}` : "";
+            
+            // ✨ სტატუსის გარანტირებული გამოჩენა
+            document.getElementById('targetStatusDisplay').innerText = p.status_text ? `💬 ${p.status_text}` : "სტატუსი არ არის";
             
             const options = document.getElementById('adminOptions');
             const roleBox = document.getElementById('role-assign-box');
 
-            if (n === myNick || p.role === "Owner") {
-                options.style.display = "none";
-            } else if (myRole === "Owner") {
-                options.style.display = "block";
-                roleBox.style.display = "block";
-            } else if (myRole === "Admin") {
-                options.style.display = "block";
-                roleBox.style.display = "none";
-            } else {
-                options.style.display = "none";
-            }
+            if (n === myNick || p.role === "Owner") options.style.display = "none";
+            else if (myRole === "Owner") { options.style.display = "block"; roleBox.style.display = "block"; }
+            else if (myRole === "Admin") { options.style.display = "block"; roleBox.style.display = "none"; }
+            else options.style.display = "none";
+            
             document.getElementById('userModal').style.display = "flex";
         }
     }
