@@ -1,37 +1,116 @@
-/* მომხმარებლის ბარათის ზომა ტელეფონისთვის */
-.user-card {
-    width: 140px; /* ცოტა დავაპატარავოთ */
-    padding: 15px;
-    margin: 8px;
-    display: inline-block;
-    vertical-align: top;
-}
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLD MAFIA - ყველა წევრი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #030000; color: white; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
+        
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; border-bottom: 2px solid #4a0000; padding-bottom: 10px; }
+        .back-btn { color: #ff0000; text-decoration: none; font-size: 18px; cursor: pointer; font-weight: bold; }
+        
+        #users-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
 
-/* ონლაინ წერტილის სტილი */
-.avatar-wrapper {
-    position: relative;
-    width: 70px;
-    height: 70px;
-    margin: 0 auto 10px;
-}
-.u-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #4a0000;
-}
-.status-dot {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    width: 12px;
-    height: 12px;
-    background: #555; /* ნაგულისხმევად ნაცრისფერი (ოფლაინი) */
-    border: 2px solid black;
-    border-radius: 50%;
-}
-.status-dot.online {
-    background: #0f0;
-    box-shadow: 0 0 8px #0f0;
-}
+        /* მომხმარებლის ბარათი */
+        .user-card {
+            width: 140px; 
+            padding: 15px;
+            margin: 5px;
+            background: rgba(15, 0, 0, 0.8);
+            border: 1px solid #4a0000;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .user-card:hover { transform: scale(1.05); border-color: #ff0000; }
+
+        /* ავატარი და ონლაინ წერტილი */
+        .avatar-wrapper {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 10px;
+        }
+        .u-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #4a0000;
+        }
+        .status-dot {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 12px;
+            height: 12px;
+            background: #555; /* ოფლაინი */
+            border: 2px solid black;
+            border-radius: 50%;
+        }
+        .status-dot.online {
+            background: #0f0;
+            box-shadow: 0 0 8px #0f0;
+        }
+
+        .u-name { color: yellow; font-weight: bold; font-size: 14px; margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .u-role { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* მობილურზე მორგება */
+        @media (max-width: 400px) {
+            .user-card { width: 130px; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="back-btn" onclick="location.href='chat.html'">← უკან</div>
+    <h3 style="margin:0; color:#ff0000;">🗂️ სრული სია</h3>
+    <div style="width:50px;"></div>
+</div>
+
+<div id="users-container">იტვირთება...</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+
+    async function loadAllUsers() {
+        const { data: users, error } = await _s.from('profiles').select('*');
+        if (error) { console.error(error); return; }
+
+        const container = document.getElementById('users-container');
+        container.innerHTML = "";
+        const now = new Date();
+
+        // დალაგება როლების მიხედვით
+        const order = { 'Owner': 1, 'Admin': 2, 'Member': 3 };
+        users.sort((a, b) => (order[a.role] || 3) - (order[b.role] || 3));
+
+        users.forEach(u => {
+            // ონლაინის შემოწმება (ბოლო 5 წუთი)
+            const lastSeen = u.last_online ? new Date(u.last_online) : null;
+            const isOnline = lastSeen && (now - lastSeen) < 300000;
+            const dotClass = isOnline ? "online" : "";
+
+            container.innerHTML += `
+                <div class="user-card" onclick="location.href='profile.html?user=${u.username}'">
+                    <div class="avatar-wrapper">
+                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="u-avatar">
+                        <div class="status-dot ${dotClass}"></div>
+                    </div>
+                    <div class="u-name">${u.username}</div>
+                    <div class="u-role">${u.role || 'Member'}</div>
+                </div>
+            `;
+        });
+    }
+
+    loadAllUsers();
+    // განახლდეს ყოველ 30 წამში, რომ ონლაინები სწორად ჩანდეს
+    setInterval(loadAllUsers, 30000);
+</script>
+</body>
+</html>
