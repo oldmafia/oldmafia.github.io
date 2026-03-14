@@ -1,0 +1,128 @@
+<style>
+    /* მარჯვენა ჰამბურგერის ღილაკი */
+    .burger-online {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        font-size: 26px;
+        color: #00ff00; /* მწვანე მბზინავი ონლაინისთვის */
+        cursor: pointer;
+        z-index: 2100; /* ყველაფერზე მაღლა რომ იყოს */
+        text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+
+    /* მარჯვენა ონლაინ პანელი */
+    .online-sidebar {
+        position: fixed;
+        top: 0;
+        right: -280px; /* დამალული */
+        width: 280px;
+        height: 100%;
+        background: #050000;
+        border-left: 2px solid #4a0000;
+        transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        box-shadow: -10px 0 20px rgba(0,0,0,0.8);
+    }
+
+    .online-sidebar.active { right: 0; }
+
+    /* სათაური პანელში */
+    .online-title {
+        padding: 25px 15px;
+        color: #00ff00;
+        text-align: center;
+        font-weight: bold;
+        border-bottom: 1px solid #1a0000;
+        letter-spacing: 1px;
+    }
+
+    /* ონლაინ იუზერის სტრიქონი */
+    .online-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        border-bottom: 1px solid #080000;
+        transition: 0.2s;
+    }
+    .online-row:hover { background: #110000; }
+
+    .online-row img {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 1px solid #00ff00;
+        object-fit: cover;
+    }
+
+    /* ფონი როცა მენიუ იხსნება */
+    .overlay-blur {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(3px);
+        z-index: 2500;
+    }
+    .overlay-blur.active { display: block; }
+
+    /* რანგის ფერები */
+    .nick-owner { color: #ffd700; font-weight: bold; text-shadow: 0 0 5px rgba(255,215,0,0.4); }
+    .nick-admin { color: #00e5ff; font-weight: bold; }
+    .nick-user { color: #ffffff; }
+</style>
+
+<div class="burger-online" onclick="toggleOnline()">☰</div>
+<div class="overlay-blur" id="onlineOverlay" onclick="toggleOnline()"></div>
+
+<div class="online-sidebar" id="onlineSidebar">
+    <div class="online-title">🟢 ONLINE USERS</div>
+    <div id="onlineData" style="overflow-y: auto; flex: 1;">
+        </div>
+</div>
+
+<script>
+    function toggleOnline() {
+        document.getElementById('onlineSidebar').classList.toggle('active');
+        document.getElementById('onlineOverlay').classList.toggle('active');
+        if(document.getElementById('onlineSidebar').classList.contains('active')) {
+            refreshOnline();
+        }
+    }
+
+    async function refreshOnline() {
+        const fiveMinAgo = new Date(Date.now() - 5 * 60000).toISOString();
+        const { data: users, error } = await _s
+            .from('profiles')
+            .select('*')
+            .gt('last_online', fiveMinAgo);
+
+        if (error) return;
+
+        const container = document.getElementById('onlineData');
+        container.innerHTML = "";
+
+        if (!users || users.length === 0) {
+            container.innerHTML = "<div style='padding:20px; color:#333; font-size:12px; text-align:center;'>საიტზე არავინაა</div>";
+            return;
+        }
+
+        users.forEach(u => {
+            const roleClass = u.role === 'Owner' ? 'nick-owner' : (u.role === 'Admin' ? 'nick-admin' : 'nick-user');
+            container.innerHTML += `
+                <div class="online-row" onclick="location.href='profile.html?user=${u.username}'">
+                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                    <div class="${roleClass}">${u.username}</div>
+                </div>
+            `;
+        });
+    }
+
+    // ავტომატური რეფრეში ყოველ 30 წამში როცა მენიუ ღიაა
+    setInterval(() => {
+        if(document.getElementById('onlineSidebar').classList.contains('active')) refreshOnline();
+    }, 30000);
+</script>
