@@ -1,5 +1,5 @@
 (function() {
-    // 1. სტილები (დავამატეთ ანიმაცია წერტილისთვის)
+    // 1. სტილები (ონლაინების და კონვერტის)
     const style = document.createElement('style');
     style.innerHTML = `
         .sidebar-right { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s ease; z-index: 4000; border-left: 2px solid #4a0000; display: flex; flex-direction: column; font-family: sans-serif; }
@@ -10,10 +10,13 @@
         .status-dot-online { width: 9px; height: 9px; background: #0f0; border-radius: 50%; box-shadow: 0 0 8px #0f0; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .menu-btn-right { cursor: pointer; font-size: 24px; color: #ff0000; position: absolute; right: 15px; top: 15px; z-index: 1001; }
+        
+        /* კონვერტის ნოთიფიკაციის სტილი */
+        #msg-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: none; align-items: center; justify-content: center; font-weight: bold; border: 1.5px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
     `;
     document.head.appendChild(style);
 
-    // 2. სტრუქტურა
+    // 2. ონლაინების გვერდითა მენიუ
     const sidebar = document.createElement('div');
     sidebar.id = 'sidebar-right';
     sidebar.className = 'sidebar-right';
@@ -25,32 +28,29 @@
     `;
     document.body.appendChild(sidebar);
 
-    // 3. ონლაინ სტატუსის განახლება (ბაზაში აგზავნის დროს)
+    // 3. ონლაინ სტატუსის განახლება
     async function updateMyPresence() {
         if (typeof myNick !== 'undefined') {
             await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
         }
     }
 
-    // 4. იუზერების გამოჩენა (ფილტრით)
+    // 4. იუზერების სია
     window.loadOnlineUsers = async function() {
         const { data: users, error } = await _s.from('profiles').select('*');
         if (error) return;
-
         const container = document.getElementById('user-list-container');
+        if (!container) return;
         container.innerHTML = "";
-        
         const now = new Date();
         const roleMap = { 'Owner': '👑 დამფუძნებლები', 'Admin': '🛡️ ადმინისტრაცია', 'Member': '👤 მომხმარებლები' };
 
         Object.keys(roleMap).forEach(role => {
-            // ფილტრი: ვინც ბოლო 2 წუთში გამოჩნდა
             const onlineUsers = users.filter(u => {
                 const lastSeen = new Date(u.last_online);
-                const diff = (now - lastSeen) / 1000 / 60; // წუთებში
+                const diff = (now - lastSeen) / 1000 / 60;
                 return (u.role || 'Member') === role && diff < 2; 
             });
-
             if (onlineUsers.length > 0) {
                 container.innerHTML += `<div class="role-group-title">${roleMap[role]}</div>`;
                 onlineUsers.forEach(u => {
@@ -65,7 +65,32 @@
         });
     };
 
-    // 5. ღილაკის ლოგიკა
+    // 5. კონვერტის (Inbox) ღილაკი და ციფრი
+    const inboxBtn = document.createElement('div');
+    inboxBtn.innerHTML = `
+        <div style="position: relative; width: 50px; height: 50px; background: #800000; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ff0000; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+            ✉️
+            <div id="msg-badge">0</div>
+        </div>
+    `;
+    inboxBtn.style = "position: fixed; bottom: 90px; right: 20px; cursor: pointer; z-index: 10000;";
+    inboxBtn.onclick = () => window.location.href = 'inbox.html';
+    document.body.appendChild(inboxBtn);
+
+    // 6. წაუკითხავი მესიჯების დათვლა
+    async function updateUnreadCount() {
+        if (typeof myNick === 'undefined') return;
+        const { count, error } = await _s.from('direct_messages').select('*', { count: 'exact', head: true }).eq('receiver_id', myNick).eq('is_read', false);
+        const badge = document.getElementById('msg-badge');
+        if (!error && count > 0) {
+            badge.innerText = count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // 7. ღილაკი ზედა ზოლში (👥)
     const topbar = document.querySelector('.topbar');
     if (topbar) {
         const btn = document.createElement('div');
@@ -79,12 +104,10 @@
         if (!sidebar.contains(e.target) && sidebar.classList.contains('active')) sidebar.classList.remove('active');
     });
 
-    setInterval(updateMyPresence, 30000); // 30 წამში ერთხელ თქვი რომ ონლაინ ხარ
-    setInterval(loadOnlineUsers, 15000);   // 15 წამში ერთხელ განაახლე სია
-    setTimeout(() => { updateMyPresence(); loadOnlineUsers(); }, 1000);
+    // ინტერვალები
+    setInterval(updateMyPresence, 30000);
+    setInterval(loadOnlineUsers, 15000);
+    setInterval(updateUnreadCount, 5000); // 5 წამში ერთხელ ამოწმებს ახალ მესიჯს
+    
+    setTimeout(() => { updateMyPresence(); loadOnlineUsers(); updateUnreadCount(); }, 1000);
 })();
-const oldInbox = document.createElement('div');
-oldInbox.innerHTML = '✉️';
-oldInbox.onclick = () => window.location.href = 'inbox.html';
-oldInbox.style = "position: fixed; bottom: 85px; right: 20px; width: 50px; height: 50px; background: #800000; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; border: 2px solid #ff0000; font-size: 22px; box-shadow: 0 0 10px rgba(0,0,0,0.5);";
-document.body.appendChild(oldInbox);
