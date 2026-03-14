@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLD MAFIA - ყველა წევრი</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --red: #4a0000; --bright-red: #ff0000; }
+        * { box-sizing: border-box; }
+        
+        body { 
+            background: #000; 
+            color: white; 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding: 0; 
+        }
+
+        /* ზედა ზოლი ძებნისთვის */
+        .top-header { 
+            position: sticky; 
+            top: 0; 
+            background: rgba(0,0,0,0.95); 
+            padding: 15px; 
+            border-bottom: 1px solid var(--red); 
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 450px;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 25px;
+            padding: 12px 20px;
+            color: white;
+            outline: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .search-input:focus { border-color: var(--bright-red); box-shadow: 0 0 10px rgba(255,0,0,0.1); }
+
+        /* წევრების ბადე - მაქსიმალურად კომპაქტური */
+        #users-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(95px, 95px)); 
+            gap: 12px; 
+            padding: 20px; 
+            justify-content: center;
+        }
+
+        /* პატარა ბარათი */
+        .member-card { 
+            background: #080808; 
+            border: 1px solid #151515; 
+            border-radius: 12px; 
+            padding: 15px 5px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+
+        .member-card:hover { border-color: var(--bright-red); transform: translateY(-3px); }
+
+        .member-avatar { 
+            width: 50px; 
+            height: 50px; 
+            border-radius: 50%; 
+            border: 1px solid var(--red); 
+            object-fit: cover; 
+            margin-bottom: 8px;
+        }
+
+        .member-name { 
+            font-size: 10px; 
+            font-weight: bold; 
+            color: #ddd; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            display: block;
+        }
+
+        .member-role { 
+            font-size: 8px; 
+            color: #444; 
+            text-transform: uppercase; 
+            margin-top: 3px; 
+            letter-spacing: 0.5px;
+        }
+
+        /* სქროლი */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--red); }
+    </style>
+</head>
+<body>
+
+<div class="top-header">
+    <div style="margin-bottom:10px; font-size:11px; color:var(--bright-red); font-weight:bold; letter-spacing:1px;">OLD MAFIA ARCHIVE</div>
+    <input type="text" id="searchInput" class="search-input" placeholder="ჩაწერე ნიკი..." oninput="filterProfiles()">
+</div>
+
+<div id="users-grid">იტვირთება...</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let usersData = [];
+
+    async function fetchUsers() {
+        const { data, error } = await _s
+            .from('profiles')
+            .select('*')
+            .order('username', { ascending: true });
+
+        if (error) {
+            document.getElementById('users-grid').innerHTML = "შეცდომაა.";
+            return;
+        }
+
+        usersData = data || [];
+        displayUsers(usersData);
+    }
+
+    function displayUsers(list) {
+        const grid = document.getElementById('users-grid');
+        grid.innerHTML = list.map(u => `
+            <div class="member-card" onclick="location.href='profile.html?user=${u.username}'">
+                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="member-avatar">
+                <span class="member-name">${u.username}</span>
+                <div class="member-role">${u.role || 'Member'}</div>
+            </div>
+        `).join('');
+    }
+
+    function filterProfiles() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = usersData.filter(u => u.username.toLowerCase().includes(query));
+        displayUsers(filtered);
+    }
+
+    fetchUsers();
+</script>
+
+</body>
+</html>
