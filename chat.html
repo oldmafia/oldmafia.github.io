@@ -174,25 +174,24 @@ async function checkPMs() {
 async function toggleEmojiPicker() {
     const picker = document.getElementById('emoji-picker');
     const list = document.getElementById('emoji-list');
-    picker.style.display = (picker.style.display === 'none' || picker.style.display === '') ? 'block' : 'none';
-    if (picker.style.display === 'block' && list.innerHTML === "") {
+    if (!picker || !list) return;
+    const isHidden = (picker.style.display === 'none' || picker.style.display === '');
+    picker.style.display = isHidden ? 'block' : 'none';
+    if (isHidden && list.innerHTML === "") {
         const { data } = await _s.from('emojis').select('name');
         const base = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+        list.innerHTML = ""; 
         data?.forEach(e => {
             const img = document.createElement('img');
-            img.src = `${base}${e.name}`; img.style.width = "38px"; img.style.margin = "5px"; img.style.cursor = "pointer";
-            img.onclick = () => { 
-                document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; 
-                document.getElementById('msg-input').focus(); 
-            };
+            img.src = `${base}${e.name}`; img.style.width = "40px"; img.style.height = "40px"; img.style.cursor = "pointer";
+            img.onclick = () => { document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; document.getElementById('msg-input').focus(); };
             list.appendChild(img);
         });
     }
 }
 
 async function loadMessages() {
-    const box = document.getElementById("chat"); 
-    if(!box) return;
+    const box = document.getElementById("chat"); if(!box) return;
     const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
     const { data: profs } = await _s.from('profiles').select('*');
     box.innerHTML = "";
@@ -202,13 +201,9 @@ async function loadMessages() {
         const p = profs?.find(u => u.username === m.user_name);
         const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
         const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
-        
         let txt = m.text || "";
         txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:45px; vertical-align:middle;" onerror="this.src='${base}${name}'; this.onerror=null;">`);
-
-        let delBtn = (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) 
-            ? `<span style="cursor:pointer;margin-left:8px;filter:grayscale(1);" onclick="event.stopPropagation(); deleteMsg(${m.id})">🗑️</span>` 
-            : "";
+        let delBtn = (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) ? `<span style="cursor:pointer;margin-left:8px;opacity:0.6;" onclick="event.stopPropagation(); deleteMsg(${m.id})">🗑️</span>` : "";
 
         box.innerHTML += `
             <div class="msg-container">
@@ -217,9 +212,7 @@ async function loadMessages() {
                     <div class="online-dot ${active}"></div>
                 </div>
                 <div class="bubble">
-                    <div class="m-nick" onclick="openProfile('${m.user_name}')" style="cursor:pointer; font-weight:bold; color:#ff4d4d;">
-                        ${m.user_name} ${delBtn}
-                    </div>
+                    <div class="m-nick" onclick="openProfile('${m.user_name}')" style="cursor:pointer; font-weight:bold; color:#ff4d4d;">${m.user_name} ${delBtn}</div>
                     <div class="m-text">${txt}</div>
                     <div class="m-footer"><span class="m-time">${time}</span></div>
                 </div>
@@ -228,18 +221,48 @@ async function loadMessages() {
     box.scrollTop = box.scrollHeight;
 }
 
+async function openProfile(name) {
+    const { data: p } = await _s.from('profiles').select('*').eq('username', name).single();
+    if (!p) return;
+    document.getElementById('prof-nick').innerText = p.username;
+    document.getElementById('prof-role').innerText = p.role || "Member";
+    document.getElementById('prof-status').innerText = p.status || "";
+    document.getElementById('prof-img').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
+    
+    const adminPanel = document.getElementById('admin-actions');
+    if (adminPanel) {
+        // მხოლოდ ადმინს ან მფლობელს უჩვენებს მართვის ღილაკებს
+        if (myRole === "Owner" || myRole === "Admin") {
+            adminPanel.style.display = "block";
+            adminPanel.innerHTML = `
+                <div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+                    <p style="font-size:12px; color:#aaa;">მართვა:</p>
+                    <button onclick="setRole('${p.username}', 'Admin')" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; margin:2px;">Admin</button>
+                    <button onclick="setRole('${p.username}', 'Member')" style="background:#444; color:white; border:1px solid #666; padding:5px 10px; cursor:pointer; margin:2px;">Member</button>
+                    <button onclick="setRole('${p.username}', 'Banned')" style="background:#800; color:white; border:none; padding:5px 10px; cursor:pointer; margin:2px;">BAN</button>
+                </div>`;
+        } else {
+            adminPanel.style.display = "none";
+        }
+    }
+    document.getElementById('profile-modal').style.display = 'flex';
+}
+
+async function setRole(name, role) {
+    if (confirm(`შეუცვალოთ როლი ${name}-ს: ${role}?`)) {
+        const { error } = await _s.from('profiles').update({ role: role }).eq('username', name);
+        if(!error) { alert("წარმატებით შეიცვალა!"); location.reload(); }
+    }
+}
+
 async function sendMsg() {
-    const i = document.getElementById("msg-input"); 
-    if (!i || !i.value.trim() || myRole === "Banned") return;
+    const i = document.getElementById("msg-input"); if (!i || !i.value.trim() || myRole === "Banned") return;
     await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
     i.value = "";
 }
 
 async function deleteMsg(id) {
-    if (confirm("ნამდვილად გსურთ წაშლა?")) {
-        await _s.from('messages').delete().eq('id', id);
-        loadMessages();
-    }
+    if (confirm("ნამდვილად გსურთ წაშლა?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); }
 }
 
 async function changeStatus() {
