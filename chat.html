@@ -279,6 +279,38 @@
     }
     function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
     init();
+    <script>
+/* ეს არის სრულიად დამოუკიდებელი ბლოკი - არაფერს აფუჭებს */
+setTimeout(() => {
+    const inputZone = document.querySelector('.input-zone');
+    if (!inputZone) return;
+
+    // 1. ვამატებთ სმაილების ღილაკს
+    const emoBtn = document.createElement('button');
+    emoBtn.innerHTML = '🎬'; 
+    emoBtn.style = "background:none; border:none; font-size:22px; cursor:pointer; margin-right:10px;";
+    inputZone.prepend(emoBtn);
+
+    // 2. ვქმნით სმაილების ფანჯარას
+    const box = document.createElement('div');
+    box.style = "display:none; position:fixed; bottom:75px; left:10px; background:#000; border:2px solid red; padding:10px; border-radius:15px; grid-template-columns: repeat(4, 1fr); gap:10px; z-index:9999; max-height:200px; overflow-y:auto; box-shadow: 0 0 15px red;";
+    document.body.appendChild(box);
+
+    // 3. როცა ღილაკს დავაჭერთ, ბაზიდან (emojis ცხრილიდან) წამოიღებს სმაილებს
+    emoBtn.onclick = async () => {
+        if (box.style.display === 'none') {
+            const { data: list } = await _s.from('emojis').select('*');
+            if (list) {
+                box.innerHTML = list.map(e => `
+                    <img src="${e.url || e.char}" style="width:40px; height:40px; cursor:pointer;" 
+                    onclick="document.getElementById('msg-input').value += '${e.url || e.char} '; box.style.display='none';">
+                `).join('');
+                box.style.display = 'grid';
+            }
+        } else { box.style.display = 'none'; }
+    };
+}, 1000);
 </script>
+
 </body>
 </html>
