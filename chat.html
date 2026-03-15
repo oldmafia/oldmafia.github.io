@@ -223,9 +223,10 @@ async function toggleEmojiPicker() {
         const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
 
         let formattedText = m.text;
-        formattedText = formattedText.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => {
-            return `<img src="${storageBase}${name}.gif" class="chat-emoji" onerror="this.replaceWith('${match}')">`;
-        });
+       formattedText = formattedText.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => {
+        // აქ წავშალეთ .gif, რადგან შენს ფაილებს პირდაპირ სახელი ჰქვია
+        return `<img src="${storageBase}${name}" class="chat-emoji" style="height:45px; width:auto; vertical-align:middle;" onerror="this.replaceWith('${match}')">`;
+    });
 
         let delBtn = "";
         if (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) {
