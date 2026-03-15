@@ -160,11 +160,15 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-  async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
+  async function updateOnline() { 
+    if (myNick) await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); 
+}
 
 async function checkPMs() {
+    if (!myNick) return;
     const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-    const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; }
+    const b = document.getElementById('pm-count'); 
+    if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; }
 }
 
 async function toggleEmojiPicker() {
@@ -177,16 +181,21 @@ async function toggleEmojiPicker() {
         data?.forEach(e => {
             const img = document.createElement('img');
             img.src = `${base}${e.name}`; img.style.width = "38px"; img.style.margin = "5px"; img.style.cursor = "pointer";
-            img.onclick = () => { document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; document.getElementById('msg-input').focus(); };
+            img.onclick = () => { 
+                document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; 
+                document.getElementById('msg-input').focus(); 
+            };
             list.appendChild(img);
         });
     }
 }
 
 async function loadMessages() {
+    const box = document.getElementById("chat"); 
+    if(!box) return;
     const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
     const { data: profs } = await _s.from('profiles').select('*');
-    const box = document.getElementById("chat"); box.innerHTML = "";
+    box.innerHTML = "";
     const base = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
 
     msgs?.forEach(m => {
@@ -195,9 +204,11 @@ async function loadMessages() {
         const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
         
         let txt = m.text || "";
-        txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:40px; vertical-align:middle;" onerror="this.src='${base}${name}'; this.onerror=null;">`);
+        txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:45px; vertical-align:middle;" onerror="this.src='${base}${name}'; this.onerror=null;">`);
 
-        let delBtn = (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) ? `<span style="cursor:pointer;margin-left:5px;" onclick="deleteMsg(${m.id})">🗑️</span>` : "";
+        let delBtn = (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) 
+            ? `<span style="cursor:pointer;margin-left:8px;filter:grayscale(1);" onclick="event.stopPropagation(); deleteMsg(${m.id})">🗑️</span>` 
+            : "";
 
         box.innerHTML += `
             <div class="msg-container">
@@ -206,7 +217,7 @@ async function loadMessages() {
                     <div class="online-dot ${active}"></div>
                 </div>
                 <div class="bubble">
-                    <div class="m-nick" onclick="openProfile('${m.user_name}')" style="cursor:pointer; color:var(--bright-red);">
+                    <div class="m-nick" onclick="openProfile('${m.user_name}')" style="cursor:pointer; font-weight:bold; color:#ff4d4d;">
                         ${m.user_name} ${delBtn}
                     </div>
                     <div class="m-text">${txt}</div>
@@ -218,7 +229,8 @@ async function loadMessages() {
 }
 
 async function sendMsg() {
-    const i = document.getElementById("msg-input"); if (!i.value.trim() || myRole === "Banned") return;
+    const i = document.getElementById("msg-input"); 
+    if (!i || !i.value.trim() || myRole === "Banned") return;
     await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
     i.value = "";
 }
@@ -229,37 +241,30 @@ async function deleteMsg(id) {
         loadMessages();
     }
 }
-    }
 
-    async function setRole(r) {
-        const t = document.getElementById('targetName').innerText;
-        await _s.from('profiles').update({ role: r }).eq('username', t);
-        alert("მომხმარებლის როლი განახლდა!"); location.reload();
-    }
+async function changeStatus() {
+    const s = prompt("შეიყვანეთ ახალი სტატუსი:");
+    if (s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
+}
 
-    async function changeStatus() {
-        const s = prompt("შეიყვანეთ ახალი სტატუსი:");
-        if (s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
-    }
+async function uploadAvatar(el) {
+    const file = el.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick);
+        location.reload();
+    };
+    reader.readAsDataURL(file);
+}
 
-    async function uploadAvatar(el) {
-        const file = el.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick);
-            location.reload();
-        };
-        reader.readAsDataURL(file);
-    }
+function changeRoom(n, el) {
+    currentRoom = n; document.getElementById('room-name').innerText = n;
+    document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active'); closeAll(); loadMessages();
+}
 
-    function changeRoom(n, el) { 
-        currentRoom = n; document.getElementById('room-name').innerText = n; 
-        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active'); closeAll(); loadMessages(); 
-    }
-    
-    function logout() { localStorage.removeItem('nickname'); location.reload(); }
-    window.onload = init;
+function logout() { localStorage.removeItem('nickname'); location.reload(); }
+window.onload = init;
 </script>
 </body>
 </html>
