@@ -143,9 +143,7 @@
     function toggleOnline() { document.getElementById('online-sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); if(document.getElementById('online-sidebar').classList.contains('active')) loadOnline(); }
     function closeAll() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('online-sidebar').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); }
     function closeModal() { document.getElementById('userModal').style.display = "none"; }
-    function translateRole(r) { const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი', 'Banned': '🚫 დაბლოკილი'}; return roles[r] || '👤 მომხმარებელი'; }
-
-    async function init() {
+    function translateRole(r) { const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი', 'Banned': '🚫 დაბლოკილი'}; return roles[r] || '👤 async function init() {
         if (!myNick) { location.href = 'index.html'; return; }
         const { data: p } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
         if (p) {
