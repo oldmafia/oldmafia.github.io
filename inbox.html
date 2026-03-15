@@ -6,7 +6,6 @@
     <title>პირადი - OLD MAFIA</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* სტილები რომ ლამაზად გამოჩნდეს */
         * { box-sizing: border-box; }
         :root { --dark-red: #4a0000; --bright-red: #ff0000; --bg-black: #050000; }
         body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -15,8 +14,19 @@
         .title { color: var(--bright-red); font-weight: bold; flex: 1; font-size: 18px; }
         #inbox-view, #chat-view { flex: 1; overflow-y: auto; display: none; padding: 15px; }
         #inbox-view.active, #chat-view.active { display: block; }
-        .history-item { background: rgba(20, 0, 0, 0.9); border: 1px solid var(--dark-red); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .history-item { background: rgba(20, 0, 0, 0.9); border: 1px solid var(--dark-red); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; }
         .history-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
+        
+        /* წითელი წერტილის სტილი */
+        .unread-dot { 
+            width: 12px; 
+            height: 12px; 
+            background: var(--bright-red); 
+            border-radius: 50%; 
+            box-shadow: 0 0 10px var(--bright-red); 
+            margin-left: auto; 
+        }
+
         .msg { margin-bottom: 12px; max-width: 85%; padding: 10px 14px; border-radius: 15px; font-size: 15px; }
         .msg.sent { background: var(--dark-red); margin-left: auto; border-bottom-right-radius: 2px; }
         .msg.received { background: #222; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #333; }
@@ -50,17 +60,41 @@
     if (!myNick) location.href = 'index.html';
 
     async function loadInbox() {
-        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq.${myNick},receiver.eq.${myNick}`).order('created_at', { ascending: false });
+        const { data: msgs } = await _s.from('private_messages')
+            .select('*')
+            .or(`sender.eq.${myNick},receiver.eq.${myNick}`)
+            .order('created_at', { ascending: false });
+
         const historyDiv = document.getElementById('inbox-view');
         historyDiv.innerHTML = "";
+        
         const chats = {};
         msgs?.forEach(m => {
             const partner = (m.sender === myNick) ? m.receiver : m.sender;
-            if (!chats[partner]) chats[partner] = { lastMsg: m.text };
+            if (!chats[partner]) {
+                chats[partner] = { 
+                    lastMsg: m.text,
+                    // ვამოწმებთ არის თუ არა წაუკითხავი (მხოლოდ შემოსულებზე)
+                    isUnread: (m.receiver === myNick && m.is_read === false)
+                };
+            }
         });
+
         for (const partner in chats) {
             const { data: prof } = await _s.from('profiles').select('avatar_url').eq('username', partner).maybeSingle();
-            historyDiv.innerHTML += `<div class="history-item" onclick="openChat('${partner}')"><img src="${prof?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}"><div><div style="font-weight:bold;color:red">${partner}</div><div style="font-size:12px;color:#aaa">${chats[partner].lastMsg}</div></div></div>`;
+            
+            // თუ წაუკითხავია, ვამატებთ წითელ წერტილს
+            const dotHtml = chats[partner].isUnread ? '<div class="unread-dot"></div>' : '';
+
+            historyDiv.innerHTML += `
+                <div class="history-item" onclick="openChat('${partner}')">
+                    <img src="${prof?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                    <div style="flex:1">
+                        <div style="font-weight:bold;color:red">${partner}</div>
+                        <div style="font-size:12px;color:#aaa">${chats[partner].lastMsg}</div>
+                    </div>
+                    ${dotHtml}
+                </div>`;
         }
     }
 
@@ -70,7 +104,13 @@
         document.getElementById('inbox-view').classList.remove('active');
         document.getElementById('chat-view').classList.add('active');
         document.getElementById('chat-input').classList.add('active');
-        await _s.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', partner);
+
+        // ჩატის გახსნისას მესიჯებს ვნიშნავთ წაკითხულად
+        await _s.from('private_messages')
+            .update({ is_read: true })
+            .eq('receiver', myNick)
+            .eq('sender', partner);
+            
         loadPrivateMessages();
     }
 
@@ -101,13 +141,12 @@
         } else { location.href = 'chat.html'; }
     }
 
-    // ეს არის მთავარი ნაწილი!
     window.onload = () => {
         loadInbox();
         const urlParams = new URLSearchParams(window.location.search);
         const directUser = urlParams.get('to');
         if (directUser) {
-            openChat(directUser); // თუ ბმულში წერია სახელი, ეგრევე ხსნის ჩატს!
+            openChat(directUser);
         }
     };
 
