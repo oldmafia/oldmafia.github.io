@@ -39,11 +39,8 @@
         .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-right: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
         
-        /* განახლებული ონლაინ პანელის სტილები */
         .online-sidebar { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-left: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .online-sidebar.active { right: 0; }
-        .search-box { padding: 10px; background: #0a0000; border-bottom: 1px solid #222; }
-        .search-box input { width: 100%; padding: 8px 15px; border-radius: 15px; background: #111; border: 1px solid var(--blood-red); color: white; font-size: 12px; outline: none; }
         .group-header { padding: 10px 15px; font-size: 10px; color: #555; background: #080000; text-transform: uppercase; border-bottom: 1px solid #111; }
         .u-card { padding: 8px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid #0f0000; transition: 0.2s; }
         .u-card:hover { background: #150000; }
@@ -51,9 +48,9 @@
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3500; }
         .overlay.active { display: block; }
         
-        /* ნათებები */
         .glow-red { border: 2px solid red !important; box-shadow: 0 0 8px red; }
         .glow-cyan { border: 2px solid cyan !important; box-shadow: 0 0 8px cyan; }
+        .glow-green { border: 2px solid #0f0 !important; box-shadow: 0 0 8px #0f0; }
         
         .rooms-list { flex: 1; overflow-y: auto; border-top: 1px solid #222; }
         .room-item { padding: 14px 20px; cursor: pointer; color: #bbb; border-bottom: 1px solid #150000; font-size: 14px; transition: 0.2s; }
@@ -92,15 +89,13 @@
         <div class="room-item" onclick="changeRoom('🏛️ ფორუმი', this)">🏛️ ფორუმი</div>
         <div class="room-item" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
         <div class="room-item" onclick="changeRoom('🆘 დახმარება', this)">🆘 დახმარება</div>
+        <div class="room-item" style="color: #0f0;" onclick="changeRoom('📁 წევრების არქივი', this)">📁 წევრების არქივი</div>
     </div>
     <div style="padding:15px; text-align:center; color:red; cursor:pointer; border-top:1px solid #222;" onclick="logout()">🚪 გასვლა</div>
 </div>
 
 <div class="online-sidebar" id="online-sidebar">
-    <div style="padding:15px; color:#0f0; font-weight:bold; text-align:center; border-bottom:1px solid var(--dark-red);">👥 წევრები</div>
-    <div class="search-box">
-        <input type="text" id="user-search" placeholder="მოძებნე..." oninput="loadOnline()">
-    </div>
+    <div style="padding:15px; color:#0f0; font-weight:bold; text-align:center; border-bottom:1px solid var(--dark-red);">🟢 ონლაინში</div>
     <div id="online-list-content" style="flex:1; overflow-y:auto;"></div>
 </div>
 
@@ -117,7 +112,7 @@
     <div id="emoji-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap:10px;"></div>
 </div>
 
-<div class="input-zone">
+<div class="input-zone" id="input-zone">
     <button onclick="toggleEmojiPicker()" style="background:none; border:none; font-size:20px; cursor:pointer; padding:0 5px;">😊</button>
     <input type="text" id="msg-input" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMsg()">
     <button class="send-btn" onclick="sendMsg()">✈</button>
@@ -164,47 +159,37 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-    // განახლებული ფუნქცია: ძებნა და არქივი
+    // მარჯვენა პანელი: მხოლოდ ონლაინ ხალხი
     async function loadOnline() {
-        const { data: users } = await _s.from('profiles').select('*').order('username');
+        const { data: users } = await _s.from('profiles').select('*');
         const list = document.getElementById('online-list-content');
-        const searchInput = document.getElementById('user-search').value.toLowerCase();
         if(!list || !users) return;
-
         list.innerHTML = "";
         const now = new Date();
-        
-        // ფილტრაცია ძებნით
-        const filtered = users.filter(u => u.username.toLowerCase().includes(searchInput));
-        
-        // ონლაინ და ოფლაინ დაყოფა
-        const online = filtered.filter(u => u.last_online && (now - new Date(u.last_online) < 60000));
-        const offline = filtered.filter(u => !u.last_online || (now - new Date(u.last_online) >= 60000));
+        const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 60000));
 
-        const renderGrp = (title, grp, isOnline) => {
+        const renderGrp = (title, grp, glowClass) => {
             if(grp.length === 0) return "";
             let h = `<div class="group-header">${title} (${grp.length})</div>`;
             grp.forEach(u => {
-                let glow = "";
-                if(isOnline) {
-                    if(u.role === 'Owner') glow = "glow-red";
-                    else if(u.role === 'Admin') glow = "glow-cyan";
-                }
-                h += `<div class="u-card" onclick="openProfile('${u.username}')" style="${!isOnline ? 'opacity:0.5' : ''}">
-                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glow}" style="width:30px; height:30px;">
-                    <span style="font-size:13px; color:${isOnline ? '#ccc' : '#666'}">${u.username}</span>
+                h += `<div class="u-card" onclick="openProfile('${u.username}')">
+                    <div style="position:relative;">
+                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glowClass}" style="width:32px; height:32px;">
+                        <div style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#0f0; border:2px solid black; border-radius:50%; box-shadow:0 0 5px #0f0;"></div>
+                    </div>
+                    <span style="font-size:13px; color:#ccc;">${u.username}</span>
                 </div>`;
             });
             return h;
         };
 
-        list.innerHTML += renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), true);
-        list.innerHTML += renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), true);
-        list.innerHTML += renderGrp("🟢 ონლაინში", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), true);
-        list.innerHTML += renderGrp("📁 წევრების არქივი", offline, false);
+        list.innerHTML += renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), "glow-red");
+        list.innerHTML += renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), "glow-cyan");
+        list.innerHTML += renderGrp("👤 წევრები", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), "glow-green");
     }
 
     async function loadMessages() {
+        if(currentRoom === '📁 წევრების არქივი') return;
         const box = document.getElementById("chat"); if(!box) return;
         const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
         const { data: profs } = await _s.from('profiles').select('*');
@@ -233,6 +218,44 @@
         box.scrollTop = box.scrollHeight;
     }
 
+    function changeRoom(n, el) {
+        currentRoom = n; document.getElementById('room-name').innerText = n;
+        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active'); closeAll();
+        
+        const chat = document.getElementById('chat');
+        const inputZone = document.getElementById('input-zone');
+
+        if(n === '📁 წევრების არქივი') {
+            inputZone.style.display = "none";
+            chat.innerHTML = `
+                <div style="padding:20px;">
+                    <input type="text" id="arc-search" placeholder="მოძებნე წევრი..." oninput="searchArchive(this.value)" 
+                        style="width:100%; padding:12px; border-radius:20px; background:#111; border:1px solid var(--blood-red); color:white; outline:none; margin-bottom:20px;">
+                    <div id="archive-results"></div>
+                </div>`;
+            searchArchive(""); 
+        } else {
+            inputZone.style.display = "flex";
+            loadMessages();
+        }
+    }
+
+    async function searchArchive(val) {
+        const { data: users } = await _s.from('profiles').select('*').ilike('username', `%${val}%`).order('username');
+        const res = document.getElementById('archive-results');
+        if(!res || !users) return;
+        res.innerHTML = users.map(u => `
+            <div class="u-card" style="background:rgba(20,0,0,0.3); margin-bottom:5px; border-radius:10px;" onclick="openProfile('${u.username}')">
+                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:35px; height:35px; border-radius:50%; border:1px solid #444;">
+                <div>
+                    <div style="color:white; font-weight:bold; font-size:14px;">${u.username}</div>
+                    <div style="color:#777; font-size:11px;">${translateRole(u.role)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
     async function openProfile(name) {
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
         if(!p) return;
@@ -255,51 +278,17 @@
             } else if (myRole === "Admin" && p.role !== "Owner" && name !== myNick) {
                 adminZone.style.display = "block";
                 adminZone.innerHTML = `<button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 ბანი</button>`;
-            } else {
-                adminZone.style.display = "none";
-            }
+            } else { adminZone.style.display = "none"; }
         }
         document.getElementById('userModal').style.display = "flex";
         window.selectedUser = name;
     }
 
-    async function setRole(role) {
-        await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser);
-        alert("განახლდა!"); closeModal(); loadOnline();
-    }
-
-    async function sendMsg() {
-        const i = document.getElementById("msg-input"); if(!i.value.trim() || myRole === "Banned") return;
-        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
-        i.value = "";
-    }
-
-    async function uploadAvatar(el) {
-        const file = el.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick);
-            location.reload();
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async function changeStatus() {
-        const s = prompt("შეიყვანეთ ახალი სტატუსი:");
-        if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
-    }
-
-    function changeRoom(n, el) {
-        currentRoom = n; document.getElementById('room-name').innerText = n;
-        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active'); closeAll(); loadMessages();
-    }
-
-    async function checkPMs() {
-        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; }
-    }
-
+    async function setRole(role) { await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser); alert("განახლდა!"); closeModal(); loadOnline(); }
+    async function sendMsg() { const i = document.getElementById("msg-input"); if(!i.value.trim() || myRole === "Banned") return; await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]); i.value = ""; }
+    async function uploadAvatar(el) { const file = el.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async (e) => { await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick); location.reload(); }; reader.readAsDataURL(file); }
+    async function changeStatus() { const s = prompt("შეიყვანეთ ახალი სტატუსი:"); if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); } }
+    async function checkPMs() { const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false); const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; } }
     async function deleteMsg(id) { if(confirm("წავშალო?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); } }
     
     async function toggleEmojiPicker() {
