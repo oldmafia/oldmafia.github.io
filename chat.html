@@ -255,3 +255,140 @@
         }
         
         document.getElementById
+        document.getElementById('userModal').style.display = "flex";
+        window.selectedUser = name; 
+    }
+
+    // ეს ფუნქცია აძლევს როლებს მომხმარებლებს
+    async function setRole(role) {
+        if(!window.selectedUser) return;
+        const { error } = await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser);
+        if(!error) { 
+            alert(window.selectedUser + " გახდა " + translateRole(role)); 
+            closeModal(); 
+            loadOnline(); 
+        }
+    }
+
+    // ეს ფუნქცია ტვირთავს მესიჯებს ჩატში
+    async function loadMessages() {
+        const box = document.getElementById("chat");
+        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true }).limit(60);
+        const { data: profs } = await _s.from('profiles').select('*');
+        box.innerHTML = "";
+        msgs?.forEach(m => {
+            const p = profs?.find(u => u.username === m.user_name);
+            box.innerHTML += `
+                <div class="msg-container">
+                    <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')">
+                    <div class="bubble">
+                        <div class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name}</div>
+                        <div class="m-text">${m.text}</div>
+                        <div class="m-footer">
+                            <span class="m-time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // მესიჯის გაგზავნა
+    async function sendMsg() {
+        const i = document.getElementById("msg-input");
+        if(!i.value.trim() || myRole === "Banned") return;
+        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
+        i.value = "";
+    }
+
+    // ოთახების გადართვა
+    function changeRoom(n, el) {
+        currentRoom = n; document.getElementById('room-name').innerText = n;
+        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active'); closeAll(); loadMessages();
+    }
+
+    // ემოჯიების პანელის გამოჩენა/დამალვა
+    function toggleEmojiPicker() {
+        const p = document.getElementById('emoji-picker');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
+        if(p.style.display === 'block' && !document.getElementById('emoji-list').innerHTML) {
+         function toggleEmojiPicker() {
+        const p = document.getElementById('emoji-picker');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
+        if(p.style.display === 'block' && !document.getElementById('emoji-list').innerHTML) {
+            const emojis = ["😊","😂","❤️","👍","🔥","😎","👑","🕵️","🕴️","🃏","🎲","⚔️","🔫","🍷","🚬","💀","🚫","🛡️"];
+            emojis.forEach(e => {
+                const span = document.createElement('span');
+                span.innerText = e;
+                span.style.cssText = "font-size:25px; cursor:pointer; padding:5px;";
+                span.onclick = () => { document.getElementById('msg-input').value += e; };
+                document.getElementById('emoji-list').appendChild(span);
+            });
+        }
+    }
+
+    async function setRole(role) {
+        if(!window.selectedUser) return;
+        const { error } = await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser);
+        if(!error) { 
+            alert(window.selectedUser + " გახდა " + translateRole(role)); 
+            closeModal(); 
+            loadOnline(); 
+        }
+    }
+
+    async function loadMessages() {
+        const box = document.getElementById("chat");
+        if(!box) return;
+        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true }).limit(60);
+        const { data: profs } = await _s.from('profiles').select('*');
+        box.innerHTML = "";
+        msgs?.forEach(m => {
+            const p = profs?.find(u => u.username === m.user_name);
+            box.innerHTML += `
+                <div class="msg-container">
+                    <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')">
+                    <div class="bubble">
+                        <div class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name}</div>
+                        <div class="m-text">${m.text}</div>
+                        <div class="m-footer">
+                            <span class="m-time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendMsg() {
+        const i = document.getElementById("msg-input");
+        if(!i.value.trim() || myRole === "Banned") return;
+        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
+        i.value = "";
+    }
+
+    function changeRoom(n, el) {
+        currentRoom = n; 
+        document.getElementById('room-name').innerText = n;
+        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active'); 
+        closeAll(); 
+        loadMessages();
+    }
+
+    async function checkPMs() {
+        const { count } = await _s.from('pms').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
+        const badge = document.getElementById('pm-count');
+        if(badge) {
+            badge.innerText = count || 0;
+            badge.style.display = count > 0 ? "block" : "none";
+        }
+    }
+
+    function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
+
+    init();
+</script>
+</body>
+</html>
