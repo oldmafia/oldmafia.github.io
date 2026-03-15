@@ -38,10 +38,22 @@
 
         .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-right: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
-        .online-sidebar { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-left: 3px solid var(--dark-red); overflow-y: auto; }
+        
+        /* განახლებული ონლაინ პანელის სტილები */
+        .online-sidebar { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-left: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .online-sidebar.active { right: 0; }
+        .search-box { padding: 10px; background: #0a0000; border-bottom: 1px solid #222; }
+        .search-box input { width: 100%; padding: 8px 15px; border-radius: 15px; background: #111; border: 1px solid var(--blood-red); color: white; font-size: 12px; outline: none; }
+        .group-header { padding: 10px 15px; font-size: 10px; color: #555; background: #080000; text-transform: uppercase; border-bottom: 1px solid #111; }
+        .u-card { padding: 8px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid #0f0000; transition: 0.2s; }
+        .u-card:hover { background: #150000; }
+        
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3500; }
         .overlay.active { display: block; }
+        
+        /* ნათებები */
+        .glow-red { border: 2px solid red !important; box-shadow: 0 0 8px red; }
+        .glow-cyan { border: 2px solid cyan !important; box-shadow: 0 0 8px cyan; }
         
         .rooms-list { flex: 1; overflow-y: auto; border-top: 1px solid #222; }
         .room-item { padding: 14px 20px; cursor: pointer; color: #bbb; border-bottom: 1px solid #150000; font-size: 14px; transition: 0.2s; }
@@ -85,8 +97,11 @@
 </div>
 
 <div class="online-sidebar" id="online-sidebar">
-    <div style="padding:20px; color:#0f0; font-weight:bold; text-align:center; border-bottom:2px solid var(--dark-red);">🟢 ონლაინში</div>
-    <div id="online-list-content"></div>
+    <div style="padding:15px; color:#0f0; font-weight:bold; text-align:center; border-bottom:1px solid var(--dark-red);">👥 წევრები</div>
+    <div class="search-box">
+        <input type="text" id="user-search" placeholder="მოძებნე..." oninput="loadOnline()">
+    </div>
+    <div id="online-list-content" style="flex:1; overflow-y:auto;"></div>
 </div>
 
 <div class="topbar">
@@ -141,11 +156,7 @@
             document.getElementById('my-nick-label').innerText = p.username;
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
-            
-            // ონლაინ სტატუსის განახლება
             setInterval(() => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick), 10000);
-            
-            // SMS და ონლაინ სიის პერიოდული შემოწმება
             checkPMs(); setInterval(checkPMs, 5000);
             loadOnline(); setInterval(loadOnline, 15000);
         }
@@ -153,25 +164,44 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
+    // განახლებული ფუნქცია: ძებნა და არქივი
     async function loadOnline() {
-        const { data: users } = await _s.from('profiles').select('*');
+        const { data: users } = await _s.from('profiles').select('*').order('username');
         const list = document.getElementById('online-list-content');
+        const searchInput = document.getElementById('user-search').value.toLowerCase();
         if(!list || !users) return;
+
         list.innerHTML = "";
         const now = new Date();
-        const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 60000)); // 1 წუთი
         
-        const renderGrp = (title, grp, color) => {
+        // ფილტრაცია ძებნით
+        const filtered = users.filter(u => u.username.toLowerCase().includes(searchInput));
+        
+        // ონლაინ და ოფლაინ დაყოფა
+        const online = filtered.filter(u => u.last_online && (now - new Date(u.last_online) < 60000));
+        const offline = filtered.filter(u => !u.last_online || (now - new Date(u.last_online) >= 60000));
+
+        const renderGrp = (title, grp, isOnline) => {
             if(grp.length === 0) return "";
-            return `<div style="padding:10px 20px; font-size:11px; color:#555; background:#0a0000;">${title}</div>` +
-            grp.map(u => `<div style="padding:10px 20px; display:flex; align-items:center; gap:10px; cursor:pointer; border-bottom:1px solid #111;" onclick="openProfile('${u.username}')">
-                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1.5px solid ${color}; object-fit: cover;">
-                <span style="font-size:13px; color:#ccc;">${u.username}</span>
-            </div>`).join('');
+            let h = `<div class="group-header">${title} (${grp.length})</div>`;
+            grp.forEach(u => {
+                let glow = "";
+                if(isOnline) {
+                    if(u.role === 'Owner') glow = "glow-red";
+                    else if(u.role === 'Admin') glow = "glow-cyan";
+                }
+                h += `<div class="u-card" onclick="openProfile('${u.username}')" style="${!isOnline ? 'opacity:0.5' : ''}">
+                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glow}" style="width:30px; height:30px;">
+                    <span style="font-size:13px; color:${isOnline ? '#ccc' : '#666'}">${u.username}</span>
+                </div>`;
+            });
+            return h;
         };
-        list.innerHTML = renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), "red") +
-                         renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), "cyan") +
-                         renderGrp("👤 წევრები", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), "#777");
+
+        list.innerHTML += renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), true);
+        list.innerHTML += renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), true);
+        list.innerHTML += renderGrp("🟢 ონლაინში", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), true);
+        list.innerHTML += renderGrp("📁 წევრების არქივი", offline, false);
     }
 
     async function loadMessages() {
