@@ -33,6 +33,8 @@
         .m-text { color: #ddd; font-size: 14px; word-wrap: break-word; line-height: 1.4; }
         .m-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
         .m-time { font-size: 10px; color: #666; font-family: monospace; }
+        .del-icon { color: #ff4444; font-size: 12px; cursor: pointer; margin-left: 10px; opacity: 0.5; transition: 0.2s; }
+        .del-icon:hover { opacity: 1; transform: scale(1.2); }
 
         /* ინპუტი */
         .input-zone { position: fixed; bottom: 0; left: 0; width: 100%; background: black; padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--dark-red); z-index: 2000; }
@@ -222,121 +224,34 @@
         const adminZone = document.getElementById('adminOptions');
         adminZone.innerHTML = ""; 
         
-        if (name !== myNick && myRole === "Owner") {
-            adminZone.style.display = "block";
-            adminZone.innerHTML = `
-                <button class="modal-btn" onclick="setRole('Owner')" style="color: gold;">👑 დამფუძნებლად დანიშვნა</button>
-                <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
-                <button class="modal-btn" onclick="setRole('Member')" style="background:#222;">✨ როლის ჩახსნა</button>
-                <button class="modal-btn" onclick="setRole('Banned')" style="background:#400; color:red;">🚫 ბანი</button>
-            `;
+        const targetIsOwner = (p.role === 'Owner');
+        const targetIsAdmin = (p.role === 'Admin');
+
+        if (name !== myNick) {
+            let showControls = false;
+            let controlsHTML = "";
+
+            if (myRole === "Owner") {
+                showControls = true;
+                controlsHTML = `
+                    <button class="modal-btn" onclick="setRole('Owner')" style="color: gold;">👑 დამფუძნებლად დანიშვნა</button>
+                    <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
+                    <button class="modal-btn" onclick="setRole('Member')" style="background:#222;">✨ როლის ჩახსნა</button>
+                    <button class="modal-btn" onclick="setRole('Banned')" style="background:#400; color:red;">🚫 ბანი</button>
+                `;
+            } else if (myRole === "Admin" && !targetIsOwner && !targetIsAdmin) {
+                showControls = true;
+                controlsHTML = `<button class="modal-btn" onclick="setRole('Banned')" style="background:#400; color:red;">🚫 ბანი (Block)</button>`;
+            }
+
+            if (showControls) {
+                adminZone.style.display = "block";
+                adminZone.innerHTML = controlsHTML;
+            } else {
+                adminZone.style.display = "none";
+            }
         } else {
             adminZone.style.display = "none";
         }
-        document.getElementById('userModal').style.display = "flex";
-        window.selectedUser = name;
-    }
-
-    async function setRole(role) { 
-        if(confirm(`დარწმუნებული ხარ, რომ გინდა მიანიჭო როლი: ${role}?`)) {
-            await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser); 
-            alert("როლი წარმატებით განახლდა!"); 
-            closeModal(); 
-            loadOnline(); 
-        }
-    }
-
-    async function loadMessages() {
-        const box = document.getElementById("chat");
-        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-        const { data: profs } = await _s.from('profiles').select('*');
-        box.innerHTML = "";
-        const base = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-
-        msgs?.forEach(m => {
-            const p = profs?.find(u => u.username === m.user_name);
-            const active = (p?.last_online && (new Date() - new Date(p.last_online)) / 1000 < 60) ? "active" : "";
-            const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
-            let txt = m.text || "";
-            txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:45px; vertical-align:middle;">`);
-            
-            box.innerHTML += `<div class="msg-container">
-                <div class="avatar-wrapper" onclick="openProfile('${m.user_name}')"><img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar"><div class="online-dot ${active}"></div></div>
-                <div class="bubble">
-                    <div class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name}</div>
-                    <div class="m-text">${txt}</div>
-                    <div class="m-footer"><span class="m-time">${time}</span></div>
-                </div>
-            </div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-    }
-
-    async function sendMsg() { 
-        const i = document.getElementById("msg-input"); 
-        if(!i.value.trim() || myRole === "Banned") return; 
-        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]); 
-        i.value = ""; 
-    }
-
-    function changeRoom(n, el) {
-        currentRoom = n; document.getElementById('room-name').innerText = n;
-        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active'); 
-        closeAll();
-        if(n === '📁 წევრების არქივი') {
-            document.getElementById('input-zone').style.display = "none";
-            document.getElementById('chat').innerHTML = `<div style="padding:20px;"><input type="text" placeholder="ძებნა..." oninput="searchArchive(this.value)" style="width:100%; padding:10px; border-radius:10px; background:#111; color:white; border:1px solid #500;"><div id="archive-results"></div></div>`;
-            searchArchive("");
-        } else {
-            document.getElementById('input-zone').style.display = "flex";
-            loadMessages();
-        }
-    }
-
-    async function searchArchive(val) {
-        const { data: users } = await _s.from('profiles').select('*').ilike('username', `%${val}%`);
-        document.getElementById('archive-results').innerHTML = users?.map(u => `<div class="u-card" onclick="openProfile('${u.username}')"><img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; border-radius:50%;"> ${u.username}</div>`).join('') || "";
-    }
-
-    async function uploadAvatar(el) { 
-        const file = el.files[0]; if(!file) return; 
-        const reader = new FileReader(); 
-        reader.onload = async (e) => { 
-            await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick); 
-            location.reload(); 
-        }; 
-        reader.readAsDataURL(file); 
-    }
-
-    async function changeStatus() { 
-        const s = prompt("შეიყვანეთ ახალი სტატუსი:"); 
-        if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); } 
-    }
-
-    async function toggleEmojiPicker() {
-        const p = document.getElementById('emoji-picker'); 
-        p.style.display = p.style.display === 'none' ? 'block' : 'none';
-        if(document.getElementById('emoji-list').innerHTML === "") {
-            const { data } = await _s.from('emojis').select('name');
-            data?.forEach(e => {
-                const img = document.createElement('img');
-                img.src = `https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}`;
-                img.style.width = "40px"; img.style.margin = "5px"; img.style.cursor = "pointer";
-                img.onclick = () => { document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; p.style.display='none'; };
-                document.getElementById('emoji-list').appendChild(img);
-            });
-        }
-    }
-
-    async function checkPMs() { 
-        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false); 
-        const b = document.getElementById('pm-count'); 
-        if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; } 
-    }
-
-    function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
-    init();
-</script>
-</body>
-</html>
+        
+        document.getElementById
