@@ -160,14 +160,10 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-    async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
-    async function checkPMs() {
-        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; }
-    }
-async function toggleEmojiPicker() {
+   async function toggleEmojiPicker() {
     const picker = document.getElementById('emoji-picker');
     const list = document.getElementById('emoji-list');
+    
     picker.style.display = (picker.style.display === 'none' || picker.style.display === '') ? 'block' : 'none';
 
     if (picker.style.display === 'block' && list.innerHTML === "") {
@@ -181,11 +177,16 @@ async function toggleEmojiPicker() {
             img.style.width = "38px";
             img.style.margin = "5px";
             img.style.cursor = "pointer";
+            
             img.onclick = () => {
                 const input = document.getElementById('msg-input');
                 input.value += ` :${code}: `;
                 input.focus();
             };
+            list.appendChild(img);
+        });
+    }
+}
             list.appendChild(img);
         });
     }
