@@ -48,6 +48,7 @@
         
         .group-header { padding: 10px 15px; font-size: 10px; color: #555; background: #080000; text-transform: uppercase; border-bottom: 1px solid #111; }
         .u-card { padding: 8px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid #0f0000; transition: 0.2s; }
+        .u-card:hover { background: #110000; }
         
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3500; }
         .overlay.active { display: block; }
@@ -127,11 +128,8 @@
         <img id="targetAvatar" src="" style="width:85px; height:85px; border-radius:50%; border:2px solid var(--dark-red); object-fit: cover;">
         <h3 id="targetName" style="color:var(--bright-red); margin:10px 0;">ნიკი</h3>
         <div id="targetStatusDisplay" style="color:#0c0; font-size:13px; font-style:italic; margin-bottom:15px;"></div>
-        
         <div id="targetRoleLabel" style="margin-bottom: 15px;"></div>
-        
         <div id="adminOptions" style="display:none;"></div>
-        
         <button class="modal-btn" style="background:#111; margin-top:10px;" onclick="closeModal()">დახურვა</button>
     </div>
 </div>
@@ -158,7 +156,12 @@
             document.getElementById('my-nick-label').innerText = p.username;
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
-            setInterval(() => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick), 10000);
+            
+            // სტატუსის განახლება
+            const updateStatus = () => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
+            updateStatus();
+            setInterval(updateStatus, 10000);
+
             checkPMs(); setInterval(checkPMs, 5000);
             loadOnline(); setInterval(loadOnline, 15000);
         }
@@ -166,15 +169,16 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-    // ონლაინ სიის განახლება
     async function loadOnline() {
         const list = document.getElementById('online-list-content');
         if(!list) return;
-        list.innerHTML = "";
+        
         const { data: users } = await _s.from('profiles').select('*');
         if(!users) return;
 
+        list.innerHTML = "";
         const now = new Date();
+        // ონლაინია, ვინც ბოლო 1 წუთში იყო აქტიური
         const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 60000));
 
         const renderGrp = (title, grp, glowClass) => {
@@ -186,64 +190,42 @@
                         <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glowClass}" style="width:32px; height:32px;">
                         <div style="position:absolute; bottom:0; right:0; width:8px; height:8px; background:#0f0; border:1.5px solid black; border-radius:50%; box-shadow:0 0 5px #0f0;"></div>
                     </div>
-                    <span style="font-size:13px; color:#ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.username}</span>
+                    <span style="font-size:13px; color:#ccc;">${u.username}</span>
                 </div>`;
             });
             return h;
         };
 
-        list.innerHTML += renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), "glow-red");
-        list.innerHTML += renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), "glow-cyan");
-        list.innerHTML += renderGrp("👤 წევრები", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), "glow-green");
+        if (online.length === 0) {
+            list.innerHTML = "<div style='color:#444; text-align:center; padding:20px; font-size:11px;'>არავინ არის საიტზე</div>";
+        } else {
+            list.innerHTML += renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), "glow-red");
+            list.innerHTML += renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), "glow-cyan");
+            list.innerHTML += renderGrp("👤 წევრები", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), "glow-green");
+        }
     }
 
-    // პროფილის გახსნა
     async function openProfile(name) {
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
         if(!p) return;
-
         document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
         document.getElementById('targetName').innerText = p.username;
         document.getElementById('targetStatusDisplay').innerText = p.status || "";
-        
         const roleLabel = document.getElementById('targetRoleLabel');
         const roleName = translateRole(p.role);
         
-        // მიწერის ღილაკი და როლი (ლამაზი ვიზუალით)
         if (name !== myNick) {
-            roleLabel.innerHTML = `
-                <div style="margin: 15px 0;">
-                    <button onclick="location.href='inbox.html?to=${name}'" 
-                        style="background: linear-gradient(135deg, #008080, #004a4a); color: white; border: none; padding: 12px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; box-shadow: 0 4px 15px rgba(0,128,128,0.4);">
-                        ✉️ პირადი მიწერა
-                    </button>
-                </div>
-                <div style="color: #888; font-size: 12px; border-top: 1px solid #222; padding-top: 10px; letter-spacing: 1px;">
-                    ${roleName.toUpperCase()}
-                </div>
-            `;
+            roleLabel.innerHTML = `<button onclick="location.href='inbox.html?to=${name}'" style="background:#008080; color:white; border:none; padding:10px; border-radius:20px; cursor:pointer; width:100%; margin-bottom:10px;">✉️ მიწერა</button><div style="color:#888; font-size:12px;">${roleName}</div>`;
         } else {
-            roleLabel.innerHTML = `<div style="color: #888; font-size: 12px; border-top: 1px solid #222; padding-top: 10px;">${roleName.toUpperCase()}</div>`;
+            roleLabel.innerHTML = `<div style="color:#888; font-size:12px;">${roleName}</div>`;
         }
 
         const adminZone = document.getElementById('adminOptions');
-        if (adminZone) {
-            adminZone.innerHTML = ""; 
-            adminZone.style.display = "none";
-            if (name !== myNick) {
-                if (myRole === "Owner") {
-                    adminZone.style.display = "block";
-                    adminZone.innerHTML = `
-                        <div style="border-top:1px solid #333; margin-top:10px; padding-top:10px; font-size:10px; color:#555; text-align:left; margin-bottom:5px;">ადმინისტრირება:</div>
-                        <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
-                        <button class="modal-btn" onclick="setRole('Owner')">👑 დამფუძნებლად დანიშვნა</button>
-                        <button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button>
-                        <button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 ბანი</button>
-                    `;
-                } else if (myRole === "Admin" && p.role !== "Owner") {
-                    adminZone.style.display = "block";
-                    adminZone.innerHTML = `<button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 ბანი</button>`;
-                }
+        adminZone.innerHTML = ""; adminZone.style.display = "none";
+        if (name !== myNick) {
+            if (myRole === "Owner") {
+                adminZone.style.display = "block";
+                adminZone.innerHTML = `<button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინი</button><button class="modal-btn" onclick="setRole('Banned')">🚫 ბანი</button>`;
             }
         }
         document.getElementById('userModal').style.display = "flex";
@@ -252,7 +234,7 @@
 
     async function loadMessages() {
         if(currentRoom === '📁 წევრების არქივი') return;
-        const box = document.getElementById("chat"); if(!box) return;
+        const box = document.getElementById("chat");
         const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
         const { data: profs } = await _s.from('profiles').select('*');
         box.innerHTML = "";
@@ -261,17 +243,14 @@
         msgs?.forEach(m => {
             const p = profs?.find(u => u.username === m.user_name);
             const active = (p?.last_online && (new Date() - new Date(p.last_online) < 60000)) ? "active" : "";
-            const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
+            const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
             let txt = m.text || "";
             txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:45px; vertical-align:middle;">`);
             
-            const canDelete = (myRole === "Owner") || (myRole === "Admin" && p?.role !== "Owner");
-            let delBtn = (canDelete) ? `<span style="cursor:pointer;margin-left:8px; opacity:0.5;" onclick="deleteMsg(${m.id})">🗑️</span>` : "";
-
             box.innerHTML += `<div class="msg-container">
                 <div class="avatar-wrapper" onclick="openProfile('${m.user_name}')"><img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar"><div class="online-dot ${active}"></div></div>
                 <div class="bubble">
-                    <div class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name} ${delBtn}</div>
+                    <div class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name}</div>
                     <div class="m-text">${txt}</div>
                     <div class="m-footer"><span class="m-time">${time}</span></div>
                 </div>
@@ -284,47 +263,49 @@
         currentRoom = n; document.getElementById('room-name').innerText = n;
         document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active'); closeAll();
-        const chat = document.getElementById('chat');
-        const inputZone = document.getElementById('input-zone');
         if(n === '📁 წევრების არქივი') {
-            inputZone.style.display = "none";
-            chat.innerHTML = `<div style="padding:20px;"><input type="text" id="arc-search" placeholder="მოძებნე წევრი..." oninput="searchArchive(this.value)" style="width:100%; padding:12px; border-radius:20px; background:#111; border:1px solid var(--blood-red); color:white; outline:none; margin-bottom:20px;"><div id="archive-results"></div></div>`;
-            searchArchive(""); 
+            document.getElementById('input-zone').style.display = "none";
+            document.getElementById('chat').innerHTML = `<div style="padding:20px;"><input type="text" placeholder="ძებნა..." oninput="searchArchive(this.value)" style="width:100%; padding:10px; border-radius:10px; background:#111; color:white; border:1px solid #500;"><div id="archive-results"></div></div>`;
+            searchArchive("");
         } else {
-            inputZone.style.display = "flex";
+            document.getElementById('input-zone').style.display = "flex";
             loadMessages();
         }
-        loadOnline();
     }
 
     async function searchArchive(val) {
-        const { data: users } = await _s.from('profiles').select('*').ilike('username', `%${val}%`).order('username');
-        const res = document.getElementById('archive-results');
-        if(!res || !users) return;
-        res.innerHTML = users.map(u => `<div class="u-card" style="background:rgba(20,0,0,0.3); margin-bottom:5px; border-radius:10px;" onclick="openProfile('${u.username}')"><img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:35px; height:35px; border-radius:50%; border:1px solid #444;"><div><div style="color:white; font-weight:bold; font-size:14px;">${u.username}</div><div style="color:#777; font-size:11px;">${translateRole(u.role)}</div></div></div>`).join('');
+        const { data: users } = await _s.from('profiles').select('*').ilike('username', `%${val}%`);
+        document.getElementById('archive-results').innerHTML = users?.map(u => `<div class="u-card" onclick="openProfile('${u.username}')"><img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; border-radius:50%;"> ${u.username}</div>`).join('') || "";
     }
 
-    async function setRole(role) { await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser); alert("განახლდა!"); closeModal(); loadOnline(); }
-    async function sendMsg() { const i = document.getElementById("msg-input"); if(!i.value.trim() || myRole === "Banned") return; await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]); i.value = ""; }
-    async function uploadAvatar(el) { const file = el.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async (e) => { await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick); location.reload(); }; reader.readAsDataURL(file); }
-    async function changeStatus() { const s = prompt("შეიყვანეთ ახალი სტატუსი:"); if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); } }
-    async function checkPMs() { const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false); const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; } }
-    async function deleteMsg(id) { if(confirm("წავშალო?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); } }
-    
+    async function sendMsg() { 
+        const i = document.getElementById("msg-input"); 
+        if(!i.value.trim() || myRole === "Banned") return; 
+        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]); 
+        i.value = ""; 
+    }
+
+    async function checkPMs() { 
+        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false); 
+        const b = document.getElementById('pm-count'); 
+        if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; } 
+    }
+
     async function toggleEmojiPicker() {
-        const p = document.getElementById('emoji-picker'); const l = document.getElementById('emoji-list');
+        const p = document.getElementById('emoji-picker'); 
         p.style.display = p.style.display === 'none' ? 'block' : 'none';
-        if(l.innerHTML === "") {
+        if(document.getElementById('emoji-list').innerHTML === "") {
             const { data } = await _s.from('emojis').select('name');
             data?.forEach(e => {
                 const img = document.createElement('img');
                 img.src = `https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}`;
-                img.style.width = "40px"; img.style.cursor = "pointer";
+                img.style.width = "40px"; img.style.margin = "5px"; img.style.cursor = "pointer";
                 img.onclick = () => { document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; p.style.display='none'; };
-                l.appendChild(img);
+                document.getElementById('emoji-list').appendChild(img);
             });
         }
     }
+
     function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
     init();
 </script>
