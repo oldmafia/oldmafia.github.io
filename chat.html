@@ -160,7 +160,7 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-   async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
+  async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
 
 async function checkPMs() {
     const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
@@ -191,15 +191,24 @@ async function loadMessages() {
 
     msgs?.forEach(m => {
         const p = profs?.find(u => u.username === m.user_name);
+        const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
         const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
+        
         let txt = m.text || "";
         txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:40px; vertical-align:middle;" onerror="this.src='${base}${name}'; this.onerror=null;">`);
 
+        let delBtn = (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) ? `<span style="cursor:pointer;margin-left:5px;" onclick="deleteMsg(${m.id})">🗑️</span>` : "";
+
         box.innerHTML += `
             <div class="msg-container">
-                <div class="avatar-wrapper"><img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar"></div>
+                <div class="avatar-wrapper" onclick="openProfile('${m.user_name}')" style="cursor:pointer;">
+                    <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar">
+                    <div class="online-dot ${active}"></div>
+                </div>
                 <div class="bubble">
-                    <div class="m-nick">${m.user_name}</div>
+                    <div class="m-nick" onclick="openProfile('${m.user_name}')" style="cursor:pointer; color:var(--bright-red);">
+                        ${m.user_name} ${delBtn}
+                    </div>
                     <div class="m-text">${txt}</div>
                     <div class="m-footer"><span class="m-time">${time}</span></div>
                 </div>
@@ -213,42 +222,13 @@ async function sendMsg() {
     await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
     i.value = "";
 }
-    
 
-    async function sendMsg() {
-        const i = document.getElementById("msg-input"); if (!i.value.trim() || myRole === "Banned") return;
-        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
-        i.value = "";
+async function deleteMsg(id) {
+    if (confirm("ნამდვილად გსურთ წაშლა?")) {
+        await _s.from('messages').delete().eq('id', id);
+        loadMessages();
     }
-
-    async function deleteMsg(id) { 
-        if (confirm("ნამდვილად გსურთ ამ შეტყობინების წაშლა?")) {
-            await _s.from('messages').delete().eq('id', id); 
-        }
-    }
-
-    async function openProfile(n) {
-        const { data: p } = await _s.from('profiles').select('*').eq('username', n).maybeSingle();
-        if (p) {
-            closeAll();
-            document.getElementById('targetName').innerText = p.username;
-            document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
-            document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-            document.getElementById('targetStatusDisplay').innerText = p.status || "";
-            document.getElementById('send-pm-btn').onclick = () => { localStorage.setItem('chatWith', n); location.href = 'inbox.html'; };
-            
-            const adm = document.getElementById('adminOptions');
-            if (n === myNick) {
-                adm.style.display = "none";
-            } else if (myRole === "Owner") {
-                adm.style.display = "block";
-            } else if (myRole === "Admin" && p.role !== "Owner") {
-                adm.style.display = "block";
-            } else {
-                adm.style.display = "none";
-            }
-            document.getElementById('userModal').style.display = "flex";
-        }
+}
     }
 
     async function setRole(r) {
