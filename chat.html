@@ -161,10 +161,13 @@
 
     // მარჯვენა პანელი: მხოლოდ ონლაინ ხალხი
     async function loadOnline() {
-        const { data: users } = await _s.from('profiles').select('*');
         const list = document.getElementById('online-list-content');
-        if(!list || !users) return;
+        if(!list) return;
+
         list.innerHTML = "";
+        const { data: users } = await _s.from('profiles').select('*');
+        if(!users) return;
+
         const now = new Date();
         const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 60000));
 
@@ -173,9 +176,9 @@
             let h = `<div class="group-header">${title} (${grp.length})</div>`;
             grp.forEach(u => {
                 h += `<div class="u-card" onclick="openProfile('${u.username}')">
-                    <div style="position:relative;">
+                    <div style="position:relative; width:32px; height:32px;">
                         <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glowClass}" style="width:32px; height:32px;">
-                        <div style="position:absolute; bottom:0; right:0; width:10px; height:10px; background:#0f0; border:2px solid black; border-radius:50%; box-shadow:0 0 5px #0f0;"></div>
+                        <div style="position:absolute; bottom:0; right:0; width:8px; height:8px; background:#0f0; border:1.5px solid black; border-radius:50%; box-shadow:0 0 5px #0f0;"></div>
                     </div>
                     <span style="font-size:13px; color:#ccc;">${u.username}</span>
                 </div>`;
@@ -239,6 +242,7 @@
             inputZone.style.display = "flex";
             loadMessages();
         }
+        loadOnline();
     }
 
     async function searchArchive(val) {
