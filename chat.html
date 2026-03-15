@@ -13,14 +13,16 @@
         }
         body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
+        /* ტოპბარი */
         .topbar { background: black; padding: 10px 15px; display: flex; align-items: center; border-bottom: 2px solid var(--dark-red); height: 60px; flex-shrink: 0; z-index: 1000; }
         .menu-btn { cursor: pointer; font-size: 25px; color: var(--bright-red); }
         #room-name { font-weight: bold; color: var(--bright-red); flex: 1; text-align: center; font-size: 16px; }
         #pm-btn { position: relative; cursor: pointer; font-size: 22px; margin-right: 15px; color: cyan; }
         #pm-count { position: absolute; top: -5px; right: -8px; background: red; color: white; border-radius: 50%; font-size: 10px; padding: 2px 5px; display: none; font-weight: bold; }
 
+        /* ჩატის ზონა */
         .chat-area { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 100px; display: flex; flex-direction: column; gap: 12px; background: radial-gradient(circle at center, #1a0000 0%, #030000 100%); }
-        .msg-container { display: flex; align-items: flex-start; gap: 10px; max-width: 95%; position: relative; }
+        .msg-container { display: flex; align-items: flex-start; gap: 10px; max-width: 95%; }
         .avatar-wrapper { position: relative; width: 42px; height: 42px; flex-shrink: 0; }
         .msg-avatar { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--dark-red); object-fit: cover; cursor: pointer; }
         .online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: #0f0; border: 2px solid black; border-radius: 50%; display: none; }
@@ -32,10 +34,12 @@
         .m-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
         .m-time { font-size: 10px; color: #666; font-family: monospace; }
 
+        /* ინპუტი */
         .input-zone { position: fixed; bottom: 0; left: 0; width: 100%; background: black; padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--dark-red); z-index: 2000; }
         .input-zone input { flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--blood-red); background: #080000; color: white; outline: none; }
         .send-btn { background: var(--dark-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: cyan; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; }
 
+        /* პანელები */
         .sidebar, .online-sidebar { position: fixed; top: 0; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; border-right: 3px solid var(--dark-red); display: flex; flex-direction: column; }
         .sidebar { left: -280px; }
         .online-sidebar { right: -280px; border-left: 3px solid var(--dark-red); border-right: none; }
@@ -121,7 +125,7 @@
         <h3 id="targetName" style="color:var(--bright-red); margin:10px 0;">ნიკი</h3>
         <div id="targetStatusDisplay" style="color:#0c0; font-size:13px; font-style:italic; margin-bottom:15px;"></div>
         <div id="targetRoleLabel" style="margin-bottom: 15px;"></div>
-        <div id="adminOptions" style="display:none;"></div>
+        <div id="adminOptions" style="display:none; border-top: 1px solid #333; padding-top: 10px;"></div>
         <button class="modal-btn" style="background:#111; margin-top:10px;" onclick="closeModal()">დახურვა</button>
     </div>
 </div>
@@ -167,7 +171,6 @@
         if(!list) return;
         const { data: users } = await _s.from('profiles').select('*');
         if(!users) return;
-
         list.innerHTML = "";
         const now = new Date();
         const online = users.filter(u => u.last_online && (now - new Date(u.last_online)) / 1000 < 60);
@@ -222,9 +225,9 @@
         if (name !== myNick && myRole === "Owner") {
             adminZone.style.display = "block";
             adminZone.innerHTML = `
-                <div style="border-top:1px solid #333; margin:10px 0; padding-top:10px; font-size:11px; color:#555;">მართვა:</div>
+                <button class="modal-btn" onclick="setRole('Owner')" style="color: gold;">👑 დამფუძნებლად დანიშვნა</button>
                 <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
-                <button class="modal-btn" onclick="setRole('Member')" style="background:#222; border:1px dashed #555;">✨ როლის ჩახსნა</button>
+                <button class="modal-btn" onclick="setRole('Member')" style="background:#222;">✨ როლის ჩახსნა</button>
                 <button class="modal-btn" onclick="setRole('Banned')" style="background:#400; color:red;">🚫 ბანი</button>
             `;
         } else {
@@ -235,9 +238,9 @@
     }
 
     async function setRole(role) { 
-        if(confirm("დარწმუნებული ხარ?")) {
+        if(confirm(`დარწმუნებული ხარ, რომ გინდა მიანიჭო როლი: ${role}?`)) {
             await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser); 
-            alert("როლი განახლდა!"); 
+            alert("როლი წარმატებით განახლდა!"); 
             closeModal(); 
             loadOnline(); 
         }
@@ -281,7 +284,6 @@
         document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active'); 
         closeAll();
-        
         if(n === '📁 წევრების არქივი') {
             document.getElementById('input-zone').style.display = "none";
             document.getElementById('chat').innerHTML = `<div style="padding:20px;"><input type="text" placeholder="ძებნა..." oninput="searchArchive(this.value)" style="width:100%; padding:10px; border-radius:10px; background:#111; color:white; border:1px solid #500;"><div id="archive-results"></div></div>`;
