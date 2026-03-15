@@ -157,13 +157,15 @@
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
             
-            // სტატუსის განახლება
-            const updateStatus = () => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
+            // ონლაინ სტატუსის განახლება (last_online სვეტისთვის)
+            const updateStatus = async () => {
+                await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
+            };
             updateStatus();
-            setInterval(updateStatus, 10000);
+            setInterval(updateStatus, 15000); // 15 წამში ერთხელ
 
             checkPMs(); setInterval(checkPMs, 5000);
-            loadOnline(); setInterval(loadOnline, 15000);
+            loadOnline(); setInterval(loadOnline, 15000); // სია ახლდება 15 წამში ერთხელ
         }
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
@@ -173,13 +175,18 @@
         const list = document.getElementById('online-list-content');
         if(!list) return;
         
-        const { data: users } = await _s.from('profiles').select('*');
-        if(!users) return;
+        const { data: users, error } = await _s.from('profiles').select('*');
+        if(error || !users) return;
 
         list.innerHTML = "";
         const now = new Date();
-        // ონლაინია, ვინც ბოლო 1 წუთში იყო აქტიური
-        const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 60000));
+        
+        // ფილტრი: მხოლოდ ისინი, ვინც ბოლო 45 წამში იყვნენ აქტიურები
+        const online = users.filter(u => {
+            if(!u.last_online) return false;
+            const diff = (now - new Date(u.last_online)) / 1000;
+            return diff < 45; 
+        });
 
         const renderGrp = (title, grp, glowClass) => {
             if(grp.length === 0) return "";
@@ -187,7 +194,7 @@
             grp.forEach(u => {
                 h += `<div class="u-card" onclick="openProfile('${u.username}')">
                     <div style="position:relative; width:32px; height:32px; flex-shrink:0;">
-                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glowClass}" style="width:32px; height:32px;">
+                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar ${glowClass}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
                         <div style="position:absolute; bottom:0; right:0; width:8px; height:8px; background:#0f0; border:1.5px solid black; border-radius:50%; box-shadow:0 0 5px #0f0;"></div>
                     </div>
                     <span style="font-size:13px; color:#ccc;">${u.username}</span>
@@ -197,7 +204,7 @@
         };
 
         if (online.length === 0) {
-            list.innerHTML = "<div style='color:#444; text-align:center; padding:20px; font-size:11px;'>არავინ არის საიტზე</div>";
+            list.innerHTML = "<div style='color:#555; text-align:center; padding:20px; font-size:11px;'>ონლაინში არავინაა</div>";
         } else {
             list.innerHTML += renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), "glow-red");
             list.innerHTML += renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), "glow-cyan");
@@ -208,28 +215,48 @@
     async function openProfile(name) {
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
         if(!p) return;
+        
         document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
         document.getElementById('targetName').innerText = p.username;
         document.getElementById('targetStatusDisplay').innerText = p.status || "";
+        
         const roleLabel = document.getElementById('targetRoleLabel');
         const roleName = translateRole(p.role);
         
         if (name !== myNick) {
-            roleLabel.innerHTML = `<button onclick="location.href='inbox.html?to=${name}'" style="background:#008080; color:white; border:none; padding:10px; border-radius:20px; cursor:pointer; width:100%; margin-bottom:10px;">✉️ მიწერა</button><div style="color:#888; font-size:12px;">${roleName}</div>`;
+            roleLabel.innerHTML = `
+                <button onclick="location.href='inbox.html?to=${name}'" style="background:#008080; color:white; border:none; padding:10px; border-radius:20px; cursor:pointer; width:100%; margin-bottom:10px;">✉️ მიწერა</button>
+                <div style="color:#888; font-size:12px;">${roleName}</div>
+            `;
         } else {
             roleLabel.innerHTML = `<div style="color:#888; font-size:12px;">${roleName}</div>`;
         }
 
         const adminZone = document.getElementById('adminOptions');
-        adminZone.innerHTML = ""; adminZone.style.display = "none";
+        adminZone.innerHTML = ""; 
+        adminZone.style.display = "none";
+        
         if (name !== myNick) {
             if (myRole === "Owner") {
                 adminZone.style.display = "block";
-                adminZone.innerHTML = `<button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინი</button><button class="modal-btn" onclick="setRole('Banned')">🚫 ბანი</button>`;
+                adminZone.innerHTML = `
+                    <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
+                    <button class="modal-btn" onclick="setRole('Member')" style="background:#222;">✨ როლის ჩახსნა</button>
+                    <button class="modal-btn" onclick="setRole('Banned')" style="background:#400; color:red;">🚫 ბანი</button>
+                `;
             }
         }
         document.getElementById('userModal').style.display = "flex";
         window.selectedUser = name;
+    }
+
+    async function setRole(role) { 
+        if(confirm("დარწმუნებული ხარ?")) {
+            await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser); 
+            alert("როლი განახლდა!"); 
+            closeModal(); 
+            loadOnline(); 
+        }
     }
 
     async function loadMessages() {
@@ -242,7 +269,8 @@
 
         msgs?.forEach(m => {
             const p = profs?.find(u => u.username === m.user_name);
-            const active = (p?.last_online && (new Date() - new Date(p.last_online) < 60000)) ? "active" : "";
+            const now = new Date();
+            const active = (p?.last_online && (now - new Date(p.last_online) < 45000)) ? "active" : "";
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
             let txt = m.text || "";
             txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:45px; vertical-align:middle;">`);
@@ -289,6 +317,21 @@
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false); 
         const b = document.getElementById('pm-count'); 
         if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; } 
+    }
+
+    async function uploadAvatar(el) { 
+        const file = el.files[0]; if(!file) return; 
+        const reader = new FileReader(); 
+        reader.onload = async (e) => { 
+            await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick); 
+            location.reload(); 
+        }; 
+        reader.readAsDataURL(file); 
+    }
+
+    async function changeStatus() { 
+        const s = prompt("შეიყვანეთ ახალი სტატუსი:"); 
+        if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); } 
     }
 
     async function toggleEmojiPicker() {
