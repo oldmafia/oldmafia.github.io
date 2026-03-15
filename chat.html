@@ -160,95 +160,59 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-   async function toggleEmojiPicker() {
+   async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
+
+async function checkPMs() {
+    const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
+    const b = document.getElementById('pm-count'); if(b) { b.innerText = count || 0; b.style.display = count > 0 ? 'block' : 'none'; }
+}
+
+async function toggleEmojiPicker() {
     const picker = document.getElementById('emoji-picker');
     const list = document.getElementById('emoji-list');
-    
     picker.style.display = (picker.style.display === 'none' || picker.style.display === '') ? 'block' : 'none';
-
     if (picker.style.display === 'block' && list.innerHTML === "") {
-        const { data: emojiData } = await _s.from('emojis').select('name');
-        const storageBase = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-
-        emojiData?.forEach(emoji => {
-            const code = emoji.name.replace('.gif', '');
+        const { data } = await _s.from('emojis').select('name');
+        const base = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+        data?.forEach(e => {
             const img = document.createElement('img');
-            img.src = `${storageBase}${emoji.name}`;
-            img.style.width = "38px";
-            img.style.margin = "5px";
-            img.style.cursor = "pointer";
-            
-            img.onclick = () => {
-                const input = document.getElementById('msg-input');
-                input.value += ` :${code}: `;
-                input.focus();
-            };
+            img.src = `${base}${e.name}`; img.style.width = "38px"; img.style.margin = "5px"; img.style.cursor = "pointer";
+            img.onclick = () => { document.getElementById('msg-input').value += ` :${e.name.replace('.gif','')}: `; document.getElementById('msg-input').focus(); };
             list.appendChild(img);
         });
     }
 }
-            list.appendChild(img);
-        });
-    }
-}
-    async function loadOnline() {
-        const list = document.getElementById('online-list-content'); list.innerHTML = "...";
-        const { data: users } = await _s.from('profiles').select('*');
-        const now = new Date();
-        const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 300000));
-        
-        const renderGrp = (title, grp, color) => {
-            if(grp.length === 0) return "";
-            return `<div style="padding:10px; font-size:11px; color:${color}; font-weight:bold; background:#080808; border-bottom:1px solid #222;">${title} (${grp.length})</div>` +
-            grp.map(u => `<div style="padding:10px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="openProfile('${u.username}')">
-                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1px solid ${color};" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
-                <span style="font-size:13px;">${u.username}</span>
-            </div>`).join('');
-        };
-        list.innerHTML = renderGrp("👑 დამფუძნებლები", online.filter(u => u.role === 'Owner'), "red") + 
-                         renderGrp("🛡️ ადმინები", online.filter(u => u.role === 'Admin'), "cyan") + 
-                         renderGrp("👤 წევრები", online.filter(u => u.role !== 'Owner' && u.role !== 'Admin'), "#0f0");
-    }
 
-  async function loadMessages() {
+async function loadMessages() {
     const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
     const { data: profs } = await _s.from('profiles').select('*');
-    const box = document.getElementById("chat");
-    box.innerHTML = "";
-    const storageBase = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+    const box = document.getElementById("chat"); box.innerHTML = "";
+    const base = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
 
     msgs?.forEach(m => {
         const p = profs?.find(u => u.username === m.user_name);
-        let active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
-        const d = new Date(m.created_at);
-        const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
+        const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
+        let txt = m.text || "";
+        txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:40px; vertical-align:middle;" onerror="this.src='${base}${name}'; this.onerror=null;">`);
 
-        let formattedText = m.text;
-       formattedText = formattedText.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => {
-        // აქ წავშალეთ .gif, რადგან შენს ფაილებს პირდაპირ სახელი ჰქვია
-        return `<img src="${storageBase}${name}" class="chat-emoji" style="height:45px; width:auto; vertical-align:middle;" onerror="this.replaceWith('${match}')">`;
-    });
-
-        let delBtn = "";
-        if (myRole === "Owner" || (myRole === "Admin" && p?.role !== "Owner")) {
-            delBtn = `<span class="del-msg" onclick="deleteMsg(${m.id})">🗑️</span>`;
-        }
-
-        box.innerHTML += `<div class="msg-container">
-            <div class="avatar-wrapper">
-                <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar" onclick="openProfile('${m.user_name}')">
-                <div class="online-dot ${active}"></div>
-            </div>
-            <div class="bubble">
-                <div class="m-nick" onclick="openProfile('${m.user_name}')"><span>${m.user_name}</span> ${delBtn}</div>
-                <div class="m-text">${formattedText}</div>
-                <div class="m-footer"><span class="m-time">${timeStr}</span></div>
-            </div>
-        </div>`;
+        box.innerHTML += `
+            <div class="msg-container">
+                <div class="avatar-wrapper"><img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar"></div>
+                <div class="bubble">
+                    <div class="m-nick">${m.user_name}</div>
+                    <div class="m-text">${txt}</div>
+                    <div class="m-footer"><span class="m-time">${time}</span></div>
+                </div>
+            </div>`;
     });
     box.scrollTop = box.scrollHeight;
 }
-                   
+
+async function sendMsg() {
+    const i = document.getElementById("msg-input"); if (!i.value.trim() || myRole === "Banned") return;
+    await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
+    i.value = "";
+}
     
 
     async function sendMsg() {
