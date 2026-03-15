@@ -65,7 +65,6 @@
         <div id="my-role-label" style="font-size: 11px; color: #888;">...</div>
         <div onclick="changeStatus()" style="font-size: 11px; color: #0c0; cursor:pointer; margin-top:5px; text-decoration: underline;">💬 სტატუსის შეცვლა</div>
     </div>
-    
     <div class="rooms-list">
         <div class="room-item active" onclick="changeRoom('☕ კაფე-ბარი', this)">☕ კაფე-ბარი</div>
         <div class="room-item" onclick="changeRoom('💎 ვიპ საუბრები', this)">💎 ვიპ საუბრები</div>
@@ -142,8 +141,13 @@
             document.getElementById('my-nick-label').innerText = p.username;
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
-            setInterval(() => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick), 30000);
-            checkPMs(); setInterval(checkPMs, 10000);
+            
+            // ონლაინ სტატუსის განახლება
+            setInterval(() => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick), 10000);
+            
+            // SMS და ონლაინ სიის პერიოდული შემოწმება
+            checkPMs(); setInterval(checkPMs, 5000);
+            loadOnline(); setInterval(loadOnline, 15000);
         }
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
@@ -155,13 +159,13 @@
         if(!list || !users) return;
         list.innerHTML = "";
         const now = new Date();
-        const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 300000));
+        const online = users.filter(u => u.last_online && (now - new Date(u.last_online) < 60000)); // 1 წუთი
         
         const renderGrp = (title, grp, color) => {
             if(grp.length === 0) return "";
             return `<div style="padding:10px 20px; font-size:11px; color:#555; background:#0a0000;">${title}</div>` +
             grp.map(u => `<div style="padding:10px 20px; display:flex; align-items:center; gap:10px; cursor:pointer; border-bottom:1px solid #111;" onclick="openProfile('${u.username}')">
-                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1px solid ${color}; object-fit: cover;">
+                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1.5px solid ${color}; object-fit: cover;">
                 <span style="font-size:13px; color:#ccc;">${u.username}</span>
             </div>`).join('');
         };
@@ -179,7 +183,7 @@
 
         msgs?.forEach(m => {
             const p = profs?.find(u => u.username === m.user_name);
-            const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
+            const active = (p?.last_online && (new Date() - new Date(p.last_online) < 60000)) ? "active" : "";
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
             let txt = m.text || "";
             txt = txt.replace(/:([a-zA-Z0-9_-]+):/g, (match, name) => `<img src="${base}${name}.gif" style="height:45px; vertical-align:middle;">`);
