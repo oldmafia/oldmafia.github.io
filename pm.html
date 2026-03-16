@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>პირადი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        :root { --dark-red: #4a0000; --bright-red: #ff0000; --bg-black: #050000; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .header { padding: 15px; text-align: center; border-bottom: 2px solid var(--dark-red); background: black; display: flex; align-items: center; justify-content: space-between; z-index: 1001; }
+        .back-btn { color: white; text-decoration: none; font-size: 24px; cursor: pointer; padding: 0 10px; }
+        
+        .side-menu { position: fixed; right: -280px; top: 0; width: 280px; height: 100%; background: #0a0000; border-left: 2px solid var(--dark-red); transition: 0.3s; z-index: 2000; overflow-y: auto; padding: 20px; }
+        .side-menu.open { right: 0; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; }
+        .overlay.show { display: block; }
+
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; display: none; padding: 15px; }
+        #inbox-view.active, #chat-view.active { display: block; }
+        
+        .msg { margin-bottom: 12px; padding: 10px 14px; border-radius: 15px; max-width: 85%; font-size: 14px; line-height: 1.4; word-wrap: break-word; position: relative; }
+        .sent { background: var(--dark-red); color: white; margin-left: auto; border-bottom-right-radius: 2px; }
+        .received { background: #1a1a1a; color: #ddd; border: 1px solid #333; border-bottom-left-radius: 2px; }
+        
+        /* სმაილების ზომა ტექსტში */
+        .m-text img { width: 45px; height: 45px; vertical-align: middle; object-fit: contain; margin: 2px; }
+        .msg-time { font-size: 10px; opacity: 0.5; display: block; text-align: right; margin-top: 5px; }
+
+        #emoji-picker { 
+            display: none; position: fixed; bottom: 75px; left: 10px; 
+            background: #080000; border: 2px solid var(--dark-red); 
+            padding: 10px; border-radius: 15px; flex-direction: column;
+            z-index: 3000; max-height: 250px; width: 280px; 
+        }
+        #emoji-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; overflow-y: auto; padding: 10px; }
+        .emoji-item { width: 45px; height: 45px; cursor: pointer; object-fit: contain; }
+
+        .input-area { padding: 12px; background: black; border-top: 2px solid var(--dark-red); display: none; gap: 10px; align-items: center; }
+        .input-area.active { display: flex; }
+        .input-area input { flex: 1; background: #080808; border: 1px solid var(--dark-red); color: white; padding: 12px; border-radius: 25px; outline: none; }
+        .send-btn { background: none; border: none; color: cyan; font-size: 24px; cursor: pointer; }
+        
+        .user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; cursor: pointer; padding: 10px; border-radius: 10px; background: rgba(20,0,0,0.4); border: 1px solid #220; }
+        .user-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="header">
+    <div class="back-btn" onclick="goBack()">⬅</div>
+    <div id="view-title" style="color:var(--bright-red); font-weight:bold;">პირადი</div>
+    <div style="font-size:24px; cursor:pointer;" onclick="toggleMenu()">👥</div>
+</div>
+
+<div class="side-menu" id="side-menu"><div id="online-users-container"></div></div>
+
+<div id="inbox-view" class="active"></div>
+<div id="chat-view"></div>
+
+<div id="emoji-picker"><div id="emoji-grid"></div></div>
+
+<div class="input-area" id="chat-input">
+    <button onclick="toggleEmojiPicker()" style="background:none; border:none; font-size:22px; cursor:pointer;">😊</button>
+    <input type="text" id="msg-text" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" onclick="sendMessage()">✈</button>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname'), activeChatPartner = null;
+    const emojiBase = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+
+    if (!myNick) location.href = 'index.html';
+
+    // ჩატის მსგავსი ლოგიკა სმაილებისთვის
+    function parseEmojis(text) {
+        if (!text) return "";
+        return text.split(/\s+/).map(word => {
+            const cleanWord = word.trim();
+            if (cleanWord.match(/\.(gif|png|jpg|webp)$/i)) {
+                return `<img src="${emojiBase}${cleanWord}" alt="emoji">`;
+            }
+            return cleanWord;
+        }).join(' ');
+    }
+
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq.${myNick},receiver.eq.${myNick}`).order('created_at', { ascending: false });
+        const historyDiv = document.getElementById('inbox-view');
+        historyDiv.innerHTML = "";
+        const chats = {};
+        
+        msgs?.forEach(m => {
+            const partner = (m.sender === myNick) ? m.receiver : m.sender;
+            if (!chats[partner]) chats[partner] = { lastMsg: m.text };
+        });
+
+        for (const partner in chats) {
+            historyDiv.innerHTML += `
+                <div class="user-row" onclick="openChat('${partner}')">
+                    <div style="flex:1">
+                        <b style="color:var(--bright-red)">${partner}</b><br>
+                        <small style="opacity:0.6">${chats[partner].lastMsg.substring(0,30)}...</small>
+                    </div>
+                </div>`;
+        }
+    }
+
+    async function openChat(partner) {
+        activeChatPartner = partner;
+        document.getElementById('view-title').innerText = partner;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        
+        // მნიშვნელოვანი: ვაჩენთ ინპუტს ჩატში შესვლისას
+        const inputArea = document.getElementById('chat-input');
+        inputArea.classList.add('active');
+        inputArea.style.display = 'flex'; 
+
+        loadPrivateMessages();
+    }
+
+    async function loadPrivateMessages() {
+        if (!activeChatPartner) return;
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq.${myNick},receiver.eq.${activeChatPartner}),and(sender.eq.${activeChatPartner},receiver.eq.${myNick})`).order('created_at', { ascending: true });
+        const chatDiv = document.getElementById('chat-view');
+        chatDiv.innerHTML = msgs?.map(m => {
+            const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `<div class="msg ${(m.sender === myNick) ? 'sent' : 'received'}">
+                        <div class="m-text">${parseEmojis(m.text)}</div>
+                        <span class="msg-time">${time}</span>
+                    </div>`;
+        }).join('') || "";
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const inp = document.getElementById('msg-text');
+        const txt = inp.value.trim();
+        if (!txt || !activeChatPartner) return;
+        inp.value = "";
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeChatPartner, text: txt }]);
+        loadPrivateMessages();
+    }
+
+    async function loadEmojis() {
+        const { data: ems } = await _s.from('emojis').select('*').order('id');
+        const grid = document.getElementById('emoji-grid');
+        grid.innerHTML = (ems || []).map(e => `
+            <img src="${emojiBase}${e.name}" class="emoji-item" onclick="insertEmoji('${e.name}')">
+        `).join('');
+    }
+
+    function insertEmoji(name) {
+        const input = document.getElementById('msg-text');
+        input.value += name + " ";
+        input.focus();
+    }
+
+    function toggleEmojiPicker() {
+        const p = document.getElementById('emoji-picker');
+        p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
+        if(p.style.display === 'flex') loadEmojis();
+    }
+
+    function toggleMenu() {
+        document.getElementById('side-menu').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('show');
+        if(document.getElementById('side-menu').classList.contains('open')) loadOnlineSidebar();
+    }
+
+    async function loadOnlineSidebar() {
+        const { data: users } = await _s.from('profiles').select('username, avatar_url');
+        const container = document.getElementById('online-users-container');
+        container.innerHTML = '<h3 style="text-align:center; color:#0f0;">👥 მომხმარებლები</h3>';
+        users?.forEach(u => {
+            if (u.username !== myNick) {
+                container.innerHTML += `<div class="user-row" style="margin:5px 0;" onclick="openChat('${u.username}'); toggleMenu();"><span>${u.username}</span></div>`;
+            }
+        });
+    }
+
+    function goBack() {
+        if (activeChatPartner) {
+            activeChatPartner = null;
+            document.getElementById('view-title').innerText = "პირადი";
+            document.getElementById('chat-view').classList.remove('active');
+            document.getElementById('chat-input').classList.remove('active');
+            document.getElementById('chat-input').style.display = 'none';
+            document.getElementById('inbox-view').classList.add('active');
+            document.getElementById('emoji-picker').style.display = 'none';
+            loadInbox();
+        } else { location.href = 'chat.html'; }
+    }
+
+    window.onload = () => {
+        loadInbox();
+        const urlParams = new URLSearchParams(window.location.search);
+        const toUser = urlParams.get('to');
+        if (toUser) openChat(toUser);
+    };
+
+    _s.channel('pms').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => {
+        if (activeChatPartner) loadPrivateMessages();
+        loadInbox();
+    }).subscribe();
+</script>
+</body>
+</html>
