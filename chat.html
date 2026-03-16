@@ -9,66 +9,50 @@
         * { box-sizing: border-box; }
         :root { --dark-red: #4a0000; --bright-red: #ff0000; --blood-red: #660000; --bg-black: #030000; }
         body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Topbar & PM Badge */
         .topbar { background: black; padding: 10px 15px; display: flex; align-items: center; border-bottom: 2px solid var(--dark-red); height: 60px; z-index: 1000; }
-        .menu-btn { cursor: pointer; font-size: 25px; color: var(--bright-red); }
         #room-name { font-weight: bold; color: var(--bright-red); flex: 1; text-align: center; }
-        #pm-btn { position: relative; cursor: pointer; font-size: 22px; margin-right: 15px; color: #fff; }
-        #pm-count { position: absolute; top: -5px; right: -8px; background: #ff0000; color: white; border-radius: 50%; font-size: 11px; min-width: 18px; height: 18px; display: none; align-items: center; justify-content: center; font-weight: bold; border: 1px solid white; box-shadow: 0 0 10px red; animation: blinker 1.5s linear infinite; }
+        #pm-btn { position: relative; cursor: pointer; font-size: 22px; margin-right: 15px; color: white; }
+        #pm-count { position: absolute; top: -5px; right: -8px; background: red; color: white; border-radius: 50%; font-size: 11px; min-width: 18px; height: 18px; display: none; align-items: center; justify-content: center; font-weight: bold; border: 1px solid white; animation: blinker 1.5s linear infinite; z-index: 10; }
         @keyframes blinker { 50% { opacity: 0.5; } }
-
-        /* Chat Area */
         .chat-area { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 100px; display: flex; flex-direction: column; gap: 12px; background: radial-gradient(circle at center, #1a0000 0%, #030000 100%); }
         .msg-container { display: flex; align-items: flex-start; gap: 10px; max-width: 95%; }
-        .avatar-wrapper { position: relative; width: 42px; height: 42px; flex-shrink: 0; }
-        .msg-avatar { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--dark-red); object-fit: cover; cursor: pointer; }
-        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: #0f0; border: 2px solid black; border-radius: 50%; display: none; }
-        .online-dot.active { display: block; box-shadow: 0 0 8px #0f0; }
+        .msg-avatar { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--dark-red); object-fit: cover; }
         .bubble { background: rgba(25, 0, 0, 0.9); border: 1px solid var(--blood-red); padding: 8px 12px; border-radius: 4px 18px 18px 18px; min-width: 80px; position: relative; }
         .m-nick { font-weight: bold; color: #ff3333; font-size: 13px; cursor: pointer; margin-bottom: 3px; }
         .m-text { color: #ddd; font-size: 14px; word-wrap: break-word; }
         .m-text img { width: 48px; height: 48px; vertical-align: middle; }
         .m-time { text-align: right; font-size: 9px; color: #777; margin-top: 4px; font-family: monospace; }
-
-        /* Input Zone */
         .input-zone { position: fixed; bottom: 0; width: 100%; background: black; padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--dark-red); z-index: 2000; }
         .input-zone input { flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--blood-red); background: #080000; color: white; outline: none; }
-        .send-btn { background: var(--dark-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: cyan; cursor: pointer; font-size: 22px; }
-
-        /* Emoji Picker */
-        #emoji-picker { display: none; position: fixed; bottom: 80px; left: 10px; background: #080000; border: 2px solid var(--dark-red); padding: 10px; border-radius: 15px; width: 300px; z-index: 3000; }
-        #emoji-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 250px; overflow-y: auto; }
-        .emoji-item { width: 45px; height: 45px; cursor: pointer; }
-
-        /* Sidebars */
         .sidebar, .online-sidebar { position: fixed; top: 0; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; }
         .sidebar { left: -280px; border-right: 3px solid var(--dark-red); }
         .sidebar.active { left: 0; }
-        .online-sidebar { right: -280px; border-left: 3px solid var(--dark-red); display: flex; flex-direction: column; }
+        .online-sidebar { right: -280px; border-left: 3px solid var(--dark-red); overflow-y: auto; }
         .online-sidebar.active { right: 0; }
-        #online-list-content { flex: 1; overflow-y: auto; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3500; }
         .overlay.active { display: block; }
-        .room-item { padding: 12px 20px; cursor: pointer; color: #bbb; border-bottom: 1px solid #150000; }
+        .room-item { padding: 12px 20px; cursor: pointer; color: #bbb; border-bottom: 1px solid #150000; transition: 0.2s; }
+        .room-item:hover { background: #110000; }
         .room-item.active { background: var(--dark-red); color: white; font-weight: bold; }
+        #emoji-picker { display: none; position: fixed; bottom: 80px; left: 10px; background: #080000; border: 2px solid var(--dark-red); padding: 10px; border-radius: 15px; width: 300px; z-index: 3000; }
+        #emoji-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 250px; overflow-y: auto; }
+        .emoji-item { width: 45px; height: 45px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
-
-<div id="emoji-picker">
-    <div id="emoji-grid"></div>
-</div>
+<div id="emoji-picker"><div id="emoji-grid"></div></div>
 
 <div class="sidebar" id="sidebar">
-    <div style="padding: 20px; text-align: center;">
-        <img id="my-avatar-img" src="" style="width:65px; height:65px; border-radius:50%; border:2px solid var(--dark-red); object-fit:cover;">
+    <div style="padding: 20px; text-align: center; border-bottom: 1px solid #220000;">
+        <input type="file" id="avatar-input" style="display:none" onchange="uploadAvatar(this)">
+        <img id="my-avatar-img" src="" style="width:65px; height:65px; border-radius:50%; border:2px solid var(--dark-red); object-fit:cover; cursor:pointer;" onclick="document.getElementById('avatar-input').click()">
         <div id="my-nick-label" style="font-weight:bold; color:var(--bright-red); margin-top:5px;">...</div>
         <div id="my-role-label" style="font-size:11px; color:#888;">...</div>
+        <div onclick="changeStatus()" style="font-size:11px; color:#0c0; cursor:pointer; text-decoration:underline; margin-top:5px;">💬 სტატუსის შეცვლა</div>
     </div>
-    <div id="rooms-list" style="overflow-y:auto; height: calc(100% - 200px);">
+    <div id="rooms-list" style="overflow-y:auto; height: calc(100% - 220px);">
         <div class="room-item active" onclick="changeRoom('☕ კაფე-ბარი', this)">☕ კაფე-ბარი</div>
         <div class="room-item" onclick="changeRoom('💎 ვიპ საუბრები', this)">💎 ვიპ საუბრები</div>
         <div class="room-item" onclick="changeRoom('🕴 მაფიის ღამე', this)">🕴 მაფიის ღამე</div>
@@ -84,19 +68,19 @@
         <div class="room-item" onclick="changeRoom('🛡️ ადმინისტრაცია', this)">🛡️ ადმინისტრაცია</div>
         <div class="room-item" onclick="changeRoom('🆘 დახმარება', this)">🆘 დახმარება</div>
     </div>
-    <div style="padding:15px; text-align:center; color:red; cursor:pointer;" onclick="logout()">🚪 გასვლა</div>
+    <div style="padding:15px; text-align:center; color:red; cursor:pointer; border-top:1px solid #220000;" onclick="logout()">🚪 გასვლა</div>
 </div>
 
 <div class="online-sidebar" id="online-sidebar">
-    <div style="padding:20px; color:#0f0; font-weight:bold; text-align:center; border-bottom:2px solid var(--dark-red);">🟢 ონლაინში</div>
+    <div style="padding:20px; color:#0f0; font-weight:bold; text-align:center; border-bottom:2px solid var(--dark-red); background: black; position: sticky; top:0;">🟢 ონლაინში</div>
     <div id="online-list-content"></div>
 </div>
 
 <div class="topbar">
-    <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+    <div class="menu-btn" onclick="toggleSidebar()" style="cursor:pointer; font-size:25px; color:red;">☰</div>
     <div id="room-name">☕ კაფე-ბარი</div>
     <div id="pm-btn" onclick="location.href='pm.html'">📩 <span id="pm-count">0</span></div>
-    <div class="menu-btn" onclick="toggleOnline()">👥</div>
+    <div class="menu-btn" onclick="toggleOnline()" style="cursor:pointer; font-size:25px; color:red;">👥</div>
 </div>
 
 <div class="chat-area" id="chat"></div>
@@ -104,62 +88,62 @@
 <div class="input-zone">
     <button onclick="toggleEmojiPicker()" style="background:none; border:none; font-size:24px; cursor:pointer;">😊</button>
     <input type="text" id="msg-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendMsg()">
-    <button class="send-btn" onclick="sendMsg()">✈</button>
+    <button onclick="sendMsg()" style="background:var(--dark-red); border:none; width:45px; height:45px; border-radius:50%; color:cyan; cursor:pointer; font-size:22px;">✈</button>
 </div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    let myNick = localStorage.getItem('nickname'), myRole = "Member", currentRoom = "☕ კაფე-ბარი";
+    let myNick = localStorage.getItem('nickname'), currentRoom = "☕ კაფე-ბარი";
 
     function parseEmojis(t) {
         if(!t) return "";
-        // ეს Regex პოულობს ნებისმიერ სიტყვას, რომელიც მთავრდება .gif, .png და ა.შ.
         return t.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/$1">`);
     }
-
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
-    function toggleOnline() { document.getElementById('online-sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); if(document.getElementById('online-sidebar').classList.contains('active')) loadOnline(); }
-    function closeAll() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('online-sidebar').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); document.getElementById('emoji-picker').style.display='none'; }
 
     async function init() {
         if (!myNick) { location.href = 'index.html'; return; }
         const { data: p } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
         if (p) {
-            myRole = p.role;
             document.getElementById('my-nick-label').innerText = p.username;
+            document.getElementById('my-role-label').innerText = p.role;
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
-            
-            // Online status update
-            _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
-            setInterval(() => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick), 30000);
+            updateOnline(); setInterval(updateOnline, 30000);
         }
         loadMessages();
         checkPMs(); setInterval(checkPMs, 5000);
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
+    async function updateOnline() { await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick); }
+
+    async function uploadAvatar(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const fileName = `${myNick}_${Date.now()}.png`;
+        const { data, error } = await _s.storage.from('avatars').upload(fileName, file);
+        if (data) {
+            const { data: { publicUrl } } = _s.storage.from('avatars').getPublicUrl(fileName);
+            await _s.from('profiles').update({ avatar_url: publicUrl }).eq('username', myNick);
+            document.getElementById('my-avatar-img').src = publicUrl;
+            alert("ავატარი შეიცვალა!");
+        }
+    }
+
+    async function changeStatus() {
+        const s = prompt("შეიყვანეთ ახალი სტატუსი:");
+        if (s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); alert("სტატუსი განახლდა!"); }
+    }
+
     async function loadOnline() {
         const { data: users } = await _s.from('profiles').select('*').order('username');
         const list = document.getElementById('online-list-content'); list.innerHTML = "";
-        const now = new Date();
-        const onlineUsers = users?.filter(u => u.last_online && (now - new Date(u.last_online) < 300000)) || [];
-        
-        const roles = [
-            {t:"👑 დამფუძნებლები", r:"Owner", c:"#ff0000"}, 
-            {t:"🛡️ ადმინისტრაცია", r:"Admin", c:"#00ccff"}, 
-            {t:"👤 წევრები", r:"Member", c:"#bbbbbb"}
-        ];
-
-        roles.forEach(role => {
-            const filtered = onlineUsers.filter(u => u.role === role.r);
+        const onlineUsers = users?.filter(u => u.last_online && (new Date() - new Date(u.last_online) < 300000)) || [];
+        const cats = [{t:"👑 დამფუძნებლები", r:"Owner", c:"#ff0000"}, {t:"🛡️ ადმინისტრაცია", r:"Admin", c:"#00ccff"}, {t:"👤 წევრები", r:"Member", c:"#bbbbbb"}];
+        cats.forEach(cat => {
+            const filtered = onlineUsers.filter(u => u.role === cat.r);
             if(filtered.length > 0) {
-                list.innerHTML += `<div style="padding:10px; color:${role.c}; font-weight:bold; font-size:12px; background:#110000;">${role.t}</div>`;
-                filtered.forEach(u => {
-                    list.innerHTML += `<div style="display:flex; align-items:center; gap:10px; padding:8px 15px; border-bottom:1px solid #080000;">
-                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1px solid ${role.c};">
-                        <span style="font-size:13px; color:#eee;">${u.username}</span>
-                    </div>`;
-                });
+                list.innerHTML += `<div style="padding:10px; color:${cat.c}; font-weight:bold; font-size:12px; background:#110000;">${cat.t}</div>`;
+                filtered.forEach(u => list.innerHTML += `<div style="display:flex; align-items:center; gap:10px; padding:10px 15px; border-bottom:1px solid #111;"><img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:30px; height:30px; border-radius:50%; border:1px solid ${cat.c};"><span style="font-size:13px; color:#eee;">${u.username}</span></div>`);
             }
         });
     }
@@ -168,24 +152,10 @@
         const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
         const { data: profs } = await _s.from('profiles').select('*');
         const box = document.getElementById("chat"); box.innerHTML = "";
-        
         msgs?.forEach(m => {
             const p = profs?.find(u => u.username === m.user_name);
             const time = new Date(m.created_at).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
-            
-            box.innerHTML += `
-                <div class="msg-container">
-                    <div class="avatar-wrapper">
-                        <img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar">
-                        <div class="online-dot ${active}"></div>
-                    </div>
-                    <div class="bubble">
-                        <div class="m-nick">${m.user_name}</div>
-                        <div class="m-text">${parseEmojis(m.text)}</div>
-                        <div class="m-time">${time}</div>
-                    </div>
-                </div>`;
+            box.innerHTML += `<div class="msg-container"><img src="${p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="msg-avatar"><div class="bubble"><div class="m-nick">${m.user_name}</div><div class="m-text">${parseEmojis(m.text)}</div><div class="m-time">${time}</div></div></div>`;
         });
         box.scrollTop = box.scrollHeight;
     }
@@ -198,23 +168,21 @@
 
     async function checkPMs() {
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const b = document.getElementById('pm-count'); 
-        b.innerText = count || 0; 
-        b.style.display = count > 0 ? 'flex' : 'none';
+        const b = document.getElementById('pm-count'); b.innerText = count || 0; b.style.display = count > 0 ? 'flex' : 'none';
     }
 
     function toggleEmojiPicker() { const p = document.getElementById('emoji-picker'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; if(p.style.display==='block') loadEmojis(); }
     async function loadEmojis() {
         const { data: ems } = await _s.from('emojis').select('*');
-        document.getElementById('emoji-grid').innerHTML = ems.map(e => `
-            <img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" 
-                 class="emoji-item" onclick="insertEmoji('${e.name}')">
-        `).join('');
+        document.getElementById('emoji-grid').innerHTML = ems.map(e => `<img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" class="emoji-item" onclick="insertEmoji('${e.name}')">`).join('');
     }
     function insertEmoji(n) { document.getElementById('msg-input').value += n + " "; document.getElementById('msg-input').focus(); }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
+    function toggleOnline() { document.getElementById('online-sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); if(document.getElementById('online-sidebar').classList.contains('active')) loadOnline(); }
+    function closeAll() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('online-sidebar').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); document.getElementById('emoji-picker').style.display='none'; }
     function changeRoom(n, el) { currentRoom = n; document.getElementById('room-name').innerText = n; document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); closeAll(); loadMessages(); }
     function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
-    
+
     init();
 </script>
 </body>
