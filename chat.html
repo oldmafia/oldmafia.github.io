@@ -62,7 +62,7 @@
         .emoji-item { width: 45px; height: 45px; cursor: pointer; object-fit: contain; transition: 0.2s; }
         .emoji-item:hover { transform: scale(1.2); }
         .emoji-wrapper { position: relative; }
-        .del-emoji { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 15px; height: 15px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white; }
+        .del-emoji { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white; font-weight: bold; z-index: 5; }
 
         .admin-tools { display: none; gap: 5px; margin-top: 10px; border-top: 1px solid #222; padding-top: 5px; }
         .admin-add-btn { flex: 1; font-size: 10px; padding: 8px; background: #004a00; color: white; border: none; border-radius: 5px; cursor: pointer; }
@@ -198,51 +198,56 @@
     async function loadEmojis() {
         const { data: ems } = await _s.from('emojis').select('*').order('id');
         const grid = document.getElementById('emoji-grid');
-        grid.innerHTML = (ems || []).filter(e => e.name).map(e => `
+        // ვფილტრავთ მხოლოდ იმ სმაილებს, რომლებსაც აქვთ ვალიდური სახელი
+        const validEms = (ems || []).filter(e => e.name && e.name.trim() !== "");
+        
+        grid.innerHTML = validEms.map(e => `
             <div class="emoji-wrapper">
-                <img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" class="emoji-item" onclick="insertEmoji('${e.name}')">
-                ${myRole === 'Owner' ? `<div class="del-emoji" onclick="deleteEmoji(${e.id})">×</div>` : ''}
+                <img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" 
+                     class="emoji-item" 
+                     onclick="insertEmoji('${e.name}')"
+                     onerror="this.parentElement.style.display='none'">
+                ${myRole === 'Owner' ? `<div class="del-emoji" onclick="deleteEmoji(${e.id}, '${e.name}')">×</div>` : ''}
             </div>`).join('');
     }
 
-    // მოძრავი სმაილის ატვირთვა - ავტომატურად ავსებს სახელს და ლინკს
     async function uploadEmoji(el) {
         const file = el.files[0]; if(!file) return;
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         
         // 1. Storage-ში ატვირთვა
         const { data, error } = await _s.storage.from('emojis').upload(fileName, file);
-        if(error) { alert("შეცდომა ატვირთვისას!"); return; }
+        if(error) { alert("შეცდომა ატვირთვისას: " + error.message); return; }
 
-        // 2. საჯარო ლინკის მიღება და ბაზაში ჩაწერა
-        const { data: urlData } = _s.storage.from('emojis').getPublicUrl(fileName);
-        await _s.from('emojis').insert([{ name: fileName, url: urlData.publicUrl }]);
+        // 2. ბაზაში ჩაწერა
+        const { error: dbErr } = await _s.from('emojis').insert([{ name: fileName }]);
         
-        alert("სმაილი წარმატებით დაემატა!");
-        loadEmojis();
+        if(!dbErr) {
+            alert("სმაილი წარმატებით დაემატა!");
+            loadEmojis();
+        } else {
+            alert("ბაზაში შენახვა ვერ მოხერხდა.");
+        }
     }
 
-    async function deleteEmoji(id) {
-    if(confirm("დარწმუნებული ხართ, რომ გსურთ სმაილის წაშლა?")) {
-        // 1. ჯერ ვიგებთ ფაილის სახელს, რომ საცავიდანაც წავშალოთ
-        const { data: emoji } = await _s.from('emojis').select('name').eq('id', id).single();
-        
-        if (emoji) {
-            // 2. ვშლით ფაილს Storage-დან
-            await _s.storage.from('emojis').remove([emoji.name]);
+    async function deleteEmoji(id, fileName) {
+        if(!id) return;
+        if(confirm("დარწმუნებული ხართ, რომ გსურთ სმაილის წაშლა?")) {
+            // 1. ვშლით ბაზიდან
+            const { error: dbError } = await _s.from('emojis').delete().eq('id', id);
             
-            // 3. ვშლით ჩანაწერს ცხრილიდან
-            const { error } = await _s.from('emojis').delete().eq('id', id);
-            
-            if (!error) {
-                alert("სმაილი წარმატებით წაიშალა!");
-                loadEmojis(); // დაფის განახლება
+            if (!dbError) {
+                // 2. ვშლით საცავიდან
+                if(fileName) {
+                    await _s.storage.from('emojis').remove([fileName]);
+                }
+                loadEmojis();
             } else {
                 alert("ბაზიდან წაშლისას დაფიქსირდა შეცდომა.");
             }
         }
     }
-}
+
     window.insertEmoji = function(name) {
         const input = document.getElementById('msg-input');
         input.value += name + " ";
@@ -272,7 +277,7 @@
                     </div>
                     <div class="bubble">
                         <div class="m-nick" onclick="openProfile('${m.user_name}')">${m.user_name} ${delBtn}</div>
-                        <div class="m-text">${m.text}</div>
+                        <div class="m-text">${parseEmojis(m.text)}</div>
                         <div class="m-footer"><span class="m-time">${time}</span></div>
                     </div>
                 </div>`;
@@ -280,16 +285,13 @@
         box.scrollTop = box.scrollHeight;
     }
 
-    // ტექსტში სმაილების ავტომატური გარდაქმნა
-    setInterval(() => {
-        document.querySelectorAll('.m-text').forEach(msg => {
-            let html = msg.innerHTML;
-            if (html.includes('.gif') && !html.includes('<img')) {
-                const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-                msg.innerHTML = html.replace(/(\S+\.gif)/g, `<img src="${baseUrl}$1">`);
-            }
-        });
-    }, 1000);
+    // ფუნქცია, რომელიც ტექსტს მაშინვე გარდაქმნის სმაილებად (setInterval-ის გარეშე, რაც უფრო სწრაფია)
+    function parseEmojis(text) {
+        if (!text) return "";
+        const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+        // ვეძებთ სიტყვებს, რომლებიც მთავრდება .gif, .png, .jpg, .webp-ით
+        return text.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
+    }
 
     async function openProfile(name) {
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
@@ -346,11 +348,13 @@
     }
 
     async function deleteMsg(id) { if(confirm("წავშალო?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); } }
+    
     async function sendMsg() {
         const i = document.getElementById("msg-input"); if(!i.value.trim() || myRole === "Banned") return;
         await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
         i.value = "";
     }
+
     async function uploadAvatar(el) {
         const file = el.files[0]; if(!file) return;
         const reader = new FileReader();
@@ -360,22 +364,27 @@
         };
         reader.readAsDataURL(file);
     }
+
     async function changeStatus() {
         const s = prompt("ახალი სტატუსი:");
         if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
     }
+
     function changeRoom(n, el) {
         currentRoom = n; document.getElementById('room-name').innerText = n;
         document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active'); closeAll(); loadMessages();
     }
+
     async function checkPMs() {
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
         const badge = document.getElementById('pm-count');
         if (badge && count > 0) { badge.innerText = count; badge.style.display = 'flex'; }
         else if(badge) { badge.style.display = 'none'; }
     }
+
     function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
+    
     init();
 </script>
 </body>
