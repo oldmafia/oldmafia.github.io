@@ -152,10 +152,18 @@
         loadPrivateMessages();
     }
 
+    // --- განახლებული ფუნქცია სმაილების მაქსიმალური ჩვენებისთვის ---
     function parseEmojis(text) {
         if (!text) return "";
         const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-        return text.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
+        
+        return text.split(/\s+/).map(word => {
+            // თუ სიტყვა შეიცავს სურათის გაფართოებას, ვაქცევთ სურათად
+            if (word.match(/\.(gif|png|jpg|webp)$/i)) {
+                return `<img src="${baseUrl}${word}" style="width:45px; height:45px; vertical-align:middle; object-fit:contain;">`;
+            }
+            return word;
+        }).join(' ');
     }
 
     async function loadPrivateMessages() {
@@ -189,12 +197,16 @@
         if(p.style.display === 'flex') loadEmojis();
     }
 
+    // --- განახლებული ფუნქცია სმაილების დაფისთვის ---
     async function loadEmojis() {
         const { data: ems } = await _s.from('emojis').select('*').order('id');
         const grid = document.getElementById('emoji-grid');
-        grid.innerHTML = (ems || []).map(e => `
+        
+        // ვაჩვენებთ ყველაფერს, რაც ბაზაშია და სახელი აქვს
+        grid.innerHTML = (ems || []).filter(e => e.name).map(e => `
             <img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" 
-                 class="emoji-item" onclick="insertEmoji('${e.name}')">
+                 class="emoji-item" onclick="insertEmoji('${e.name}')" 
+                 style="width: 45px; height: 45px; cursor: pointer; object-fit: contain;">
         `).join('');
     }
 
