@@ -198,8 +198,7 @@
     async function loadEmojis() {
         const { data: ems } = await _s.from('emojis').select('*').order('id');
         const grid = document.getElementById('emoji-grid');
-        // ვფილტრავთ მხოლოდ იმ სმაილებს, რომლებსაც აქვთ ვალიდური სახელი
-        const validEms = (ems || []).filter(e => e.name && e.name.trim() !== "");
+        const validEms = (ems || []).filter(e => e.name && e.name.trim() !== "" && e.name !== 'undefined');
         
         grid.innerHTML = validEms.map(e => `
             <div class="emoji-wrapper">
@@ -215,35 +214,41 @@
         const file = el.files[0]; if(!file) return;
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         
-        // 1. Storage-ში ატვირთვა
-        const { data, error } = await _s.storage.from('emojis').upload(fileName, file);
-        if(error) { alert("შეცდომა ატვირთვისას: " + error.message); return; }
+        try {
+            // 1. Storage-ში ატვირთვა
+            const { error: storageError } = await _s.storage.from('emojis').upload(fileName, file);
+            if(storageError) throw storageError;
 
-        // 2. ბაზაში ჩაწერა
-        const { error: dbErr } = await _s.from('emojis').insert([{ name: fileName }]);
-        
-        if(!dbErr) {
+            // 2. ბაზაში ჩაწერა
+            const { error: dbError } = await _s.from('emojis').insert([{ name: fileName }]);
+            if(dbError) throw dbError;
+
             alert("სმაილი წარმატებით დაემატა!");
             loadEmojis();
-        } else {
-            alert("ბაზაში შენახვა ვერ მოხერხდა.");
+        } catch (err) {
+            console.error(err);
+            alert("შეცდომა ატვირთვისას: " + err.message);
         }
     }
 
     async function deleteEmoji(id, fileName) {
         if(!id) return;
         if(confirm("დარწმუნებული ხართ, რომ გსურთ სმაილის წაშლა?")) {
-            // 1. ვშლით ბაზიდან
-            const { error: dbError } = await _s.from('emojis').delete().eq('id', id);
-            
-            if (!dbError) {
-                // 2. ვშლით საცავიდან
-                if(fileName) {
+            try {
+                // 1. ვშლით ბაზიდან
+                const { error: dbError } = await _s.from('emojis').delete().eq('id', id);
+                if (dbError) throw dbError;
+
+                // 2. ვშლით საცავიდან (თუ სახელი ვალიდურია)
+                if(fileName && fileName !== 'undefined') {
                     await _s.storage.from('emojis').remove([fileName]);
                 }
+
+                alert("სმაილი წაიშალა!");
                 loadEmojis();
-            } else {
-                alert("ბაზიდან წაშლისას დაფიქსირდა შეცდომა.");
+            } catch (err) {
+                console.error(err);
+                alert("შეცდომა წაშლისას: " + err.message);
             }
         }
     }
@@ -285,11 +290,9 @@
         box.scrollTop = box.scrollHeight;
     }
 
-    // ფუნქცია, რომელიც ტექსტს მაშინვე გარდაქმნის სმაილებად (setInterval-ის გარეშე, რაც უფრო სწრაფია)
     function parseEmojis(text) {
         if (!text) return "";
         const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-        // ვეძებთ სიტყვებს, რომლებიც მთავრდება .gif, .png, .jpg, .webp-ით
         return text.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
     }
 
