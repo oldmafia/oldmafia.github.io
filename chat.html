@@ -222,8 +222,27 @@
         loadEmojis();
     }
 
-    async function deleteEmoji(id) { if(confirm("წავშალო?")) { await _s.from('emojis').delete().eq('id', id); loadEmojis(); } }
-
+    async function deleteEmoji(id) {
+    if(confirm("დარწმუნებული ხართ, რომ გსურთ სმაილის წაშლა?")) {
+        // 1. ჯერ ვიგებთ ფაილის სახელს, რომ საცავიდანაც წავშალოთ
+        const { data: emoji } = await _s.from('emojis').select('name').eq('id', id).single();
+        
+        if (emoji) {
+            // 2. ვშლით ფაილს Storage-დან
+            await _s.storage.from('emojis').remove([emoji.name]);
+            
+            // 3. ვშლით ჩანაწერს ცხრილიდან
+            const { error } = await _s.from('emojis').delete().eq('id', id);
+            
+            if (!error) {
+                alert("სმაილი წარმატებით წაიშალა!");
+                loadEmojis(); // დაფის განახლება
+            } else {
+                alert("ბაზიდან წაშლისას დაფიქსირდა შეცდომა.");
+            }
+        }
+    }
+}
     window.insertEmoji = function(name) {
         const input = document.getElementById('msg-input');
         input.value += name + " ";
