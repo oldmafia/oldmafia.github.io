@@ -19,16 +19,23 @@
         #room-name { font-weight: bold; color: var(--bright-red); flex: 1; text-align: center; font-size: 16px; }
         
         #pm-btn { position: relative; cursor: pointer; font-size: 22px; margin-right: 15px; color: cyan; display: flex; align-items: center; }
+        
+        /* გასწორებული PM COUNT - მხოლოდ წითელი ციფრი */
         #pm-count { 
-            position: absolute; top: -5px; right: -8px; 
-            background: #ff0000; color: white; border-radius: 50%; 
-            font-size: 11px; min-width: 18px; height: 18px; 
-            display: none; align-items: center; justify-content: center; 
-            font-weight: bold; border: 1px solid white; 
-            box-shadow: 0 0 10px #ff0000;
+            position: absolute; 
+            top: -8px; 
+            right: -10px; 
+            background: transparent; 
+            color: #ff0000;           
+            font-size: 16px;          
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            text-shadow: 0 0 5px black; 
             animation: blinker 1.5s linear infinite;
         }
-        @keyframes blinker { 50% { opacity: 0.5; } }
+        @keyframes blinker { 50% { opacity: 0.3; } }
 
         /* ჩატის არე */
         .chat-area { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 100px; display: flex; flex-direction: column; gap: 12px; background: radial-gradient(circle at center, #1a0000 0%, #030000 100%); }
@@ -213,16 +220,11 @@
     async function uploadEmoji(el) {
         const file = el.files[0]; if(!file) return;
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-        
         try {
-            // 1. Storage-ში ატვირთვა
             const { error: storageError } = await _s.storage.from('emojis').upload(fileName, file);
             if(storageError) throw storageError;
-
-            // 2. ბაზაში ჩაწერა
             const { error: dbError } = await _s.from('emojis').insert([{ name: fileName }]);
             if(dbError) throw dbError;
-
             alert("სმაილი წარმატებით დაემატა!");
             loadEmojis();
         } catch (err) {
@@ -235,15 +237,11 @@
         if(!id) return;
         if(confirm("დარწმუნებული ხართ, რომ გსურთ სმაილის წაშლა?")) {
             try {
-                // 1. ვშლით ბაზიდან
                 const { error: dbError } = await _s.from('emojis').delete().eq('id', id);
                 if (dbError) throw dbError;
-
-                // 2. ვშლით საცავიდან (თუ სახელი ვალიდურია)
                 if(fileName && fileName !== 'undefined') {
                     await _s.storage.from('emojis').remove([fileName]);
                 }
-
                 alert("სმაილი წაიშალა!");
                 loadEmojis();
             } catch (err) {
@@ -317,7 +315,9 @@
                     <button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button>
                     <button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა (BAN)</button>`;
             } else if (myRole === "Admin" && p.role !== "Owner") {
-                adminZone.innerHTML += `<button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა</button>`;
+                adminZone.innerHTML += `
+                    <button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button>
+                    <button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა</button>`;
             }
         } else { adminZone.style.display = "none"; }
         
@@ -382,7 +382,10 @@
     async function checkPMs() {
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
         const badge = document.getElementById('pm-count');
-        if (badge && count > 0) { badge.innerText = count; badge.style.display = 'flex'; }
+        if (badge && count > 0) { 
+            badge.innerText = count; 
+            badge.style.display = 'inline-flex';
+        }
         else if(badge) { badge.style.display = 'none'; }
     }
 
