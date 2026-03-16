@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ადმინ პანელი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #050000; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: auto; border: 2px solid #4a0000; padding: 20px; border-radius: 15px; background: #0a0000; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        h2 { color: gold; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        input { width: 90%; padding: 12px; margin: 15px 0; background: #1a1a1a; border: 1px solid #4a0000; color: white; border-radius: 8px; outline: none; }
+        button { padding: 12px 20px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; transition: 0.3s; }
+        .add-btn { background: #008000; color: white; width: 90%; margin-bottom: 20px; }
+        .add-btn:hover { background: #00a000; }
+        .del-btn { background: #ff0000; color: white; padding: 6px 12px; font-size: 12px; }
+        .room-list { margin-top: 20px; text-align: left; background: #080808; border-radius: 10px; padding: 10px; }
+        .room-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #222; }
+        .room-item:last-child { border-bottom: none; }
+        .back-btn { background: #333; color: white; margin-top: 20px; width: 90%; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="admin-content" style="display:none;">
+    <h2>🛠 ოთახების მართვა</h2>
+    <p style="color: #888;">მოგესალმებით, დამფუძნებელო</p>
+    
+    <input type="text" id="room-name" placeholder="ახალი ოთახის სახელი...">
+    <button class="add-btn" onclick="addRoom()">➕ ოთახის დამატება</button>
+
+    <div id="rooms-list" class="room-list">
+        <p style="text-align:center; opacity:0.5;">იტვირთება ოთახები...</p>
+    </div>
+    
+    <button class="back-btn" onclick="location.href='chat.html'">⬅ ჩატში დაბრუნება</button>
+</div>
+
+<div id="access-denied" style="display:none; margin-top:100px;">
+    <h1 style="color:red; font-size: 50px;">❌</h1>
+    <h2 style="color:red;">წვდომა აკრძალულია!</h2>
+    <p>თქვენ არ გაქვთ ადმინისტრატორის უფლებები.</p>
+    <button onclick="location.href='chat.html'" style="background:#444; color:white;">უკან დაბრუნება</button>
+</div>
+
+<script>
+    // Supabase კონფიგურაცია
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('nickname');
+
+    async function checkAccess() {
+        if (!myNick) {
+            location.href = 'index.html';
+            return;
+        }
+
+        const { data: user, error } = await _s.from('profiles').select('role').eq('username', myNick).single();
+        
+        // ვამოწმებთ არის თუ არა Abu007 ან აქვს თუ არა დამფუძნებლის როლი
+        const isFounder = (user && user.role && user.role.includes('დამფუძნებელი'));
+        const isAdmin = (myNick === 'Abu007' || isFounder);
+
+        if (isAdmin) {
+            document.getElementById('admin-content').style.display = 'block';
+            loadRooms();
+        } else {
+            document.getElementById('access-denied').style.display = 'block';
+        }
+    }
+
+    async function loadRooms() {
+        const { data: rooms, error } = await _s.from('rooms').select('*').order('created_at', { ascending: true });
+        const listDiv = document.getElementById('rooms-list');
+        
+        if (error) {
+            listDiv.innerHTML = "<p style='color:red;'>შეცდომა ჩატვირთვისას</p>";
+            return;
+        }
+
+        listDiv.innerHTML = "<h3 style='margin-left:10px; color:gold;'>არსებული ოთახები:</h3>";
+        rooms.forEach(r => {
+            listDiv.innerHTML += `
+                <div class="room-item">
+                    <span>${r.name}</span>
+                    <button class="del-btn" onclick="deleteRoom(${r.id}, '${r.name}')">წაშლა 🗑️</button>
+                </div>
+            `;
+        });
+    }
+
+    async function addRoom() {
+        const input = document.getElementById('room-name');
+        const name = input.value.trim();
+        if (!name) return alert("ჩაწერეთ სახელი!");
+
+        const { error } = await _s.from('rooms').insert([{ name: name }]);
+        if (error) {
+            alert("შეცდომა დამატებისას: " + error.message);
+        } else {
+            input.value = "";
+            loadRooms();
+        }
+    }
+
+    async function deleteRoom(id, name) {
+        if (!confirm(`ნამდვილად გსურთ ოთახის "${name}" წაშლა?`)) return;
+        
+        const { error } = await _s.from('rooms').delete().eq('id', id);
+        if (error) {
+            alert("შეცდომა წაშლისას!");
+        } else {
+            loadRooms();
+        }
+    }
+
+    // შემოწმების გაშვება
+    checkAccess();
+</script>
+</body>
+</html>
