@@ -183,10 +183,15 @@
             
             await _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick);
             setInterval(() => _s.from('profiles').update({ last_online: new Date().toISOString() }).eq('username', myNick), 30000);
-            checkPMs(); setInterval(checkPMs, 10000);
+            
+            // შეტყობინებების და PM-ების მოსმენა
+            checkPMs(); 
+            _s.channel('chat-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages', filter: `receiver=eq.${myNick}` }, checkPMs)
+                .subscribe();
         }
         loadMessages();
-        _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
     function toggleEmojiPicker() {
@@ -198,14 +203,13 @@
     async function loadEmojis() {
         const { data: ems } = await _s.from('emojis').select('*').order('id');
         const grid = document.getElementById('emoji-grid');
-        const validEms = (ems || []).filter(e => e.name && e.name.trim() !== "" && e.name !== 'undefined');
+        const validEms = (ems || []).filter(e => e.name && e.name !== 'undefined');
         
         grid.innerHTML = validEms.map(e => `
             <div class="emoji-wrapper">
                 <img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" 
                      class="emoji-item" 
-                     onclick="insertEmoji('${e.name}')"
-                     onerror="this.parentElement.style.display='none'">
+                     onclick="insertEmoji('${e.name}')">
                 ${myRole === 'Owner' ? `<div class="del-emoji" onclick="deleteEmoji(${e.id}, '${e.name}')">×</div>` : ''}
             </div>`).join('');
     }
@@ -215,41 +219,20 @@
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         
         try {
-            // 1. Storage-ში ატვირთვა
             const { error: storageError } = await _s.storage.from('emojis').upload(fileName, file);
             if(storageError) throw storageError;
-
-            // 2. ბაზაში ჩაწერა
             const { error: dbError } = await _s.from('emojis').insert([{ name: fileName }]);
             if(dbError) throw dbError;
-
-            alert("სმაილი წარმატებით დაემატა!");
+            alert("სმაილი დაემატა!");
             loadEmojis();
-        } catch (err) {
-            console.error(err);
-            alert("შეცდომა ატვირთვისას: " + err.message);
-        }
+        } catch (err) { alert("შეცდომა: " + err.message); }
     }
 
     async function deleteEmoji(id, fileName) {
-        if(!id) return;
-        if(confirm("დარწმუნებული ხართ, რომ გსურთ სმაილის წაშლა?")) {
-            try {
-                // 1. ვშლით ბაზიდან
-                const { error: dbError } = await _s.from('emojis').delete().eq('id', id);
-                if (dbError) throw dbError;
-
-                // 2. ვშლით საცავიდან (თუ სახელი ვალიდურია)
-                if(fileName && fileName !== 'undefined') {
-                    await _s.storage.from('emojis').remove([fileName]);
-                }
-
-                alert("სმაილი წაიშალა!");
-                loadEmojis();
-            } catch (err) {
-                console.error(err);
-                alert("შეცდომა წაშლისას: " + err.message);
-            }
+        if(confirm("წავშალო?")) {
+            await _s.from('emojis').delete().eq('id', id);
+            if(fileName) await _s.storage.from('emojis').remove([fileName]);
+            loadEmojis();
         }
     }
 
@@ -269,9 +252,7 @@
             const p = profs?.find(u => u.username === m.user_name);
             const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
-            
-            const isOwnerMsg = p?.role === "Owner";
-            const canDelete = (myRole === "Owner") || (myRole === "Admin" && !isOwnerMsg);
+            const canDelete = (myRole === "Owner") || (myRole === "Admin" && p?.role !== "Owner");
             let delBtn = (canDelete) ? `<span style="cursor:pointer;margin-left:8px;opacity:0.5;" onclick="deleteMsg(${m.id})">🗑️</span>` : "";
 
             box.innerHTML += `
@@ -293,9 +274,31 @@
     function parseEmojis(text) {
         if (!text) return "";
         const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-        return text.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
+        return text.replace(/(\d+_\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
     }
 
+    async function sendMsg() {
+        const i = document.getElementById("msg-input");
+        const val = i.value.trim();
+        if(!val || myRole === "Banned") return;
+        
+        // ინდიკატორი გაგზავნისას
+        i.disabled = true;
+        const { error } = await _s.from('messages').insert([{ user_name: myNick, text: val, room_name: currentRoom }]);
+        i.disabled = false;
+        if(!error) { i.value = ""; i.focus(); }
+    }
+
+    async function checkPMs() {
+        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
+        const badge = document.getElementById('pm-count');
+        if (badge) {
+            badge.innerText = count || 0;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+    }
+
+    async function deleteMsg(id) { if(confirm("წავშალო?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); } }
     async function openProfile(name) {
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
         if(!p) return;
@@ -303,59 +306,14 @@
         document.getElementById('targetName').innerText = p.username;
         document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
         document.getElementById('targetStatusDisplay').innerText = p.status || "";
-        
         const adminZone = document.getElementById('adminOptions');
         adminZone.innerHTML = "";
-        adminZone.style.display = "block";
-
         if (name !== myNick) {
-            adminZone.innerHTML += `<button class="modal-btn" style="background:#004a4a; border-color:cyan;" onclick="location.href='pm.html?to=${name}'">✉️ მიმოწერა</button>`;
-            if (myRole === "Owner") {
-                adminZone.innerHTML += `
-                    <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
-                    <button class="modal-btn" onclick="setRole('Owner')">👑 დამფუძნებლად დანიშვნა</button>
-                    <button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button>
-                    <button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა (BAN)</button>`;
-            } else if (myRole === "Admin" && p.role !== "Owner") {
-                adminZone.innerHTML += `<button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა</button>`;
-            }
-        } else { adminZone.style.display = "none"; }
-        
+            adminZone.innerHTML += `<button class="modal-btn" style="background:#004a4a;" onclick="location.href='pm.html?to=${name}'">✉️ მიმოწერა</button>`;
+            if (myRole === "Owner") adminZone.innerHTML += `<button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინი</button><button class="modal-btn" style="background:#440000;" onclick="setRole('Banned')">🚫 BAN</button>`;
+        }
         document.getElementById('userModal').style.display = "flex";
         window.selectedUser = name;
-    }
-
-    async function setRole(role) {
-        if(confirm("დარწმუნებული ხართ?")) {
-            await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser);
-            closeModal(); loadMessages();
-        }
-    }
-
-    async function loadOnline() {
-        const { data: users } = await _s.from('profiles').select('*');
-        const list = document.getElementById('online-list-content');
-        if(!list || !users) return;
-        list.innerHTML = "";
-        const now = new Date();
-        users.filter(u => u.last_online && (now - new Date(u.last_online) < 300000)).forEach(u => {
-            let roleColor = u.role === 'Owner' ? "red" : (u.role === 'Admin' ? "cyan" : "#777");
-            list.innerHTML += `<div style="padding:12px 15px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #111; cursor:pointer;" onclick="openProfile('${u.username}')">
-                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:35px; height:35px; border-radius:50%; border:1.5px solid ${roleColor}; object-fit: cover;">
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-size:14px; color:#eee;">${u.username}</span>
-                    <span style="font-size:9px; color:${roleColor};">${translateRole(u.role)}</span>
-                </div>
-            </div>`;
-        });
-    }
-
-    async function deleteMsg(id) { if(confirm("წავშალო?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); } }
-    
-    async function sendMsg() {
-        const i = document.getElementById("msg-input"); if(!i.value.trim() || myRole === "Banned") return;
-        await _s.from('messages').insert([{ user_name: myNick, text: i.value, room_name: currentRoom }]);
-        i.value = "";
     }
 
     async function uploadAvatar(el) {
@@ -379,15 +337,7 @@
         el.classList.add('active'); closeAll(); loadMessages();
     }
 
-    async function checkPMs() {
-        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const badge = document.getElementById('pm-count');
-        if (badge && count > 0) { badge.innerText = count; badge.style.display = 'flex'; }
-        else if(badge) { badge.style.display = 'none'; }
-    }
-
     function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
-    
     init();
 </script>
 </body>
