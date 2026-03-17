@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>შიფროგრამის თამაში</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align:center; padding:50px; background:#f0f0f0; }
+  #scrambled { font-size:2em; margin:20px 0; }
+  #score { font-size:1.2em; margin:10px; }
+  #timer { font-size:1.2em; margin:10px; }
+  input { font-size:1em; padding:5px; }
+  button { font-size:1em; padding:5px 10px; }
+</style>
+</head>
+<body>
+
+<h1>შიფროგრამა 🎮</h1>
+<div id="score">ქულა: 0</div>
+<div id="timer">დრო: 60</div>
+<h2 id="scrambled">სიტყვა</h2>
+
+<input type="text" id="answer" placeholder="შენი პასუხი">
+<button onclick="checkAnswer()">შემოწმება</button>
+<p id="result"></p>
+
+<script>
+let pairs = [
+  { scrambled: "მეღა", correct: "ღამე" },
+  { scrambled: "ალდი", correct: "დილა" },
+  { scrambled: "ოკაკ", correct: "კოკა" },
+  { scrambled: "რუბთი", correct: "ბურთი" },
+  { scrambled: "კინაბ", correct: "ბანკი" },
+  { scrambled: "ლიკაკა", correct: "კაკალი" },
+  { scrambled: "ვიმაწ", correct: "წვიმა" },
+  { scrambled: "გვითა", correct: "თაგვი" },
+  { scrambled: "ტრიკი", correct: "კიტრი" },
+  { scrambled: "ბადარზი", correct: "დარბაზი" },
+  { scrambled: "რასიმღე", correct: "სიმღერა" },
+  { scrambled: "რულიყვასი", correct: "სიყვარული" },
+  { scrambled: "ლაკოს", correct: "სკოლა" },
+  { scrambled: "ხეცი", correct: "ციხე" },
+  { scrambled: "თელინას", correct: "სანთელი" },
+  { scrambled: "დარფა", correct: "ფარდა" },
+  { scrambled: "ლიკბი", correct: "კბილი" },
+  { scrambled: "ილუვერ", correct: "რვეული" },
+  { scrambled: "ჭებედი", correct: "ბეჭედი" },
+  { scrambled: "გიდამა", correct: "მაგიდა" },
+  { scrambled: "ილღრუბე", correct: "ღრუბელი" },
+  { scrambled: "მიკალა", correct: "კალამი" },
+  { scrambled: "ილიყვავ", correct: "ყვავილი" },
+  { scrambled: "ტერიმპიუკო", correct: "კომპიუტერი" },
+  { scrambled: "ტაპლანე", correct: "პლანეტა" },
+  { scrambled: "ბოლამი", correct: "ალბომი" },
+  { scrambled: "შავილა", correct: "ლავაში" },
+  { scrambled: "რიკინაბ", correct: "ბანკირი" },
+  { scrambled: "ვეჩემრლი", correct: "მრჩეველი" },
+  { scrambled: "თილები", correct: "ბილეთი" },
+  { scrambled: "იმასაბყელ", correct: "ყელსაბამი" },
+  { scrambled: "რდივა", correct: "ვარდი" },
+  { scrambled: "თბოგამალები", correct: "გამათბობელი" },
+  { scrambled: "ტოკარინიდი", correct: "ინდიკატორი" },
+  { scrambled: "შვიშა", correct: "შაშვი" },
+  { scrambled: "გარიგარ", correct: "გარგარი" },
+  { scrambled: "რიდენბაი", correct: "ბაინდერი" },
+  { scrambled: "ქაითიფა", correct: "აფთიაქი" },
+  { scrambled: "რიმენო", correct: "ნომერი" },
+  { scrambled: "ცემხი", correct: "მხეცი" },
+  { scrambled: "ნიფოლეტე", correct: "ტელეფონი" },
+  { scrambled: "რუჟლინა", correct: "ჟურნალი" },
+  { scrambled: "ბირაწ", correct: "წარბი" },
+  { scrambled: "ლაკოდა", correct: "კოდალა" },
+  { scrambled: "ირაქამ", correct: "ქამარი" },
+  { scrambled: "რიკურემ", correct: "მერკური" },
+  { scrambled: "კრიეჯო", correct: "ჯოკერი" },
+  { scrambled: "გჟინა", correct: "ჟანგი" },
+  { scrambled: "კრამა", correct: "მაკრატელი" },
+  { scrambled: "იალაგ", correct: "გალია" },
+  { scrambled: "რტოშმი", correct: "შტორმი" },
+  { scrambled: "თიასნა", correct: "ასანთი" },
+  { scrambled: "არღუბე", correct: "ბეღურა" },
+  { scrambled: "დანელკარი", correct: "კალენდარი" },
+  { scrambled: "დაშნალი", correct: "შანდალი" },
+  { scrambled: "ლარიგო", correct: "გორილა" },
+  { scrambled: "ველტეიზია", correct: "ტელევიზია" },
+  { scrambled: "რწყოა", correct: "წყარო" }
+];
+
+let score = 0;
+let time = 60;
+let currentPair;
+
+// აიღე შემთხვევითი სიტყვა
+function newWord() {
+  currentPair = pairs[Math.floor(Math.random() * pairs.length)];
+  document.getElementById("scrambled").innerText = currentPair.scrambled;
+}
+
+// შემოწმება
+function checkAnswer() {
+  let user = document.getElementById("answer").value.trim();
+
+  if (user === currentPair.correct) {
+    score++;
+    document.getElementById("result").innerText = "სწორია 😄";
+    document.getElementById("score").innerText = "ქულა: " + score;
+    newWord();
+  } else {
+    document.getElementById("result").innerText = "არასწორია 😅";
+  }
+
+  document.getElementById("answer").value = "";
+}
+
+// ტაიმერი
+function startTimer() {
+  let timerInterval = setInterval(() => {
+    time--;
+    document.getElementById("timer").innerText = "დრო: " + time;
+
+    if (time <= 0) {
+      clearInterval(timerInterval);
+      alert("თამაში დასრულდა! შენი ქულა: " + score);
+      location.reload(); // თავიდან დაიწყება
+    }
+  }, 1000);
+}
+
+// დაიწყე თამაში
+newWord();
+startTimer();
+</script>
+
+</body>
+</html>
