@@ -109,7 +109,7 @@
         }
     </style>
 </head>
-<body>
+<body onload="init()">
 
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 
@@ -549,15 +549,20 @@
     async function checkPMs() {
         const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
         const badge = document.getElementById('pm-count');
-        if (badge && count > 0) { 
-            badge.innerText = count; 
-            badge.style.display = 'inline-flex';
+        if (badge) {
+            if (count > 0) {
+                badge.innerText = count; 
+                badge.style.display = 'inline-flex';
+            } else {
+                badge.style.display = 'none';
+            }
         }
-        else if(badge) { badge.style.display = 'none'; }
     }
 
-    function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
-    init();
+    function logout() {
+        localStorage.clear();
+        location.href = 'index.html';
+    }
 </script>
 </body>
 </html>
