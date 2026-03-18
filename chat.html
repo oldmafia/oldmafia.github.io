@@ -20,7 +20,6 @@
         
         #pm-btn { position: relative; cursor: pointer; font-size: 22px; margin-right: 15px; color: cyan; display: flex; align-items: center; }
         
-        /* გასწორებული PM COUNT - მხოლოდ წითელი ციფრი */
         #pm-count { 
             position: absolute; 
             top: -8px; 
@@ -167,7 +166,6 @@
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     let myNick = localStorage.getItem('nickname'), myRole = "Member", currentRoom = "☕ კაფე-ბარი";
 
-    // --- ვიქტორინის ცვლადები ---
     let currentQuizQ = null;
     const QUIZ_ROOM_NAME = "❓ ვიქტორინა";
 
@@ -189,7 +187,7 @@
             document.getElementById('my-nick-label').innerText = p.username;
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
-            document.getElementById('my-points-label').innerText = p.quiz_points || 0;
+            document.getElementById('my-points-label').innerText = p.points || 0;
             
             if(myRole === "Owner" || myRole === "Admin") {
                 document.getElementById('admin-tools').style.display = "flex";
@@ -203,18 +201,11 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
-    // --- ვიქტორინის ფუნქციები (განახლებული) ---
     async function startQuiz() {
         if (currentRoom !== QUIZ_ROOM_NAME) return;
-        
         const { data: questions, error } = await _s.from('quiz_questions').select('*');
-        if (error || !questions || questions.length === 0) {
-            console.log("Quiz error: Questions not found");
-            return;
-        }
-
+        if (error || !questions || questions.length === 0) return;
         currentQuizQ = questions[Math.floor(Math.random() * questions.length)];
-        
         await _s.from('messages').insert([{
             room_name: QUIZ_ROOM_NAME,
             user_name: '🤖 QUIZ_BOT',
@@ -224,23 +215,24 @@
 
     async function handleQuizLogic(msg) {
         if (currentRoom !== QUIZ_ROOM_NAME || !currentQuizQ || msg.user_name === '🤖 QUIZ_BOT') return;
-        
         if (msg.text.toLowerCase().trim() === currentQuizQ.answer.toLowerCase().trim()) {
             const winner = msg.user_name;
             currentQuizQ = null;
 
+            // ქულების წამოღება (დიდი-პატარა ასოების იგნორირებით)
+            const { data: userProfile } = await _s.from('profiles').select('points').ilike('username', winner).maybeSingle();
+            const updatedPoints = (userProfile?.points || 0) + 5;
+
+            // ბაზაში ჩაწერა
+            await _s.from('profiles').update({ points: updatedPoints }).ilike('username', winner);
+
             await _s.from('messages').insert([{
                 room_name: QUIZ_ROOM_NAME,
                 user_name: '🤖 QUIZ_BOT',
-                text: `🎉 სწორია! **${winner}**, შენ დაგერიცხა 5 ქულა!`
+                text: `🎉 სწორია! **${winner}**, შენ დაგერიცხა 5 ქულა! (სულ გაქვს: ${updatedPoints})`
             }]);
-
-            const { data: prof } = await _s.from('profiles').select('quiz_points').eq('username', winner).single();
-            const newPoints = (prof?.quiz_points || 0) + 5;
-            await _s.from('profiles').update({ quiz_points: newPoints }).eq('username', winner);
             
-            if(winner === myNick) document.getElementById('my-points-label').innerText = newPoints;
-
+            if(winner.toLowerCase() === myNick.toLowerCase()) document.getElementById('my-points-label').innerText = updatedPoints;
             setTimeout(startQuiz, 7000); 
         }
     }
@@ -255,7 +247,6 @@
         const { data: ems } = await _s.from('emojis').select('*').order('id');
         const grid = document.getElementById('emoji-grid');
         const validEms = (ems || []).filter(e => e.name && e.name.trim() !== "" && e.name !== 'undefined');
-        
         grid.innerHTML = validEms.map(e => `
             <div class="emoji-wrapper">
                 <img src="https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/${e.name}" 
@@ -270,33 +261,17 @@
         const file = el.files[0]; if(!file) return;
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         try {
-            const { error: storageError } = await _s.storage.from('emojis').upload(fileName, file);
-            if(storageError) throw storageError;
-            const { error: dbError } = await _s.from('emojis').insert([{ name: fileName }]);
-            if(dbError) throw dbError;
-            alert("სმაილი წარმატებით დაემატა!");
+            await _s.storage.from('emojis').upload(fileName, file);
+            await _s.from('emojis').insert([{ name: fileName }]);
             loadEmojis();
-        } catch (err) {
-            console.error(err);
-            alert("შეცდომა ატვირთვისას: " + err.message);
-        }
+        } catch (err) { alert("შეცდომა ატვირთვისას."); }
     }
 
     async function deleteEmoji(id, fileName) {
-        if(!id) return;
         if(confirm("დარწმუნებული ხართ?")) {
-            try {
-                const { error: dbError } = await _s.from('emojis').delete().eq('id', id);
-                if (dbError) throw dbError;
-                if(fileName && fileName !== 'undefined') {
-                    await _s.storage.from('emojis').remove([fileName]);
-                }
-                alert("წაიშალა!");
-                loadEmojis();
-            } catch (err) {
-                console.error(err);
-                alert("შეცდომა: " + err.message);
-            }
+            await _s.from('emojis').delete().eq('id', id);
+            if(fileName && fileName !== 'undefined') await _s.storage.from('emojis').remove([fileName]);
+            loadEmojis();
         }
     }
 
@@ -318,8 +293,10 @@
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
             
             const isBot = m.user_name === '🤖 QUIZ_BOT';
-            const bubbleStyle = isBot ? 'border: 1px solid gold; background: rgba(50, 40, 0, 0.9);' : '';
-            const nickStyle = isBot ? 'color: gold;' : '';
+            // ბოტის ახალი დიზაინი
+            const bubbleStyle = isBot ? 'border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(30, 20, 0, 0.95);' : '';
+            const nickStyle = isBot ? 'color: #ffd700;' : '';
+            const textStyle = isBot ? 'color: #ffffff; font-weight: 500;' : '';
 
             const isOwnerMsg = p?.role === "Owner";
             const canDelete = (myRole === "Owner") || (myRole === "Admin" && !isOwnerMsg);
@@ -333,12 +310,10 @@
                     </div>
                     <div class="bubble" style="${bubbleStyle}">
                         <div class="m-nick" style="${nickStyle}" onclick="openProfile('${m.user_name}')">${m.user_name} ${delBtn}</div>
-                        <div class="m-text">${parseEmojis(m.text)}</div>
+                        <div class="m-text" style="${textStyle}">${parseEmojis(m.text)}</div>
                         <div class="m-footer"><span class="m-time">${time}</span></div>
                     </div>
                 </div>`;
-            
-            // აი აქ დავამატე პასუხის შემოწმების გამოძახება!
             handleQuizLogic(m);
         });
         box.scrollTop = box.scrollHeight;
@@ -357,7 +332,7 @@
         document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
         document.getElementById('targetName').innerText = p.username;
         document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-        document.getElementById('targetPointsLabel').innerText = "🏆 ქულები: " + (p.quiz_points || 0);
+        document.getElementById('targetPointsLabel').innerText = "🏆 ქულები: " + (p.points || 0);
         document.getElementById('targetStatusDisplay').innerText = p.status || "";
         
         const adminZone = document.getElementById('adminOptions');
@@ -439,10 +414,7 @@
         el.classList.add('active'); 
         closeAll(); 
         loadMessages();
-
-        // ვიქტორინის გააქტიურება
         if(n === QUIZ_ROOM_NAME) {
-            console.log("Quiz room activated!");
             setTimeout(startQuiz, 1000);
         } else {
             currentQuizQ = null;
@@ -460,7 +432,6 @@
     }
 
     function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
-    
     init();
 </script>
 </body>
