@@ -108,7 +108,8 @@
         <img id="my-avatar-img" src="https://i.ibb.co/v3m6y6R/avatar.png" style="width:65px; height:65px; border-radius:50%; border:2px solid var(--dark-red); object-fit: cover; cursor:pointer;" onclick="document.getElementById('avatar-input').click()">
         <div id="my-nick-label" style="font-weight:bold; color:var(--bright-red); margin-top:5px;">...</div>
         <div id="my-role-label" style="font-size: 11px; color: #888;">...</div>
-        <div style="font-size: 12px; color: gold; margin-top: 5px;">🏆 ვიქტორინის ქულა: <span id="my-points-label">0</span></div>
+        <div style="font-size: 12px; color: gold; margin-top: 5px;">🏆 ვიქტორინა: <span id="my-points-label">0</span></div>
+        <div style="font-size: 12px; color: #00ffff; margin-top: 5px;">🔐 შიფრო-ქულა: <span id="my-cipher-points-label">0</span></div>
         <div onclick="changeStatus()" style="font-size: 11px; color: #0c0; cursor:pointer; margin-top:5px; text-decoration: underline;">💬 სტატუსი</div>
     </div>
     <div class="rooms-list" style="flex:1; overflow-y:auto;">
@@ -167,7 +168,9 @@
     let myNick = localStorage.getItem('nickname'), myRole = "Member", currentRoom = "☕ კაფე-ბარი";
 
     let currentQuizQ = null;
+    let currentCipher = null;
     const QUIZ_ROOM_NAME = "❓ ვიქტორინა";
+    const CIPHER_ROOM_NAME = "🔐 შიფროგრამა";
 
     function translateRole(r) { 
         const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი', 'Banned': '🚫 დაბლოკილი'}; 
@@ -188,6 +191,7 @@
             document.getElementById('my-role-label').innerText = translateRole(myRole);
             document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
             document.getElementById('my-points-label').innerText = p.points || 0;
+            document.getElementById('my-cipher-points-label').innerText = p.cipher_points || 0;
             
             if(myRole === "Owner" || myRole === "Admin") {
                 document.getElementById('admin-tools').style.display = "flex";
@@ -201,10 +205,11 @@
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
     }
 
+    // --- ვიქტორინის ლოგიკა ---
     async function startQuiz() {
         if (currentRoom !== QUIZ_ROOM_NAME) return;
-        const { data: questions, error } = await _s.from('quiz_questions').select('*');
-        if (error || !questions || questions.length === 0) return;
+        const { data: questions } = await _s.from('quiz_questions').select('*');
+        if (!questions || questions.length === 0) return;
         currentQuizQ = questions[Math.floor(Math.random() * questions.length)];
         await _s.from('messages').insert([{
             room_name: QUIZ_ROOM_NAME,
@@ -218,22 +223,47 @@
         if (msg.text.toLowerCase().trim() === currentQuizQ.answer.toLowerCase().trim()) {
             const winner = msg.user_name;
             currentQuizQ = null;
-
-            // ქულების წამოღება (დიდი-პატარა ასოების იგნორირებით)
             const { data: userProfile } = await _s.from('profiles').select('points').ilike('username', winner).maybeSingle();
             const updatedPoints = (userProfile?.points || 0) + 5;
-
-            // ბაზაში ჩაწერა
             await _s.from('profiles').update({ points: updatedPoints }).ilike('username', winner);
-
             await _s.from('messages').insert([{
                 room_name: QUIZ_ROOM_NAME,
                 user_name: '🤖 QUIZ_BOT',
                 text: `🎉 სწორია! **${winner}**, შენ დაგერიცხა 5 ქულა! (სულ გაქვს: ${updatedPoints})`
             }]);
-            
             if(winner.toLowerCase() === myNick.toLowerCase()) document.getElementById('my-points-label').innerText = updatedPoints;
             setTimeout(startQuiz, 7000); 
+        }
+    }
+
+    // --- შიფროგრამის ლოგიკა (ახალი) ---
+    async function startCipher() {
+        if (currentRoom !== CIPHER_ROOM_NAME) return;
+        const { data: words } = await _s.from('cipher_games').select('*');
+        if (!words || words.length === 0) return;
+        currentCipher = words[Math.floor(Math.random() * words.length)];
+        await _s.from('messages').insert([{
+            room_name: CIPHER_ROOM_NAME,
+            user_name: '🔐 CIPHER_BOT',
+            text: `🧩 **ააწყვეთ სიტყვა:** 👉  **${currentCipher.scrambled}**`
+        }]);
+    }
+
+    async function handleCipherLogic(msg) {
+        if (currentRoom !== CIPHER_ROOM_NAME || !currentCipher || msg.user_name === '🔐 CIPHER_BOT') return;
+        if (msg.text.toLowerCase().trim() === currentCipher.correct.toLowerCase().trim()) {
+            const winner = msg.user_name;
+            currentCipher = null;
+            const { data: prof } = await _s.from('profiles').select('cipher_points').ilike('username', winner).maybeSingle();
+            const updatedCipherPoints = (prof?.cipher_points || 0) + 10;
+            await _s.from('profiles').update({ cipher_points: updatedCipherPoints }).ilike('username', winner);
+            await _s.from('messages').insert([{
+                room_name: CIPHER_ROOM_NAME,
+                user_name: '🔐 CIPHER_BOT',
+                text: `✅ სწორია! **${winner}**, შენ გამოიცანი სიტყვა! \n🏆 შიფრო-ქულები: **${updatedCipherPoints}**`
+            }]);
+            if(winner.toLowerCase() === myNick.toLowerCase()) document.getElementById('my-cipher-points-label').innerText = updatedCipherPoints;
+            setTimeout(startCipher, 7000);
         }
     }
 
@@ -292,8 +322,7 @@
             const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
             
-            const isBot = m.user_name === '🤖 QUIZ_BOT';
-            // ბოტის ახალი დიზაინი
+            const isBot = (m.user_name === '🤖 QUIZ_BOT' || m.user_name === '🔐 CIPHER_BOT');
             const bubbleStyle = isBot ? 'border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(30, 20, 0, 0.95);' : '';
             const nickStyle = isBot ? 'color: #ffd700;' : '';
             const textStyle = isBot ? 'color: #ffffff; font-weight: 500;' : '';
@@ -315,6 +344,7 @@
                     </div>
                 </div>`;
             handleQuizLogic(m);
+            handleCipherLogic(m);
         });
         box.scrollTop = box.scrollHeight;
     }
@@ -326,13 +356,13 @@
     }
 
     async function openProfile(name) {
-        if(name === '🤖 QUIZ_BOT') return;
+        if(name === '🤖 QUIZ_BOT' || name === '🔐 CIPHER_BOT') return;
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
         if(!p) return;
         document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
         document.getElementById('targetName').innerText = p.username;
         document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-        document.getElementById('targetPointsLabel').innerText = "🏆 ქულები: " + (p.points || 0);
+        document.getElementById('targetPointsLabel').innerHTML = `🏆 ვიქტორინა: ${p.points || 0} <br> 🔐 შიფროგრამა: ${p.cipher_points || 0}`;
         document.getElementById('targetStatusDisplay').innerText = p.status || "";
         
         const adminZone = document.getElementById('adminOptions');
@@ -416,8 +446,11 @@
         loadMessages();
         if(n === QUIZ_ROOM_NAME) {
             setTimeout(startQuiz, 1000);
+        } else if(n === CIPHER_ROOM_NAME) {
+            setTimeout(startCipher, 1000);
         } else {
             currentQuizQ = null;
+            currentCipher = null;
         }
     }
 
