@@ -88,6 +88,9 @@
         .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; }
         .modal-content { background: #080000; border: 2px solid var(--dark-red); padding: 25px; border-radius: 25px; width: 320px; text-align: center; }
         .modal-btn { display: block; width: 100%; padding: 12px; margin: 7px 0; border: 1px solid var(--blood-red); background: #110000; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; }
+        
+        /* Joker UI */
+        #joker-ui { display: none; position: fixed; top: 60px; left: 0; width: 100%; background: rgba(0, 20, 0, 0.95); border-bottom: 2px solid gold; padding: 10px; z-index: 1500; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -101,6 +104,8 @@
         <button class="admin-add-btn" onclick="document.getElementById('emoji-file').click()" style="background:#00004a;">+ მოძრავი სმაილი</button>
     </div>
 </div>
+
+<div id="joker-ui"></div>
 
 <div class="sidebar" id="sidebar">
     <div style="padding: 20px 15px; text-align: center;">
@@ -169,8 +174,10 @@
 
     let currentQuizQ = null;
     let currentCipher = null;
+    let currentJokerGame = null;
     const QUIZ_ROOM_NAME = "❓ ვიქტორინა";
     const CIPHER_ROOM_NAME = "🔐 შიფროგრამა";
+    const JOKER_ROOM_NAME = "🃏 ჯოკერი";
 
     function translateRole(r) { 
         const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი', 'Banned': '🚫 დაბლოკილი'}; 
@@ -203,6 +210,56 @@
         }
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
+
+        // Joker Realtime
+        _s.channel('joker').on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, async (payload) => {
+            if (currentRoom === JOKER_ROOM_NAME) {
+                currentJokerGame = payload.new;
+                renderJokerUI();
+            }
+        }).subscribe();
+    }
+
+    // --- ჯოკერის ლოგიკა ---
+    async function joinJoker() {
+        if (currentRoom !== JOKER_ROOM_NAME) return;
+        const { data: games } = await _s.from('joker_games').select('*').eq('status', 'waiting').limit(1);
+        let game = games ? games[0] : null;
+
+        if (!game) {
+            const { data: newGame } = await _s.from('joker_games').insert([{
+                room_id: 'main_table',
+                players: [{ name: myNick, hand: [], points: 0, bet: null, taken: 0 }],
+                status: 'waiting'
+            }]).select().single();
+            game = newGame;
+        } else {
+            let players = game.players || [];
+            if (!players.find(p => p.name === myNick) && players.length < 4) {
+                players.push({ name: myNick, hand: [], points: 0, bet: null, taken: 0 });
+                const { data: updatedGame } = await _s.from('joker_games').update({ players: players }).eq('id', game.id).select().single();
+                game = updatedGame;
+            }
+        }
+        currentJokerGame = game;
+        renderJokerUI();
+    }
+
+    function renderJokerUI() {
+        const ui = document.getElementById('joker-ui');
+        if (currentRoom !== JOKER_ROOM_NAME || !currentJokerGame) {
+            ui.style.display = 'none';
+            return;
+        }
+        ui.style.display = 'block';
+        const pCount = currentJokerGame.players.length;
+        ui.innerHTML = `
+            <div style="color:gold; font-weight:bold; font-size:14px;">🃏 ჯოკერის მაგიდა (${pCount}/4)</div>
+            <div style="display:flex; justify-content:center; gap:10px; font-size:12px; margin-top:5px;">
+                ${currentJokerGame.players.map(p => `<span style="color:${p.name === myNick ? 'cyan' : 'white'}">👤 ${p.name}</span>`).join('')}
+            </div>
+            ${pCount === 4 ? '<button style="background:gold; border:none; padding:4px 12px; border-radius:4px; margin-top:5px; font-weight:bold; cursor:pointer;">დარიგება</button>' : '<div style="font-size:10px; color:#aaa; margin-top:5px;">ველოდებით სხვებს...</div>'}
+        `;
     }
 
     // --- ვიქტორინის ლოგიკა ---
@@ -322,16 +379,10 @@
             const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
             
-            // --- ბოტის ამოცნობის ლოგიკა ---
             const isBot = m.user_name && m.user_name.includes('BOT');
-
-            // --- ბოტის სტილები (მკვეთრი ნარინჯისფერი) ---
-            const bubbleStyle = isBot ? 
-                'border: 2px solid #ff8c00 !important; background: rgba(45, 20, 0, 0.95) !important; box-shadow: 0 0 10px rgba(255, 140, 0, 0.4) !important;' : '';
-            const nickStyle = isBot ? 
-                'color: #ff8c00 !important; font-weight: bold !important; text-shadow: 0 0 5px rgba(255, 140, 0, 0.5) !important;' : '';
-            const textStyle = isBot ? 
-                'color: #ffffff !important; font-weight: 500 !important;' : '';
+            const bubbleStyle = isBot ? 'border: 2px solid #ff8c00 !important; background: rgba(45, 20, 0, 0.95) !important; box-shadow: 0 0 10px rgba(255, 140, 0, 0.4) !important;' : '';
+            const nickStyle = isBot ? 'color: #ff8c00 !important; font-weight: bold !important; text-shadow: 0 0 5px rgba(255, 140, 0, 0.5) !important;' : '';
+            const textStyle = isBot ? 'color: #ffffff !important; font-weight: 500 !important;' : '';
 
             const isOwnerMsg = p?.role === "Owner";
             const canDelete = (myRole === "Owner") || (myRole === "Admin" && !isOwnerMsg);
@@ -450,13 +501,19 @@
         el.classList.add('active'); 
         closeAll(); 
         loadMessages();
+        
+        // UI Cleanups
+        document.getElementById('joker-ui').style.display = 'none';
+        currentQuizQ = null;
+        currentCipher = null;
+        currentJokerGame = null;
+
         if(n === QUIZ_ROOM_NAME) {
             setTimeout(startQuiz, 1000);
         } else if(n === CIPHER_ROOM_NAME) {
             setTimeout(startCipher, 1000);
-        } else {
-            currentQuizQ = null;
-            currentCipher = null;
+        } else if(n === JOKER_ROOM_NAME) {
+            joinJoker();
         }
     }
 
