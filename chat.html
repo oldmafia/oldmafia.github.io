@@ -25,7 +25,7 @@
             top: -8px; 
             right: -10px; 
             background: transparent; 
-            color: #ff0000;            
+            color: #ff0000;             
             font-size: 16px;          
             display: none; 
             align-items: center; 
@@ -96,6 +96,17 @@
             border-bottom: 2px solid gold; padding: 12px; z-index: 1500; text-align: center; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
         }
+        .joker-table-container {
+            display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px;
+        }
+        .player-slot {
+            display: flex; flex-direction: column; align-items: center; gap: 5px; width: 22%;
+        }
+        .player-slot img {
+            width: 45px; height: 45px; border-radius: 50%; border: 2px solid gold; object-fit: cover; background: #111;
+        }
+        .player-name { font-size: 11px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+
         .joker-input-box {
             display: flex; gap: 5px; margin-top: 10px; max-width: 400px; margin-left: auto; margin-right: auto;
         }
@@ -186,7 +197,7 @@
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    let myNick = localStorage.getItem('nickname'), myRole = "Member", currentRoom = "☕ კაფე-ბარი";
+    let myNick = localStorage.getItem('nickname'), myRole = "Member", currentRoom = "☕ კაფე-ბარი", myAvatar = "";
 
     let currentQuizQ = null;
     let currentCipher = null;
@@ -210,9 +221,10 @@
         const { data: p } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
         if (p) {
             myRole = p.role || "Member";
+            myAvatar = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
             document.getElementById('my-nick-label').innerText = p.username;
             document.getElementById('my-role-label').innerText = translateRole(myRole);
-            document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
+            document.getElementById('my-avatar-img').src = myAvatar;
             document.getElementById('my-points-label').innerText = p.points || 0;
             document.getElementById('my-cipher-points-label').innerText = p.cipher_points || 0;
             
@@ -227,6 +239,7 @@
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
 
+        // Realtime Joker Updates
         _s.channel('joker').on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, async (payload) => {
             if (currentRoom === JOKER_ROOM_NAME) {
                 currentJokerGame = payload.new;
@@ -235,22 +248,27 @@
         }).subscribe();
     }
 
+    // ავტომატური დაჯდომა მაგიდაზე
     async function joinJoker() {
         if (currentRoom !== JOKER_ROOM_NAME) return;
+        
+        // ვეძებთ არსებულ თამაშს
         const { data: games } = await _s.from('joker_games').select('*').eq('status', 'waiting').limit(1);
-        let game = games ? games[0] : null;
+        let game = games && games.length > 0 ? games[0] : null;
 
         if (!game) {
+            // თუ თამაში არ არსებობს, ვქმნით ახალს და ვჯდებით
             const { data: newGame } = await _s.from('joker_games').insert([{
                 room_id: 'main_table',
-                players: [{ name: myNick, hand: [], points: 0, bet: null, taken: 0 }],
+                players: [{ name: myNick, avatar: myAvatar, points: 0 }],
                 status: 'waiting'
             }]).select().single();
             game = newGame;
         } else {
+            // თუ თამაში არსებობს, ვამოწმებთ უკვე ვზივართ თუ არა
             let players = game.players || [];
             if (!players.find(p => p.name === myNick) && players.length < 4) {
-                players.push({ name: myNick, hand: [], points: 0, bet: null, taken: 0 });
+                players.push({ name: myNick, avatar: myAvatar, points: 0 });
                 const { data: updatedGame } = await _s.from('joker_games').update({ players: players }).eq('id', game.id).select().single();
                 game = updatedGame;
             }
@@ -268,15 +286,29 @@
             return;
         }
         ui.style.display = 'block';
-        chat.style.paddingTop = '120px';
-        const pCount = currentJokerGame.players.length;
+        chat.style.paddingTop = '180px'; // მეტი ადგილი ავატარებისთვის
+        
+        const players = currentJokerGame.players || [];
+        
+        // ვქმნით 4 სლოტს (თუ მოთამაშე არაა, ვაჩვენებთ ცარიელს)
+        let slotsHTML = "";
+        for(let i=0; i<4; i++) {
+            const p = players[i];
+            slotsHTML += `
+                <div class="player-slot">
+                    <img src="${p ? p.avatar : 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="${!p ? 'opacity: 0.3; border-color: #444;' : ''}">
+                    <div class="player-name">${p ? p.name : '...'}</div>
+                </div>
+            `;
+        }
+
         ui.innerHTML = `
-            <div style="color:gold; font-weight:bold; font-size:15px; text-shadow: 0 0 5px black;">🃏 ჯოკერის მაგიდა (${pCount}/4)</div>
-            <div style="display:flex; justify-content:center; gap:12px; font-size:13px; margin-top:8px;">
-                ${currentJokerGame.players.map(p => `<span style="color:${p.name === myNick ? 'cyan' : '#fff'}; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px;">👤 ${p.name}</span>`).join('')}
+            <div style="color:gold; font-weight:bold; font-size:14px; margin-bottom:10px;">🃏 ჯოკერის მაგიდა (${players.length}/4)</div>
+            <div class="joker-table-container">
+                ${slotsHTML}
             </div>
             <div class="joker-input-box">
-                <input type="text" id="joker-mini-msg" class="joker-mini-input" placeholder="აქედან მოუწერე..." onkeypress="if(event.key==='Enter') sendJokerMsg()">
+                <input type="text" id="joker-mini-msg" class="joker-mini-input" placeholder="მოწერე მაგიდაზე..." onkeypress="if(event.key==='Enter') sendJokerMsg()">
                 <button class="joker-mini-send" onclick="sendJokerMsg()">></button>
             </div>
         `;
@@ -537,10 +569,10 @@
         currentJokerGame = null;
 
         if(n === JOKER_ROOM_NAME) {
-            mainInput.style.display = 'none'; // ვმალავთ დიდ საწერს
+            mainInput.style.display = 'none';
             joinJoker();
         } else {
-            mainInput.style.display = 'flex'; // ვაჩენთ სხვა ოთახებში
+            mainInput.style.display = 'flex';
             if(n === QUIZ_ROOM_NAME) setTimeout(startQuiz, 1000);
             if(n === CIPHER_ROOM_NAME) setTimeout(startCipher, 1000);
         }
@@ -559,10 +591,7 @@
         }
     }
 
-    function logout() {
-        localStorage.clear();
-        location.href = 'index.html';
-    }
+    function logout() { localStorage.clear(); location.href = 'index.html'; }
 </script>
 </body>
 </html>
