@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>პირადი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { --bright-red: #ff0000; --bg-black: #050000; }
+        
+        body { 
+            margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; 
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
+
+        .header { 
+            padding: 12px; text-align: center; border-bottom: 1px solid #200; 
+            background: #000; display: flex; align-items: center; justify-content: space-between; 
+        }
+
+        #inbox-view, #chat-view { 
+            flex: 1; overflow-y: auto; display: none; padding: 10px; 
+            padding-bottom: 150px; 
+        }
+        #inbox-view.active, #chat-view.active { display: block; }
+
+        /* მესიჯების დიზაინი */
+        .message-row { display: flex; gap: 8px; margin-bottom: 15px; align-items: flex-start; }
+        .avatar-box { position: relative; width: 42px; height: 42px; flex-shrink: 0; }
+        .avatar-img { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid #500; object-fit: cover; }
+        .online-status { position: absolute; bottom: 1px; right: 1px; width: 9px; height: 9px; background: #0f0; border-radius: 50%; border: 1.5px solid #000; }
+
+        .message-bubble { 
+            background: rgba(25, 5, 5, 0.9); border: 1px solid #400; 
+            border-radius: 10px; padding: 8px 12px; flex: 1; max-width: 85%;
+        }
+
+        .message-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .sender-nick { color: #f33; font-weight: bold; font-size: 13px; }
+        .trash-icon { color: #444; font-size: 14px; cursor: pointer; }
+
+        .message-content { font-size: 14px; color: #ddd; line-height: 1.4; word-break: break-word; }
+        /* სმაილების ზომა */
+        .message-content img { width: 40px; height: 40px; vertical-align: middle; margin: 2px; }
+        
+        .message-time { font-size: 10px; color: #444; text-align: right; margin-top: 4px; }
+
+        /* საწერი გრაფა */
+        .bottom-bar { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: #000; padding: 12px; border-top: 1px solid #200;
+            display: none; align-items: center; gap: 10px; padding-bottom: 35px;
+        }
+        .bottom-bar.active { display: flex; }
+
+        .input-container { 
+            flex: 1; background: #0a0a0a; border: 1px solid #300; 
+            border-radius: 25px; display: flex; align-items: center; padding: 2px 15px;
+        }
+        .input-container input { 
+            flex: 1; background: none; border: none; color: white; 
+            padding: 10px; outline: none; font-size: 14px;
+        }
+        .send-btn { 
+            width: 42px; height: 42px; background: #300; border: 1px solid #600;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+
+        /* ინბოქსის სტილი */
+        .inbox-item { display: flex; align-items: center; gap: 12px; padding: 15px; border-bottom: 1px solid #111; position: relative; }
+        .unread-dot { background: red; color: white; border-radius: 50%; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; position: absolute; right: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div onclick="goBack()" style="cursor:pointer; font-size: 20px;">⬅</div>
+    <div style="color:red; font-weight:bold;" id="view-title">პირადი</div>
+    <div style="width:20px;"></div>
+</div>
+
+<div id="inbox-view" class="active"></div>
+<div id="chat-view"></div>
+
+<div class="bottom-bar" id="chat-input-bar">
+    <div style="font-size: 24px; cursor: pointer;">😊</div>
+    <div class="input-container">
+        <input type="text" id="msg-input" placeholder="დაწერე მესიჯი..." autocomplete="off">
+    </div>
+    <div class="send-btn" onclick="sendMessage()">
+        <span style="color:cyan; font-size: 18px;">✈</span>
+    </div>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname'), activePartner = null;
+    const emojiUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
+
+    // სმაილების გადამყვანი ფუნქცია (გასწორებული)
+    function renderText(text) {
+        if (!text) return "";
+        return text.split(' ').map(word => {
+            const cleanWord = word.trim();
+            if (cleanWord.match(/\.(gif|png|jpg|webp)$/i)) {
+                return `<img src="${emojiUrl}${cleanWord}" onerror="this.style.display='none'">`;
+            }
+            return word;
+        }).join(' ');
+    }
+
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+        const { data: profs } = await _s.from('profiles').select('username, avatar_url');
+        const box = document.getElementById('inbox-view'); box.innerHTML = "";
+        const list = {};
+
+        msgs?.forEach(m => {
+            const p = m.sender === myNick ? m.receiver : m.sender;
+            if(!list[p]) {
+                const u = profs?.find(x => x.username === p);
+                const unreadCount = msgs.filter(x => x.sender === p && x.receiver === myNick && !x.is_read).length;
+                list[p] = { text: m.text, ava: u?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed='+p, unread: unreadCount };
+            }
+        });
+
+        for (let p in list) {
+            box.innerHTML += `
+                <div class="inbox-item" onclick="openChat('${p}')">
+                    <img src="${list[p].ava}" width="45" height="45" style="border-radius:50%; border:1px solid #400;">
+                    <div style="flex:1"><b style="color:red">${p}</b><br><small style="color:#555">${list[p].text.substring(0,25)}...</small></div>
+                    ${list[p].unread > 0 ? `<div class="unread-dot">${list[p].unread}</div>` : ''}
+                </div>`;
+        }
+    }
+
+    async function openChat(p) {
+        activePartner = p;
+        document.getElementById('view-title').innerText = p;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('chat-input-bar').classList.add('active');
+        
+        await _s.from('private_messages').update({ is_read: true }).eq('sender', p).eq('receiver', myNick);
+        loadMessages();
+    }
+
+    async function loadMessages() {
+        if(!activePartner) return;
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${activePartner}"),and(sender.eq."${activePartner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+        const { data: profs } = await _s.from('profiles').select('username, avatar_url');
+        
+        const area = document.getElementById('chat-view');
+        area.innerHTML = msgs?.map(m => {
+            const u = profs?.find(x => x.username === m.sender);
+            const ava = u?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed='+m.sender;
+            const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `
+                <div class="message-row">
+                    <div class="avatar-box"><img src="${ava}" class="avatar-img"><div class="online-status"></div></div>
+                    <div class="message-bubble">
+                        <div class="message-top"><span class="sender-nick">${m.sender}</span><span class="trash-icon">🗑</span></div>
+                        <div class="message-content">${renderText(m.text)}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                </div>`;
+        }).join('');
+        area.scrollTop = area.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const i = document.getElementById('msg-input');
+        if(!i.value.trim()) return;
+        const t = i.value; i.value = "";
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activePartner, text: t, is_read: false }]);
+        loadMessages();
+    }
+
+    function goBack() {
+        if(activePartner) {
+            activePartner = null;
+            document.getElementById('view-title').innerText = "პირადი";
+            document.getElementById('chat-view').classList.remove('active');
+            document.getElementById('chat-input-bar').classList.remove('active');
+            document.getElementById('inbox-view').classList.add('active');
+            loadInbox();
+        } else { location.href = 'chat.html'; }
+    }
+
+    window.onload = loadInbox;
+    _s.channel('pm_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => {
+        if(activePartner) loadMessages();
+        loadInbox();
+    }).subscribe();
+
+    document.getElementById('msg-input').addEventListener('keypress', e => { if(e.key==='Enter') sendMessage() });
+</script>
+</body>
+</html>
