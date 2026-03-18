@@ -25,7 +25,7 @@
             top: -8px; 
             right: -10px; 
             background: transparent; 
-            color: #ff0000;           
+            color: #ff0000;            
             font-size: 16px;          
             display: none; 
             align-items: center; 
@@ -236,7 +236,7 @@
         }
     }
 
-    // --- შიფროგრამის ლოგიკა (ახალი) ---
+    // --- შიფროგრამის ლოგიკა ---
     async function startCipher() {
         if (currentRoom !== CIPHER_ROOM_NAME) return;
         const { data: words } = await _s.from('cipher_games').select('*');
@@ -322,10 +322,16 @@
             const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
             
-            const isBot = (m.user_name === '🤖 QUIZ_BOT' || m.user_name === '🔐 CIPHER_BOT');
-            const bubbleStyle = isBot ? 'border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(30, 20, 0, 0.95);' : '';
-            const nickStyle = isBot ? 'color: #ffd700;' : '';
-            const textStyle = isBot ? 'color: #ffffff; font-weight: 500;' : '';
+            // --- ბოტის ამოცნობის ლოგიკა ---
+            const isBot = m.user_name && m.user_name.includes('BOT');
+
+            // --- ბოტის სტილები (მკვეთრი ნარინჯისფერი) ---
+            const bubbleStyle = isBot ? 
+                'border: 2px solid #ff8c00 !important; background: rgba(45, 20, 0, 0.95) !important; box-shadow: 0 0 10px rgba(255, 140, 0, 0.4) !important;' : '';
+            const nickStyle = isBot ? 
+                'color: #ff8c00 !important; font-weight: bold !important; text-shadow: 0 0 5px rgba(255, 140, 0, 0.5) !important;' : '';
+            const textStyle = isBot ? 
+                'color: #ffffff !important; font-weight: 500 !important;' : '';
 
             const isOwnerMsg = p?.role === "Owner";
             const canDelete = (myRole === "Owner") || (myRole === "Admin" && !isOwnerMsg);
@@ -356,7 +362,7 @@
     }
 
     async function openProfile(name) {
-        if(name === '🤖 QUIZ_BOT' || name === '🔐 CIPHER_BOT') return;
+        if(name && name.includes('BOT')) return;
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
         if(!p) return;
         document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
