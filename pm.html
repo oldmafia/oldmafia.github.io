@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>პირადი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        :root { --dark-red: #4a0000; --bright-red: #ff0000; --bg-black: #050000; }
+        body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .header { padding: 15px; text-align: center; border-bottom: 2px solid var(--dark-red); background: black; display: flex; align-items: center; justify-content: space-between; z-index: 1001; }
+        .back-btn { color: white; text-decoration: none; font-size: 24px; cursor: pointer; padding: 0 10px; }
+
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; display: none; padding: 20px 15px; }
+        #inbox-view.active, #chat-view.active { display: block; }
+
+        .user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; cursor: pointer; padding: 15px; border-radius: 15px; background: rgba(40,0,0,0.4); border: 1px solid #600; position: relative; }
+        .avatar-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bright-red); }
+
+        .unread-badge { 
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%); 
+            background: var(--bright-red); color: white; font-size: 11px; padding: 2px 7px; 
+            border-radius: 10px; font-weight: bold; display: none;
+        }
+
+        .msg-wrap { display: flex; width: 100%; margin-bottom: 10px; }
+        .msg { padding: 10px 14px; border-radius: 15px; max-width: 85%; font-size: 14px; }
+        .sent { background: var(--dark-red); margin-left: auto; border: 1px solid #700; }
+        .received { background: #1a1a1a; border: 1px solid #333; }
+
+        .input-area { 
+            padding: 15px; background: #000; border-top: 2px solid var(--dark-red); 
+            display: none; gap: 10px; align-items: center; position: fixed; 
+            bottom: 0; left: 0; width: 100%; padding-bottom: 35px; z-index: 2000;
+        }
+        .input-area.show { display: flex !important; }
+        .input-area input { flex: 1; background: #111; border: 1px solid var(--dark-red); color: white; padding: 12px; border-radius: 25px; outline: none; }
+        
+        .side-menu { position: fixed; right: -280px; top: 0; width: 280px; height: 100%; background: #0a0000; border-left: 2px solid var(--dark-red); transition: 0.3s; z-index: 3000; padding: 20px; overflow-y: auto; }
+        .side-menu.open { right: 0; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; }
+        .overlay.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="header">
+    <div class="back-btn" onclick="goBack()">⬅</div>
+    <div id="view-title" style="color:var(--bright-red); font-weight:bold;">პირადი</div>
+    <div style="font-size:26px; cursor:pointer;" onclick="toggleMenu()">👥</div>
+</div>
+
+<div id="inbox-view" class="active"></div>
+<div id="chat-view"></div>
+<div class="side-menu" id="side-menu"><div id="online-users-container"></div></div>
+
+<div class="input-area" id="chat-input">
+    <input type="text" id="msg-text" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button onclick="sendMessage()" style="background:none; border:none; color:cyan; font-size:28px; cursor:pointer;">✈</button>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname'), activeChatPartner = null;
+
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
+        const historyDiv = document.getElementById('inbox-view');
+        historyDiv.innerHTML = "";
+        const chats = {};
+
+        msgs?.forEach(m => {
+            const partner = (m.sender === myNick) ? m.receiver : m.sender;
+            if (!chats[partner]) {
+                const prof = profiles?.find(p => p.username === partner);
+                chats[partner] = { 
+                    lastMsg: m.text, 
+                    avatar: prof?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${partner}`,
+                    unreadCount: msgs.filter(msg => msg.sender === partner && msg.receiver === myNick && !msg.is_read).length
+                };
+            }
+        });
+
+        for (const partner in chats) {
+            const badgeStyle = chats[partner].unreadCount > 0 ? 'display:block' : 'display:none';
+            historyDiv.innerHTML += `
+                <div class="user-row" onclick="openChat('${partner}')">
+                    <img src="${chats[partner].avatar}" class="avatar-img">
+                    <div style="flex:1">
+                        <b style="color:var(--bright-red)">${partner}</b><br>
+                        <small style="opacity:0.6">${chats[partner].lastMsg.substring(0,20)}...</small>
+                    </div>
+                    <div class="unread-badge" style="${badgeStyle}">${chats[partner].unreadCount}</div>
+                </div>`;
+        }
+    }
+
+    async function openChat(partner) {
+        activeChatPartner = partner;
+        document.getElementById('view-title').innerText = partner;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('chat-input').classList.add('show');
+        
+        // მესიჯების წაკითხულად მონიშვნა
+        await _s.from('private_messages').update({ is_read: true }).eq('sender', partner).eq('receiver', myNick);
+        
+        loadPrivateMessages();
+    }
+
+    async function loadPrivateMessages() {
+        if (!activeChatPartner) return;
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${activeChatPartner}"),and(sender.eq."${activeChatPartner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+        const chatDiv = document.getElementById('chat-view');
+        chatDiv.innerHTML = msgs?.map(m => `
+            <div class="msg-wrap"><div class="msg ${m.sender === myNick ? 'sent' : 'received'}">
+                <div style="font-size:10px; color:gold;">${m.sender}</div>
+                <div>${m.text}</div>
+            </div></div>`).join('');
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const inp = document.getElementById('msg-text');
+        const txt = inp.value.trim();
+        if (!txt || !activeChatPartner) return;
+        inp.value = "";
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeChatPartner, text: txt, is_read: false }]);
+        loadPrivateMessages();
+    }
+
+    function toggleMenu() {
+        document.getElementById('side-menu').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('show');
+        if(document.getElementById('side-menu').classList.contains('open')) loadOnlineSidebar();
+    }
+
+    async function loadOnlineSidebar() {
+        const { data: users } = await _s.from('profiles').select('username, avatar_url');
+        const container = document.getElementById('online-users-container');
+        container.innerHTML = '<h3 style="text-align:center; color:#0f0;">👥 იუზერები</h3>';
+        users?.forEach(u => {
+            if (u.username !== myNick) {
+                const ava = u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`;
+                container.innerHTML += `<div class="user-row" onclick="openChat('${u.username}'); toggleMenu();"><img src="${ava}" class="avatar-img" style="width:35px; height:35px;"><span>${u.username}</span></div>`;
+            }
+        });
+    }
+
+    function goBack() {
+        if (activeChatPartner) {
+            activeChatPartner = null;
+            document.getElementById('view-title').innerText = "პირადი";
+            document.getElementById('chat-view').classList.remove('active');
+            document.getElementById('chat-input').classList.remove('show');
+            document.getElementById('inbox-view').classList.add('active');
+            loadInbox();
+        } else { location.href = 'chat.html'; }
+    }
+
+    window.onload = loadInbox;
+
+    _s.channel('pms_final').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => {
+        if (activeChatPartner) loadPrivateMessages();
+        loadInbox();
+    }).subscribe();
+</script>
+</body>
+</html>
