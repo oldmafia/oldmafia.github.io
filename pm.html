@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>პირადი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { --dark-red: #4a0000; --bright-red: #ff0000; --bg-black: #050000; }
+        
+        body { 
+            margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; 
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
+
+        /* ზედა ზოლი */
+        .header { 
+            padding: 15px; text-align: center; border-bottom: 2px solid var(--dark-red); 
+            background: black; display: flex; align-items: center; justify-content: space-between; 
+            z-index: 1001; position: sticky; top: 0;
+        }
+        .back-btn { color: white; text-decoration: none; font-size: 24px; cursor: pointer; padding: 0 10px; }
+
+        /* კონტენტის ზონა */
+        #inbox-view, #chat-view { 
+            flex: 1; overflow-y: auto; display: none; padding: 20px 15px; 
+            padding-bottom: 100px; /* რომ ბოლო მესიჯი საწერმა გრაფამ არ დაფაროს */
+        }
+        #inbox-view.active, #chat-view.active { display: block; }
+
+        /* იუზერების სია ინბოქსში */
+        .user-row { 
+            display: flex; align-items: center; gap: 12px; margin-bottom: 15px; 
+            cursor: pointer; padding: 15px; border-radius: 15px; 
+            background: rgba(40,0,0,0.4); border: 1px solid #600; position: relative; 
+        }
+        .avatar-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bright-red); background: #222; }
+
+        /* მესიჯების ბუშტები */
+        .msg-wrap { display: flex; width: 100%; margin-bottom: 10px; }
+        .msg { padding: 10px 14px; border-radius: 15px; max-width: 85%; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .sent { background: var(--dark-red); margin-left: auto; border-bottom-right-radius: 2px; border: 1px solid #700; }
+        .received { background: #1a1a1a; border: 1px solid #333; border-bottom-left-radius: 2px; }
+
+        /* შეტყობინების წერტილი */
+        .unread-dot { 
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%); 
+            width: 12px; height: 12px; background: var(--bright-red); 
+            border-radius: 50%; display: none; box-shadow: 0 0 10px var(--bright-red); 
+        }
+
+        /* საწერი გრაფა - აწეული და ოპტიმიზირებული */
+        .input-area { 
+            padding: 15px; background: #000; border-top: 2px solid var(--dark-red); 
+            display: none; gap: 10px; align-items: center; 
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            padding-bottom: 30px; /* აი აქედან იწევა ზემოთ */
+            z-index: 2000;
+        }
+        .input-area.show { display: flex !important; }
+        .input-area input { 
+            flex: 1; background: #111; border: 1px solid var(--dark-red); 
+            color: white; padding: 12px 18px; border-radius: 25px; outline: none; font-size: 16px; 
+        }
+        .send-btn { background: none; border: none; color: cyan; font-size: 28px; cursor: pointer; }
+
+        /* გვერდითა მენიუ */
+        .side-menu { position: fixed; right: -280px; top: 0; width: 280px; height: 100%; background: #0a0000; border-left: 2px solid var(--dark-red); transition: 0.3s; z-index: 3000; padding: 20px; overflow-y: auto; }
+        .side-menu.open { right: 0; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; }
+        .overlay.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="header">
+    <div class="back-btn" onclick="goBack()">⬅</div>
+    <div id="view-title" style="color:var(--bright-red); font-weight:bold; font-size: 18px;">პირადი</div>
+    <div style="font-size:26px; cursor:pointer;" onclick="toggleMenu()">👥</div>
+</div>
+
+<div id="inbox-view" class="active"></div>
+<div id="chat-view"></div>
+
+<div class="side-menu" id="side-menu"><div id="online-users-container"></div></div>
+
+<div class="input-area" id="chat-input">
+    <input type="text" id="msg-text" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" onclick="sendMessage()">✈</button>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname'), activeChatPartner = null;
+
+    if (!myNick) location.href = 'index.html';
+
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
+        
+        const historyDiv = document.getElementById('inbox-view');
+        historyDiv.innerHTML = "";
+        const chats = {};
+
+        msgs?.forEach(m => {
+            const partner = (m.sender === myNick) ? m.receiver : m.sender;
+            if (!chats[partner]) {
+                const prof = profiles?.find(p => p.username === partner);
+                chats[partner] = { 
+                    lastMsg: m.text, 
+                    avatar: prof?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${partner}` 
+                };
+            }
+        });
+
+        for (const partner in chats) {
+            historyDiv.innerHTML += `
+                <div class="user-row" id="row-${partner}" onclick="openChat('${partner}')">
+                    <img src="${chats[partner].avatar}" class="avatar-img">
+                    <div style="flex:1">
+                        <b style="color:var(--bright-red); font-size:16px;">${partner}</b><br>
+                        <small style="opacity:0.6">${chats[partner].lastMsg.substring(0,25)}...</small>
+                    </div>
+                    <div class="unread-dot" id="dot-${partner}"></div>
+                </div>`;
+        }
+    }
+
+    async function openChat(partner) {
+        activeChatPartner = partner;
+        document.getElementById('view-title').innerText = partner;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('chat-input').classList.add('show');
+        
+        const dot = document.getElementById(`dot-${partner}`);
+        if(dot) dot.style.display = 'none';
+
+        loadPrivateMessages();
+    }
+
+    async function loadPrivateMessages() {
+        if (!activeChatPartner) return;
+        const { data: msgs } = await _s.from('private_messages').select('*')
+            .or(`and(sender.eq."${myNick}",receiver.eq."${activeChatPartner}"),and(sender.eq."${activeChatPartner}",receiver.eq."${myNick}")`)
+            .order('created_at', { ascending: true });
+
+        const chatDiv = document.getElementById('chat-view');
+        chatDiv.innerHTML = msgs?.map(m => `
+            <div class="msg-wrap">
+                <div class="msg ${m.sender === myNick ? 'sent' : 'received'}">
+                    <div style="font-size:10px; color:gold; margin-bottom:3px; font-weight:bold;">${m.sender}</div>
+                    <div>${m.text}</div>
+                </div>
+            </div>`).join('');
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const inp = document.getElementById('msg-text');
+        const txt = inp.value.trim();
+        if (!txt || !activeChatPartner) return;
+        inp.value = "";
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeChatPartner, text: txt }]);
+        loadPrivateMessages();
+    }
+
+    function toggleMenu() {
+        document.getElementById('side-menu').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('show');
+        if(document.getElementById('side-menu').classList.contains('open')) loadOnlineSidebar();
+    }
+
+    async function loadOnlineSidebar() {
+        const { data: users } = await _s.from('profiles').select('username, avatar_url');
+        const container = document.getElementById('online-users-container');
+        container.innerHTML = '<h3 style="text-align:center; color:#0f0;">👥 მომხმარებლები</h3>';
+        users?.forEach(u => {
+            if (u.username !== myNick) {
+                const ava = u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`;
+                container.innerHTML += `
+                    <div class="user-row" onclick="openChat('${u.username}'); toggleMenu();">
+                        <img src="${ava}" class="avatar-img" style="width:35px; height:35px;">
+                        <span>${u.username}</span>
+                    </div>`;
+            }
+        });
+    }
+
+    function goBack() {
+        if (activeChatPartner) {
+            activeChatPartner = null;
+            document.getElementById('view-title').innerText = "პირადი";
+            document.getElementById('chat-view').classList.remove('active');
+            document.getElementById('chat-input').classList.remove('show');
+            document.getElementById('inbox-view').classList.add('active');
+            loadInbox();
+        } else { location.href = 'chat.html'; }
+    }
+
+    window.onload = loadInbox;
+
+    // ⚡ რეალურ დროში სწრაფი განახლება
+    _s.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'private_messages' }, (payload) => {
+        if (activeChatPartner && (payload.new.sender === activeChatPartner || payload.new.receiver === activeChatPartner)) {
+            loadPrivateMessages();
+        } else if (payload.new.receiver === myNick) {
+            loadInbox().then(() => {
+                const dot = document.getElementById(`dot-${payload.new.sender}`);
+                if(dot) dot.style.display = 'block';
+            });
+        }
+    }).subscribe();
+</script>
+</body>
+</html>
