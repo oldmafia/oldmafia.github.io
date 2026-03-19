@@ -88,36 +88,6 @@
         .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; }
         .modal-content { background: #080000; border: 2px solid var(--dark-red); padding: 25px; border-radius: 25px; width: 320px; text-align: center; }
         .modal-btn { display: block; width: 100%; padding: 12px; margin: 7px 0; border: 1px solid var(--blood-red); background: #110000; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; }
-        
-        /* Joker UI განახლებული */
-        #joker-ui { 
-            display: none; position: fixed; top: 60px; left: 0; width: 100%; 
-            background: linear-gradient(180deg, rgba(0, 40, 0, 0.98) 0%, rgba(0, 10, 0, 0.95) 100%); 
-            border-bottom: 2px solid gold; padding: 12px; z-index: 1500; text-align: center; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
-        }
-        .joker-table-container {
-            display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px;
-        }
-        .player-slot {
-            display: flex; flex-direction: column; align-items: center; gap: 5px; width: 22%;
-        }
-        .player-slot img {
-            width: 45px; height: 45px; border-radius: 50%; border: 2px solid gold; object-fit: cover; background: #111;
-        }
-        .player-name { font-size: 11px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
-
-        .joker-input-box {
-            display: flex; gap: 5px; margin-top: 10px; max-width: 400px; margin-left: auto; margin-right: auto;
-        }
-        .joker-mini-input {
-            flex: 1; background: rgba(255,255,255,0.05); border: 1px solid #005500; border-radius: 20px;
-            padding: 8px 15px; color: white; font-size: 13px; outline: none;
-        }
-        .joker-mini-send {
-            background: gold; border: none; border-radius: 50%; width: 32px; height: 32px;
-            color: black; font-weight: bold; cursor: pointer; font-size: 16px;
-        }
     </style>
 </head>
 <body onload="init()">
@@ -131,8 +101,6 @@
         <button class="admin-add-btn" onclick="document.getElementById('emoji-file').click()" style="background:#00004a;">+ მოძრავი სმაილი</button>
     </div>
 </div>
-
-<div id="joker-ui"></div>
 
 <div class="sidebar" id="sidebar">
     <div style="padding: 20px 15px; text-align: center;">
@@ -201,10 +169,8 @@
 
     let currentQuizQ = null;
     let currentCipher = null;
-    let currentJokerGame = null;
     const QUIZ_ROOM_NAME = "❓ ვიქტორინა";
     const CIPHER_ROOM_NAME = "🔐 შიფროგრამა";
-    const JOKER_ROOM_NAME = "🃏 ჯოკერი";
 
     function translateRole(r) { 
         const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი', 'Banned': '🚫 დაბლოკილი'}; 
@@ -238,88 +204,31 @@
         }
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
-
-        // Realtime Joker Updates
-        _s.channel('joker').on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, async (payload) => {
-            if (currentRoom === JOKER_ROOM_NAME) {
-                currentJokerGame = payload.new;
-                renderJokerUI();
-            }
-        }).subscribe();
     }
 
-    // ავტომატური დაჯდომა მაგიდაზე
-    async function joinJoker() {
-        if (currentRoom !== JOKER_ROOM_NAME) return;
-        
-        // ვეძებთ არსებულ თამაშს
-        const { data: games } = await _s.from('joker_games').select('*').eq('status', 'waiting').limit(1);
-        let game = games && games.length > 0 ? games[0] : null;
-
-        if (!game) {
-            // თუ თამაში არ არსებობს, ვქმნით ახალს და ვჯდებით
-            const { data: newGame } = await _s.from('joker_games').insert([{
-                room_id: 'main_table',
-                players: [{ name: myNick, avatar: myAvatar, points: 0 }],
-                status: 'waiting'
-            }]).select().single();
-            game = newGame;
-        } else {
-            // თუ თამაში არსებობს, ვამოწმებთ უკვე ვზივართ თუ არა
-            let players = game.players || [];
-            if (!players.find(p => p.name === myNick) && players.length < 4) {
-                players.push({ name: myNick, avatar: myAvatar, points: 0 });
-                const { data: updatedGame } = await _s.from('joker_games').update({ players: players }).eq('id', game.id).select().single();
-                game = updatedGame;
-            }
-        }
-        currentJokerGame = game;
-        renderJokerUI();
+    async function checkPMs() {
+        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver_name', myNick).eq('is_read', false);
+        const el = document.getElementById('pm-count');
+        if(count > 0) { el.innerText = count; el.style.display = 'flex'; } else { el.style.display = 'none'; }
     }
 
-    function renderJokerUI() {
-        const ui = document.getElementById('joker-ui');
-        const chat = document.getElementById('chat');
-        if (currentRoom !== JOKER_ROOM_NAME || !currentJokerGame) {
-            ui.style.display = 'none';
-            chat.style.paddingTop = '15px';
+    function changeRoom(n, el) {
+        // ჯოკრის ოთახზე გადასვლის ლოგიკა
+        if (n === '🃏 ჯოკერი') {
+            window.location.href = 'joker.html';
             return;
         }
-        ui.style.display = 'block';
-        chat.style.paddingTop = '180px'; // მეტი ადგილი ავატარებისთვის
-        
-        const players = currentJokerGame.players || [];
-        
-        // ვქმნით 4 სლოტს (თუ მოთამაშე არაა, ვაჩვენებთ ცარიელს)
-        let slotsHTML = "";
-        for(let i=0; i<4; i++) {
-            const p = players[i];
-            slotsHTML += `
-                <div class="player-slot">
-                    <img src="${p ? p.avatar : 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="${!p ? 'opacity: 0.3; border-color: #444;' : ''}">
-                    <div class="player-name">${p ? p.name : '...'}</div>
-                </div>
-            `;
-        }
 
-        ui.innerHTML = `
-            <div style="color:gold; font-weight:bold; font-size:14px; margin-bottom:10px;">🃏 ჯოკერის მაგიდა (${players.length}/4)</div>
-            <div class="joker-table-container">
-                ${slotsHTML}
-            </div>
-            <div class="joker-input-box">
-                <input type="text" id="joker-mini-msg" class="joker-mini-input" placeholder="მოწერე მაგიდაზე..." onkeypress="if(event.key==='Enter') sendJokerMsg()">
-                <button class="joker-mini-send" onclick="sendJokerMsg()">></button>
-            </div>
-        `;
-    }
+        currentRoom = n;
+        document.getElementById('room-name').innerText = n;
+        document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+        if(el) el.classList.add('active');
+        
+        loadMessages();
+        closeAll();
 
-    function sendJokerMsg() {
-        const input = document.getElementById('joker-mini-msg');
-        if(!input.value.trim()) return;
-        const text = input.value;
-        input.value = "";
-        _s.from('messages').insert([{ user_name: myNick, text: text, room_name: currentRoom }]);
+        if (n === QUIZ_ROOM_NAME) startQuiz();
+        if (n === CIPHER_ROOM_NAME) startCipher();
     }
 
     async function startQuiz() {
@@ -552,46 +461,7 @@
         if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
     }
 
-    function changeRoom(n, el) {
-        currentRoom = n; 
-        document.getElementById('room-name').innerText = n;
-        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active'); 
-        closeAll(); 
-        loadMessages();
-        
-        // UI Cleanups
-        document.getElementById('joker-ui').style.display = 'none';
-        const mainInput = document.getElementById('main-input-zone');
-        
-        currentQuizQ = null;
-        currentCipher = null;
-        currentJokerGame = null;
-
-        if(n === JOKER_ROOM_NAME) {
-            mainInput.style.display = 'none';
-            joinJoker();
-        } else {
-            mainInput.style.display = 'flex';
-            if(n === QUIZ_ROOM_NAME) setTimeout(startQuiz, 1000);
-            if(n === CIPHER_ROOM_NAME) setTimeout(startCipher, 1000);
-        }
-    }
-
-    async function checkPMs() {
-        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const badge = document.getElementById('pm-count');
-        if (badge) {
-            if (count > 0) {
-                badge.innerText = count; 
-                badge.style.display = 'inline-flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    }
-
-    function logout() { localStorage.clear(); location.href = 'index.html'; }
+    function logout() { localStorage.removeItem('nickname'); location.href='index.html'; }
 </script>
 </body>
 </html>
