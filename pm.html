@@ -1,0 +1,134 @@
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname') || "სტუმარი";
+    let activeP = null;
+    let userAvatars = {};
+
+    // 1. ავატარების წამოღება მთავარი ბაზიდან ნიკთან ერთად
+    async function loadAvatars() {
+        const { data } = await _s.from('profiles').select('username, avatar_url');
+        data?.forEach(p => {
+            userAvatars[p.username] = p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}`;
+        });
+    }
+
+    // 2. ინბოქსის განახლება და წაუკითხავი მესიჯების ციფრი
+    async function loadInbox() {
+        await loadAvatars();
+        const { data: msgs } = await _s.from('private_messages')
+            .select('*')
+            .or(`sender.eq."${myNick}",receiver.eq."${myNick}"`)
+            .order('created_at', { ascending: false });
+
+        const box = document.getElementById('inbox-view');
+        box.innerHTML = "";
+        const partners = {};
+        
+        msgs?.forEach(m => {
+            const p = m.sender === myNick ? m.receiver : m.sender;
+            if (!partners[p]) {
+                partners[p] = { 
+                    text: m.text, 
+                    unreadCount: (m.receiver === myNick && !m.is_read) ? 1 : 0 
+                };
+            } else if (m.receiver === myNick && !m.is_read) {
+                partners[p].unreadCount++;
+            }
+        });
+
+        for (let p in partners) {
+            const ava = userAvatars[p];
+            const unreadTag = partners[p].unreadCount > 0 ? `<b style="background:red; color:white; padding:2px 6px; border-radius:50%; font-size:10px;">${partners[p].unreadCount}</b>` : '';
+            
+            box.innerHTML += `
+                <div class="message-row" style="padding:10px; border-bottom:1px solid #111; cursor:pointer" onclick="openChat('${p}')">
+                    <img src="${ava}" class="avatar-img">
+                    <div style="flex:1; margin-left:10px;">
+                        <b style="color:red">${p}</b> ${unreadTag}<br>
+                        <small style="color:#555">${partners[p].text.substring(0,30)}...</small>
+                    </div>
+                </div>`;
+        }
+    }
+
+    // 3. ჩატის გახსნა და მესიჯების "წაკითხულად" მონიშვნა (ციფრი იშლება)
+    async function openChat(p) {
+        activeP = p;
+        document.getElementById('view-title').innerText = p;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('input-bar').style.display = 'flex';
+        
+        // წაკითხვის დაფიქსირება
+        await _s.from('private_messages').update({ is_read: true }).match({ sender: p, receiver: myNick });
+        
+        loadMessages();
+        // რეალურ დროში განახლებისთვის (Optional)
+        setInterval(loadMessages, 5000); 
+    }
+
+    async function loadMessages() {
+        if(!activeP) return;
+        const { data: msgs } = await _s.from('private_messages')
+            .select('*')
+            .or(`and(sender.eq."${myNick}",receiver.eq."${activeP}"),and(sender.eq."${activeP}",receiver.eq."${myNick}")`)
+            .order('created_at', { ascending: true });
+
+        const area = document.getElementById('chat-view');
+        area.innerHTML = "";
+        
+        msgs?.forEach(m => {
+            const isMe = m.sender === myNick;
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            area.innerHTML += `
+                <div class="message-row ${isMe ? 'my-msg' : 'other-msg'}">
+                    <img src="${userAvatars[m.sender]}" class="avatar-img">
+                    <div class="bubble">
+                        <div style="color:${isMe ? '#0cf' : 'red'}; font-size:11px; font-weight:bold">${m.sender}</div>
+                        <div class="msg-text">${parseBBCode(m.text)}</div>
+                        <div class="msg-info">
+                            <span>${time}</span>
+                            ${myNick === 'Abu007' ? `<span class="del-btn" style="margin-left:10px" onclick="deleteMsg('${m.id}')">🗑️</span>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        });
+        area.scrollTop = area.scrollHeight;
+    }
+
+    // 4. მესიჯის გაგზავნა (გასწორებული)
+    async function sendMessage() {
+        const i = document.getElementById('msg-input');
+        const val = i.value.trim();
+        if (!val || !activeP) return;
+
+        const { error } = await _s.from('private_messages').insert([
+            { sender: myNick, receiver: activeP, text: val, is_read: false }
+        ]);
+
+        if (error) {
+            alert("შეცდომა გაგზავნისას!");
+        } else {
+            i.value = "";
+            loadMessages();
+        }
+    }
+
+    // 5. სმაილების ჩატვირთვა ბაზიდან
+    async function toggleEmojis() {
+        const picker = document.getElementById('emoji-picker');
+        if (picker.style.display === 'grid') { 
+            picker.style.display = 'none'; 
+            return; 
+        }
+        
+        const { data, error } = await _s.from('emojis').select('*');
+        if(error) return;
+
+        picker.innerHTML = data.map(e => `
+            <img src="${e.emoji_url}" class="emoji-img" title="Smaili" onclick="addEmoji('${e.emoji_url}')">
+        `).join('');
+        picker.style.display = 'grid';
+    }
+</script>
