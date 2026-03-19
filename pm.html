@@ -8,36 +8,44 @@
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: sans-serif; background: #050000; color: white; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
         .header { padding: 12px; text-align: center; border-bottom: 1px solid #300; background: #000; display: flex; align-items: center; justify-content: space-between; }
-        #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 85px; display: none; }
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 90px; display: none; }
         .active { display: block !important; }
 
-        /* მესიჯი და საათი */
-        .message-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
-        .avatar-img { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid #600; object-fit: cover; }
-        .bubble { background: #110505; border: 1px solid #300; border-radius: 12px; padding: 8px 12px; flex: 1; max-width: 85%; position: relative; }
-        .msg-time { font-size: 9px; color: #555; float: right; margin-top: 5px; margin-left: 8px; }
-        .del-btn { color: #500; font-size: 11px; cursor: pointer; float: right; margin-left: 10px; }
+        /* მესიჯების განლაგება (მარჯვნივ და მარცხნივ) */
+        .message-row { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; }
+        .my-msg { flex-direction: row-reverse; } /* ჩემი მესიჯი მარჯვნივ */
+        
+        .avatar-img { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #500; object-fit: cover; }
+        
+        .bubble { padding: 10px; border-radius: 12px; max-width: 75%; position: relative; border: 1px solid #300; }
+        .my-msg .bubble { background: #0a1520; border-color: #004466; } /* ლურჯი ტონი ჩემსაზე */
+        .other-msg .bubble { background: #150505; border-color: #500; } /* წითელი ტონი სხვისაზე */
 
-        /* სმაილები */
-        #emoji-picker { position: fixed; bottom: 75px; left: 10px; right: 10px; background: #000; border: 2px solid #500; border-radius: 10px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 8px; z-index: 3000; max-height: 250px; overflow-y: auto; box-shadow: 0 0 15px #f00; }
-        .emoji-img { width: 35px; height: 35px; cursor: pointer; object-fit: contain; border-radius: 5px; }
-        .emoji-img:hover { background: #200; }
+        .msg-text { font-size: 14px; line-height: 1.4; word-break: break-word; }
+        .msg-text img { max-width: 80px; display: block; margin: 5px 0; } /* სმაილი მესიჯში */
 
-        /* ინდიკატორი */
-        .unread-dot { background: red; width: 12px; height: 12px; border-radius: 50%; position: absolute; right: 15px; box-shadow: 0 0 10px red; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .msg-info { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; font-size: 10px; color: #555; }
+        .del-btn { color: #f00; cursor: pointer; margin-left: 8px; font-weight: bold; }
 
-        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 10px; border-top: 1px solid #300; display: none; gap: 10px; align-items: center; z-index: 2000; }
-        input { flex: 1; background: #0a0a0a; border: 1px solid #400; color: white; padding: 12px; border-radius: 25px; outline: none; font-size: 14px; }
+        /* სმაილების პანელი */
+        #emoji-picker { position: fixed; bottom: 75px; left: 5%; right: 5%; background: #000; border: 1px solid #f00; border-radius: 10px; padding: 10px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 3000; max-height: 200px; overflow-y: auto; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
+        .emoji-img { width: 100%; aspect-ratio: 1; cursor: pointer; object-fit: contain; }
+
+        /* ქვედა ზოლი */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 10px; border-top: 1px solid #200; display: none; gap: 10px; align-items: center; }
+        input { flex: 1; background: #0a0a0a; border: 1px solid #300; color: white; padding: 12px; border-radius: 25px; outline: none; }
+        
+        .unread-dot { background: red; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px red; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div onclick="goBack()" style="cursor:pointer; font-size: 22px;">⬅</div>
-    <div style="color:red; font-weight:bold; letter-spacing: 1px;" id="view-title">პირადი</div>
-    <div onclick="location.reload()" style="cursor:pointer; font-size: 18px;">🔄</div>
+    <div onclick="goBack()" style="cursor:pointer; font-size: 20px;">⬅</div>
+    <div id="view-title" style="color:red; font-weight:bold;">პირადი</div>
+    <div onclick="location.reload()" style="cursor:pointer;">🔄</div>
 </div>
 
 <div id="inbox-view" class="active"></div>
@@ -56,20 +64,21 @@
     let activeP = null;
     let userAvatars = {};
 
-    // დროის ფორმატირება
     function formatTime(ts) {
         const d = new Date(ts);
         return d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
     }
 
-    async function loadAvatars() {
-        const { data } = await _s.from('profiles').select('username, avatar_url');
-        data?.forEach(p => { userAvatars[p.username] = p.avatar_url; });
+    // BBCode-ის გადაყვანა HTML-ში (სმაილებისთვის)
+    function parseBBCode(text) {
+        return text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" alt="emoji">');
     }
 
     async function loadInbox() {
         if (!myNick) return;
-        await loadAvatars();
+        const { data: profs } = await _s.from('profiles').select('username, avatar_url');
+        profs?.forEach(p => userAvatars[p.username] = p.avatar_url);
+
         const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
         
         const box = document.getElementById('inbox-view'); box.innerHTML = "";
@@ -82,13 +91,12 @@
         for (let p in partners) {
             const ava = userAvatars[p] || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p}`;
             box.innerHTML += `
-                <div class="message-row" style="padding:12px; border-bottom:1px solid #111; position:relative" onclick="openChat('${p}')">
+                <div class="message-row" style="padding:10px; border-bottom:1px solid #111; cursor:pointer" onclick="openChat('${p}')">
                     <img src="${ava}" class="avatar-img">
                     <div style="flex:1; margin-left:10px;">
-                        <b style="color:red; font-size:15px">${p}</b>
-                        <div style="color:#666; font-size:12px; margin-top:3px">${partners[p].text.substring(0,35)}...</div>
+                        <b style="color:red">${p}</b><br>
+                        <small style="color:#555">${partners[p].text.substring(0,30)}</small>
                     </div>
-                    <span style="font-size:10px; color:#333">${formatTime(partners[p].time)}</span>
                     ${partners[p].unread ? '<div class="unread-dot"></div>' : ''}
                 </div>`;
         }
@@ -100,8 +108,6 @@
         document.getElementById('inbox-view').classList.remove('active');
         document.getElementById('chat-view').classList.add('active');
         document.getElementById('input-bar').style.display = 'flex';
-        
-        // წაკითხულად მონიშვნა (ინდიკატორის ჩაქრობა)
         await _s.from('private_messages').update({ is_read: true }).match({ sender: p, receiver: myNick, is_read: false });
         loadMessages();
     }
@@ -112,56 +118,56 @@
         
         const area = document.getElementById('chat-view'); area.innerHTML = "";
         msgs?.forEach(m => {
-            const ava = userAvatars[m.sender] || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.sender}`;
             const isMe = m.sender === myNick;
-            const canDelete = (myNick === 'Abu007'); // შენ ხარ დამფუძნებელი
-
+            const ava = userAvatars[m.sender] || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.sender}`;
+            
             area.innerHTML += `
-                <div class="message-row" style="${isMe ? 'flex-direction:row-reverse' : ''}">
+                <div class="message-row ${isMe ? 'my-msg' : 'other-msg'}">
                     <img src="${ava}" class="avatar-img">
-                    <div class="bubble" style="${isMe ? 'border-color:#500' : ''}">
-                        ${canDelete ? `<span class="del-btn" onclick="deleteMsg('${m.id}')">✖</span>` : ''}
-                        <div style="color:${isMe ? 'cyan' : 'red'}; font-size:11px; font-weight:bold">${m.sender}</div>
-                        <div style="margin-top:4px; font-size:14px">${m.text}</div>
-                        <div class="msg-time">${formatTime(m.created_at)}</div>
+                    <div class="bubble">
+                        <div style="color:${isMe ? '#00ccff' : 'red'}; font-size:11px; font-weight:bold; margin-bottom:4px;">${m.sender}</div>
+                        <div class="msg-text">${parseBBCode(m.text)}</div>
+                        <div class="msg-info">
+                            <span>${formatTime(m.created_at)}</span>
+                            ${(myNick === 'Abu007') ? `<span class="del-btn" onclick="deleteMsg('${m.id}')">✖</span>` : ''}
+                        </div>
                     </div>
                 </div>`;
         });
         area.scrollTop = area.scrollHeight;
     }
 
-    async function sendMessage() {
-        const i = document.getElementById('msg-input');
-        if (!i.value.trim() || !activeP) return;
-        const text = i.value; i.value = "";
-        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeP, text: text, is_read: false }]);
-        loadMessages();
-    }
-
     async function toggleEmojis() {
         const picker = document.getElementById('emoji-picker');
         if (picker.style.display === 'grid') { picker.style.display = 'none'; return; }
-        const { data: emojis } = await _s.from('emojis').select('*');
-        picker.innerHTML = emojis?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('');
+        const { data } = await _s.from('emojis').select('*');
+        picker.innerHTML = data?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('') || "";
         picker.style.display = 'grid';
     }
 
     function addEmoji(url) {
-        document.getElementById('msg-input').value += ` [img]${url}[/img] `;
+        document.getElementById('msg-input').value += `[img]${url}[/img]`;
         document.getElementById('emoji-picker').style.display = 'none';
+        document.getElementById('msg-input').focus();
+    }
+
+    async function sendMessage() {
+        const i = document.getElementById('msg-input');
+        if (!i.value.trim() || !activeP) return;
+        const txt = i.value; i.value = "";
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeP, text: txt, is_read: false }]);
+        loadMessages();
     }
 
     async function deleteMsg(id) {
-        if (!confirm("წავშალოთ მესიჯი?")) return;
-        await _s.from('private_messages').delete().eq('id', id); loadMessages();
+        if (!confirm("წავშალოთ?")) return;
+        await _s.from('private_messages').delete().eq('id', id);
+        loadMessages();
     }
 
-    function goBack() { 
-        if(document.getElementById('chat-view').classList.contains('active')) {
-            window.location.href = 'pm.html';
-        } else {
-            window.location.href = 'chat.html';
-        }
+    function goBack() {
+        if(document.getElementById('chat-view').classList.contains('active')) { window.location.href = 'pm.html'; }
+        else { window.location.href = 'chat.html'; }
     }
 
     window.onload = loadInbox;
