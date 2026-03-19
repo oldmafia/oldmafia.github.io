@@ -1,157 +1,165 @@
-// --- კონფიგურაცია ---
-const myId = localStorage.getItem('user_id'); 
-const myNick = localStorage.getItem('nickname') || "სტუმარი";
-const roomId = "main_table_001"; // მაგიდის ID
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>Joker Game - Abu007 Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #1a472a; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        #game-container { position: relative; width: 800px; height: 500px; border: 5px solid #3e2723; border-radius: 50px; margin-top: 20px; background: radial-gradient(#2e7d32, #1b5e20); }
+        .player-slot { position: absolute; text-align: center; width: 100px; }
+        #p1 { bottom: 10px; left: 350px; color: gold; font-weight: bold; } /* შენ */
+        #p2 { left: 10px; top: 200px; }
+        #p3 { top: 10px; left: 350px; }
+        #p4 { right: 10px; top: 200px; }
+        .avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; display: block; margin: 0 auto; }
+        #table-center { position: absolute; top: 180px; left: 250px; width: 300px; height: 140px; display: flex; justify-content: center; gap: 10px; align-items: center; border: 1px dashed rgba(255,255,255,0.2); }
+        .card { width: 45px; height: 65px; background: white; color: black; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid #000; }
+        #my-hand { margin-top: 20px; display: flex; gap: 5px; }
+        #chat-section { width: 300px; position: fixed; right: 10px; bottom: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; }
+        #chat-box { height: 150px; overflow-y: auto; font-size: 13px; margin-bottom: 5px; border-bottom: 1px solid #444; }
+        .del-btn { color: red; cursor: pointer; margin-left: 5px; border: none; background: none; }
+        .controls { margin-top: 10px; }
+        button { cursor: pointer; padding: 5px 10px; }
+    </style>
+</head>
+<body>
 
-// --- 1. თამაშის დაწყება და პროფილის სინქრონიზაცია ---
-async function initGame() {
-    const { data: profile } = await _s.from('profiles').select('*').eq('id', myId).single();
-    
-    // ეკრანზე შენი მონაცემების დასმა (თხის ნაცვლად)
-    document.getElementById('my-nick-display').innerText = profile.username;
-    document.getElementById('my-avatar').src = profile.avatar_url || 'default.png';
+    <h2>Joker Room: <span id="room-id-display">Main Table</span></h2>
 
-    // მაგიდაზე დაჯდომა
-    const { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
-    let players = game.players || [];
+    <div id="game-container">
+        <div id="p1" class="player-slot"><img id="img1" class="avatar" src=""><span id="name1">...</span></div>
+        <div id="p2" class="player-slot"><img id="img2" class="avatar" src=""><span id="name2">...</span></div>
+        <div id="p3" class="player-slot"><img id="img3" class="avatar" src=""><span id="name3">...</span></div>
+        <div id="p4" class="player-slot"><img id="img4" class="avatar" src=""><span id="name4">...</span></div>
 
-    if (!players.find(p => p.id === myId) && players.length < 4) {
-        players.push({
-            id: myId,
-            name: profile.username,
-            avatar: profile.avatar_url,
-            hand: [],     // ხელში არსებული კარტები
-            bid: 0,       // რამდენი თქვა
-            taken: 0,     // რამდენი წაიღო
-            points: 0     // ჯამური ქულა
-        });
-        await _s.from('joker_games').update({ players }).eq('room_id', roomId);
-    }
-    renderTable(players, game.table_cards, game.turn_index);
-}
+        <div id="table-center"></div>
+    </div>
 
-// --- 2. კარტების აჩეხვა და დარიგება (მხოლოდ "Abu007"-ს შეუძლია) ---
-async function dealCards() {
-    if (myNick !== "Abu007") return alert("მხოლოდ ადმინს შეუძლია დარიგება!");
+    <div id="my-hand"></div>
 
-    const deck = createDeck(); // ქმნის 52 კარტს + 2 ჯოკერი
-    const { data: game } = await _s.from('joker_games').select('players').eq('room_id', roomId).single();
-    let players = game.players;
+    <div class="controls">
+        <button onclick="dealCards()" id="deal-btn" style="display:none;">კარტის დარიგება (Admin)</button>
+    </div>
 
-    // თითოს 9 კარტი (მაგალითად პირველი ხელისთვის)
-    players.forEach(p => {
-        p.hand = deck.splice(0, 9);
-        p.bid = 0;
-        p.taken = 0;
-    });
+    <div id="chat-section">
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="დაწერე..." style="width:70%">
+        <button onclick="sendMsg()">OK</button>
+    </div>
 
-    await _s.from('joker_games').update({ 
-        players, 
-        deck, 
-        table_cards: [], 
-        turn_index: 0,
-        status: 'bidding' 
-    }).eq('room_id', roomId);
-}
+<script>
+    // --- 1. SUPABASE კავშირი (შეცვალე შენი მონაცემებით) ---
+    const _s = supabase.createClient('შენი_URL', 'შენი_KEY');
 
-function createDeck() {
-    const suits = ['❤️', '♦️', '♣️', '♠️'];
-    const values = ['6','7','8','9','10','J','Q','K','A'];
-    let deck = [];
-    suits.forEach(s => values.forEach(v => deck.push({ suit: s, val: v })));
-    deck.push({ suit: 'JOKER', val: '🃏' }, { suit: 'JOKER', val: '🃏' });
-    return deck.sort(() => Math.random() - 0.5); // არევა
-}
+    const myId = localStorage.getItem('user_id');
+    const myNick = localStorage.getItem('nickname');
+    const roomId = "joker_main_1";
 
-// --- 3. ვიზუალური მხარე (მაგიდის დახატვა) ---
-function renderTable(players, tableCards, turnIndex) {
-    // მოთამაშეების დასმა
-    for (let i = 1; i <= 4; i++) {
-        const p = players[i-1];
-        const slotName = document.getElementById(`p${i}_name`);
-        const slotImg = document.getElementById(`p${i}_img`);
+    // --- 2. თამაშის დაწყება და "თხის" გაქრობა ---
+    async function init() {
+        if (!myId) return alert("გაიარე ავტორიზაცია!");
         
-        if (p) {
-            slotName.innerText = p.name + (i-1 === turnIndex ? " 🟢" : "");
-            slotImg.src = p.avatar || 'default.png';
-            
-            // თუ მე ვარ, ჩემი კარტები გამომიჩინოს
-            if (p.id === myId) renderMyHand(p.hand);
-        } else {
-            slotName.innerText = "ელოდება...";
-            slotImg.src = "placeholder.png";
+        // აჩვენე ადმინის ღილაკი მხოლოდ Abu007-ს
+        if (myNick === "Abu007") document.getElementById('deal-btn').style.display = "inline";
+
+        const { data: profile } = await _s.from('profiles').select('*').eq('id', myId).single();
+        const { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
+        
+        let players = game.players || [];
+        if (!players.find(p => p.id === myId) && players.length < 4) {
+            players.push({ id: myId, name: profile.username, avatar: profile.avatar_url, hand: [], points: 0 });
+            await _s.from('joker_games').update({ players }).eq('room_id', roomId);
         }
+        
+        render(game);
+        loadChat();
     }
 
-    // მაგიდაზე დაგდებული კარტების ჩვენება
-    const tableDiv = document.getElementById('table-center');
-    tableDiv.innerHTML = "";
-    (tableCards || []).forEach(c => {
-        tableDiv.innerHTML += `<div class="card">${c.val}${c.suit}</div>`;
-    });
-}
+    // --- 3. ვიზუალის განახლება ---
+    function render(game) {
+        const players = game.players || [];
+        // სლოტების გასუფთავება/შევსება
+        for (let i = 1; i <= 4; i++) {
+            const p = players[i-1];
+            document.getElementById(`name${i}`).innerText = p ? p.name : "ელოდება...";
+            document.getElementById(`img${i}`).src = p ? (p.avatar || 'default.png') : 'placeholder.png';
+        }
 
-function renderMyHand(hand) {
-    const handDiv = document.getElementById('my-cards');
-    handDiv.innerHTML = "";
-    hand.forEach((card, index) => {
-        const c = document.createElement('div');
-        c.className = 'card clickable';
-        c.innerHTML = `${card.val}${card.suit}`;
-        c.onclick = () => playCard(index);
-        handDiv.appendChild(c);
-    });
-}
+        // მაგიდაზე დაგდებული კარტები
+        const center = document.getElementById('table-center');
+        center.innerHTML = (game.table_cards || []).map(c => `<div class="card">${c.v}${c.s}</div>`).join('');
 
-// --- 4. კარტის დაგდება ---
-async function playCard(cardIndex) {
-    const { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
-    
-    // შემოწმება: ჩემი ჯერია?
-    const myIndex = game.players.findIndex(p => p.id === myId);
-    if (game.turn_index !== myIndex) return alert("შენი ჯერი არაა!");
+        // ჩემი ხელის კარტები
+        const me = players.find(p => p.id === myId);
+        const handDiv = document.getElementById('my-hand');
+        handDiv.innerHTML = me ? me.hand.map((c, i) => `<div class="card" onclick="playCard(${i})">${c.v}${c.s}</div>`).join('') : "";
+    }
 
-    let players = game.players;
-    let table = game.table_cards || [];
-    const card = players[myIndex].hand.splice(cardIndex, 1)[0];
-    table.push({ ...card, owner: myNick });
+    // --- 4. კარტის დარიგება (Shuffle & Deal) ---
+    async function dealCards() {
+        const suits = ['❤️', '♦️', '♣️', '♠️'];
+        const vals = ['6','7','8','9','10','J','Q','K','A'];
+        let deck = [];
+        suits.forEach(s => vals.forEach(v => deck.push({s, v})));
+        deck.push({s:'🃏', v:'J'}, {s:'🃏', v:'J'});
+        deck.sort(() => Math.random() - 0.5);
 
-    let nextTurn = (game.turn_index + 1) % players.length;
+        const { data: game } = await _s.from('joker_games').select('players').eq('room_id', roomId).single();
+        let players = game.players;
+        players.forEach(p => p.hand = deck.splice(0, 9));
 
-    await _s.from('joker_games').update({ 
-        players, 
-        table_cards: table, 
-        turn_index: nextTurn 
-    }).eq('room_id', roomId);
-}
+        await _s.from('joker_games').update({ players, table_cards: [], turn_index: 0 }).eq('room_id', roomId);
+    }
 
-// --- 5. ჩატი და წაშლა (Admin Abu007) ---
-async function handleChat() {
-    const { data: msgs } = await _s.from('messages').select('*').eq('room_name', 'joker_chat').limit(20).order('created_at', {ascending: false});
-    const chatBox = document.getElementById('joker-chat-box');
-    chatBox.innerHTML = msgs.reverse().map(m => `
-        <div class="msg">
-            <b>${m.username}:</b> ${m.text}
-            ${(myNick === 'Abu007' || m.user_id === myId) ? `<button onclick="deleteMsg('${m.id}')">🗑️</button>` : ''}
-        </div>
-    `).join('');
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
+    // --- 5. კარტის დაგდება ---
+    async function playCard(idx) {
+        const { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
+        let players = game.players;
+        let myIdx = players.findIndex(p => p.id === myId);
+        
+        if (game.turn_index !== myIdx) return alert("შენი ჯერი არაა!");
 
-async function deleteMsg(id) {
-    await _s.from('messages').delete().eq('id', id);
-}
+        let card = players[myIdx].hand.splice(idx, 1)[0];
+        let table = game.table_cards || [];
+        table.push(card);
 
-// --- 6. Realtime (ავტომატური განახლება ყველასთვის) ---
-_s.channel('game_channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, payload => {
-        renderTable(payload.new.players, payload.new.table_cards, payload.new.turn_index);
-    })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => handleChat())
-    .subscribe();
+        await _s.from('joker_games').update({ 
+            players, 
+            table_cards: table, 
+            turn_index: (game.turn_index + 1) % players.length 
+        }).eq('room_id', roomId);
+    }
 
-// გაშვება
-window.onload = () => {
-    initGame();
-    handleChat();
-};
+    // --- 6. ჩატი და წაშლა ---
+    async function loadChat() {
+        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', 'joker_chat').order('created_at', {ascending:false}).limit(20);
+        const box = document.getElementById('chat-box');
+        box.innerHTML = msgs.reverse().map(m => `
+            <div><b>${m.username}:</b> ${m.text} 
+            ${(myNick === "Abu007" || m.user_id === myId) ? `<button class="del-btn" onclick="delMsg('${m.id}')">✖</button>` : ''}</div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendMsg() {
+        const input = document.getElementById('chat-input');
+        if (!input.value.trim()) return;
+        await _s.from('messages').insert([{ user_id: myId, username: myNick, text: input.value, room_name: 'joker_chat' }]);
+        input.value = "";
+    }
+
+    async function delMsg(id) {
+        await _s.from('messages').delete().eq('id', id);
+    }
+
+    // --- 7. REALTIME ---
+    _s.channel('joker_live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, payload => render(payload.new))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadChat())
+        .subscribe();
+
+    init();
+</script>
+</body>
+</html>
