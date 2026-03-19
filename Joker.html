@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joker Table - Premium</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --gold: #ffd700; --bg: #002b00; --panel: rgba(0,0,0,0.8); }
+        body { margin: 0; display: flex; height: 100vh; background: var(--bg); font-family: sans-serif; overflow: hidden; color: white; }
+
+        /* მარცხენა მხარე - მაგიდა */
+        .game-section { flex: 1; display: flex; flex-direction: column; position: relative; border-right: 2px solid #004400; }
+        .table-area { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        
+        .poker-table { 
+            width: 80%; height: 60%; background: radial-gradient(circle, #006400 0%, #004400 100%);
+            border: 15px solid #3d2b1f; border-radius: 200px; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* მოთამაშეების განლაგება */
+        .player { position: absolute; text-align: center; width: 80px; }
+        .p-top { top: -60px; } .p-bottom { bottom: -60px; }
+        .p-left { left: -60px; } .p-right { right: -60px; }
+        
+        .player img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--gold); background: #111; }
+
+        /* მარჯვენა მხარე - მესენჯერ ჩატი */
+        .messenger-chat { width: 320px; background: var(--panel); display: flex; flex-direction: column; border-left: 1px solid #333; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #333; font-weight: bold; color: var(--gold); text-align: center; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        
+        /* მესენჯერის ბუშტები */
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; }
+        .msg.mine { align-self: flex-end; background: #0084ff; color: white; }
+        .msg.others { align-self: flex-start; background: #333; color: #eee; }
+        .msg-nick { font-size: 10px; margin-bottom: 2px; opacity: 0.7; }
+
+        .chat-input { padding: 15px; display: flex; gap: 5px; }
+        .chat-input input { flex: 1; padding: 10px; border-radius: 20px; border: none; background: #222; color: white; outline: none; }
+        
+        /* კარტების ზონა */
+        .my-hand { height: 120px; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; gap: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="game-section">
+    <div style="padding: 10px; background: rgba(0,0,0,0.5); display: flex; justify-content: space-between;">
+        <button onclick="location.href='index.html'" style="background:none; border: 1px solid white; color: white; cursor: pointer;">⬅ უკან</button>
+        <div id="game-status">მოლოდინი...</div>
+        <div id="trump-card">კოზირი: -</div>
+    </div>
+
+    <div class="table-area">
+        <div class="poker-table">
+            <div id="p0" class="player p-bottom"></div>
+            <div id="p1" class="player p-left"></div>
+            <div id="p2" class="player p-top"></div>
+            <div id="p3" class="player p-right"></div>
+            
+            <div id="table-center" style="font-size: 40px;">🃏</div>
+        </div>
+    </div>
+
+    <div class="my-hand" id="my-hand">
+        </div>
+</div>
+
+<div class="messenger-chat">
+    <div class="chat-header">მაგიდის ჩატი</div>
+    <div class="chat-messages" id="joker-chat-box"></div>
+    <div class="chat-input">
+        <input type="text" id="j-msg" placeholder="დაწერე მესიჯი..." onkeypress="if(event.key==='Enter') sendJokerMsg()">
+    </div>
+</div>
+
+<script>
+    // Supabase კონფიგურაცია (გამოიყენე შენი მონაცემები)
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('nickname');
+    let currentGameId = null;
+
+    async function initJoker() {
+        if (!myNick) { location.href = 'index.html'; return; }
+        
+        // 1. შევიდეთ მაგიდაზე (ლოგიკა იგივე რჩება)
+        await joinTable();
+        
+        // 2. გამოვიწეროთ განახლებები
+        _s.channel('joker_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, payload => {
+            renderGame(payload.new);
+        }).subscribe();
+
+        // 3. ჩატის გამოწერა
+        _s.channel('joker_messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_name=eq.🃏 ჯოკერი` }, payload => {
+            appendMessage(payload.new);
+        }).subscribe();
+
+        loadInitialMessages();
+    }
+
+    async function joinTable() {
+        const { data: games } = await _s.from('joker_games').select('*').eq('status', 'waiting').limit(1);
+        let game = games?.[0];
+
+        if (!game) {
+            const { data } = await _s.from('joker_games').insert([{ 
+                room_id: 'main', players: [{ name: myNick, avatar: 'https://i.ibb.co/v3m6y6R/avatar.png' }], status: 'waiting' 
+            }]).select().single();
+            game = data;
+        } else {
+            let players = game.players || [];
+            if (!players.find(p => p.name === myNick) && players.length < 4) {
+                players.push({ name: myNick, avatar: 'https://i.ibb.co/v3m6y6R/avatar.png' });
+                await _s.from('joker_games').update({ players }).eq('id', game.id);
+            }
+        }
+        currentGameId = game.id;
+        renderGame(game);
+    }
+
+    function renderGame(game) {
+        const players = game.players || [];
+        players.forEach((p, index) => {
+            const el = document.getElementById(`p${index}`);
+            if (el) {
+                el.innerHTML = `<img src="${p.avatar}"><div style="font-size:12px;">${p.name}</div>`;
+            }
+        });
+        document.getElementById('game-status').innerText = `მოთამაშეები: ${players.length}/4`;
+    }
+
+    async function sendJokerMsg() {
+        const input = document.getElementById('j-msg');
+        if (!input.value.trim()) return;
+        await _s.from('messages').insert([{ user_name: myNick, text: input.value, room_name: '🃏 ჯოკერი' }]);
+        input.value = "";
+    }
+
+    function appendMessage(m) {
+        const box = document.getElementById('joker-chat-box');
+        const isMine = m.user_name === myNick;
+        box.innerHTML += `
+            <div class="msg ${isMine ? 'mine' : 'others'}">
+                <div class="msg-nick">${m.user_name}</div>
+                <div>${m.text}</div>
+            </div>`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function loadInitialMessages() {
+        const { data } = await _s.from('messages').select('*').eq('room_name', '🃏 ჯოკერი').order('created_at', { ascending: false }).limit(20);
+        data?.reverse().forEach(appendMessage);
+    }
+
+    initJoker();
+</script>
+</body>
+</html>
