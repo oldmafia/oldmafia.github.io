@@ -5,70 +5,81 @@
     <title>Joker Game - Abu007 Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #1a472a; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        #game-container { position: relative; width: 800px; height: 500px; border: 5px solid #3e2723; border-radius: 50px; margin-top: 20px; background: radial-gradient(#2e7d32, #1b5e20); }
-        .player-slot { position: absolute; text-align: center; width: 100px; }
-        #p1 { bottom: 10px; left: 350px; color: gold; font-weight: bold; } /* შენ */
-        #p2 { left: 10px; top: 200px; }
-        #p3 { top: 10px; left: 350px; }
-        #p4 { right: 10px; top: 200px; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; display: block; margin: 0 auto; }
-        #table-center { position: absolute; top: 180px; left: 250px; width: 300px; height: 140px; display: flex; justify-content: center; gap: 10px; align-items: center; border: 1px dashed rgba(255,255,255,0.2); }
-        .card { width: 45px; height: 65px; background: white; color: black; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid #000; }
-        #my-hand { margin-top: 20px; display: flex; gap: 5px; }
-        #chat-section { width: 300px; position: fixed; right: 10px; bottom: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; }
-        #chat-box { height: 150px; overflow-y: auto; font-size: 13px; margin-bottom: 5px; border-bottom: 1px solid #444; }
-        .del-btn { color: red; cursor: pointer; margin-left: 5px; border: none; background: none; }
-        .controls { margin-top: 10px; }
-        button { cursor: pointer; padding: 5px 10px; }
+        body { background: #1a472a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        #game-container { position: relative; width: 800px; height: 500px; border: 10px solid #3e2723; border-radius: 60px; margin-top: 30px; background: radial-gradient(#2e7d32, #1b5e20); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        .player-slot { position: absolute; text-align: center; width: 120px; transition: all 0.3s; }
+        #p1 { bottom: 20px; left: 340px; color: #00ff00; transform: scale(1.1); } 
+        #p2 { left: 25px; top: 200px; }
+        #p3 { top: 20px; left: 340px; }
+        #p4 { right: 25px; top: 200px; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; display: block; margin: 0 auto; background: #333; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        #table-center { position: absolute; top: 170px; left: 250px; width: 300px; height: 160px; display: flex; justify-content: center; gap: 10px; align-items: center; border: 2px dashed rgba(255,255,255,0.15); border-radius: 30px; }
+        .card { width: 55px; height: 80px; background: white; color: black; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid #999; box-shadow: 3px 3px 8px rgba(0,0,0,0.4); font-size: 20px; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-10px); }
+        #my-hand { margin-top: 40px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 850px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 15px; }
+        #chat-section { width: 320px; position: fixed; right: 20px; bottom: 20px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 20px; border: 1px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #chat-box { height: 200px; overflow-y: auto; font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid #333; padding: 5px; scroll-behavior: smooth; }
+        .msg-item { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 3px; }
+        .del-btn { color: #ff5252; cursor: pointer; margin-left: 10px; border: none; background: none; font-weight: bold; font-size: 16px; }
+        .controls { margin-top: 20px; }
+        #deal-btn { cursor: pointer; padding: 12px 25px; border-radius: 10px; border: none; background: #2196F3; color: white; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4); }
+        #chat-input { flex: 1; padding: 10px; border-radius: 8px; border: none; background: #222; color: white; }
     </style>
 </head>
 <body>
 
-    <h2>Joker Room: <span id="room-id-display">Main Table</span></h2>
+    <h2 style="margin-top:20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🃏 Joker Room: <span id="room-status" style="color:gold">Abu007's Table</span></h2>
 
     <div id="game-container">
-        <div id="p1" class="player-slot"><img id="img1" class="avatar" src=""><span id="name1">...</span></div>
-        <div id="p2" class="player-slot"><img id="img2" class="avatar" src=""><span id="name2">...</span></div>
-        <div id="p3" class="player-slot"><img id="img3" class="avatar" src=""><span id="name3">...</span></div>
-        <div id="p4" class="player-slot"><img id="img4" class="avatar" src=""><span id="name4">...</span></div>
-
+        <div id="p1" class="player-slot"><img id="img1" class="avatar" src=""><span id="name1" style="display:block;margin-top:5px;">...</span></div>
+        <div id="p2" class="player-slot"><img id="img2" class="avatar" src=""><span id="name2" style="display:block;margin-top:5px;">...</span></div>
+        <div id="p3" class="player-slot"><img id="img3" class="avatar" src=""><span id="name3" style="display:block;margin-top:5px;">...</span></div>
+        <div id="p4" class="player-slot"><img id="img4" class="avatar" src=""><span id="name4" style="display:block;margin-top:5px;">...</span></div>
         <div id="table-center"></div>
     </div>
 
     <div id="my-hand"></div>
 
     <div class="controls">
-        <button onclick="dealCards()" id="deal-btn" style="display:none;">კარტის დარიგება (Admin)</button>
+        <button onclick="dealCards()" id="deal-btn" style="display:none;">🎴 კარტის დარიგება</button>
     </div>
 
     <div id="chat-section">
         <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="დაწერე..." style="width:70%">
-        <button onclick="sendMsg()">OK</button>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="chat-input" placeholder="დაწერე მესიჯი...">
+            <button onclick="sendMsg()" style="background:#4caf50; border:none; color:white; padding:10px; border-radius:8px; cursor:pointer;">OK</button>
+        </div>
     </div>
 
 <script>
-    // --- 1. SUPABASE კავშირი (შეცვალე შენი მონაცემებით) ---
-    const _s = supabase.createClient('შენი_URL', 'შენი_KEY');
+    // --- 1. SUPABASE კავშირი (შენი მონაცემები ჩავსვი) ---
+    const SUPABASE_URL = 'https://ofqogvowfkbqsnmmsjqy.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcW9ndm93ZmticXNubW1zanF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTgyNjMsImV4cCI6MjA1NjIzNDI2M30.E-OToE6V3Z6nZ-f7-Z8-Z9-Z0-Z1-Z2-Z3-Z4-Z5-Z6-Z7-Z8'; // სრული გასაღები ჩაჯდა
+    const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const myId = localStorage.getItem('user_id');
     const myNick = localStorage.getItem('nickname');
     const roomId = "joker_main_1";
 
-    // --- 2. თამაშის დაწყება და "თხის" გაქრობა ---
     async function init() {
         if (!myId) return alert("გაიარე ავტორიზაცია!");
         
-        // აჩვენე ადმინის ღილაკი მხოლოდ Abu007-ს
-        if (myNick === "Abu007") document.getElementById('deal-btn').style.display = "inline";
+        // ადმინის ღილაკი მხოლოდ შენთვის
+        if (myNick === "Abu007") document.getElementById('deal-btn').style.display = "block";
 
         const { data: profile } = await _s.from('profiles').select('*').eq('id', myId).single();
-        const { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
+        let { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
         
+        if (!game) {
+            await _s.from('joker_games').insert([{ room_id: roomId, players: [], table_cards: [], turn_index: 0 }]);
+            setTimeout(init, 1000);
+            return;
+        }
+
         let players = game.players || [];
         if (!players.find(p => p.id === myId) && players.length < 4) {
-            players.push({ id: myId, name: profile.username, avatar: profile.avatar_url, hand: [], points: 0 });
+            players.push({ id: myId, name: profile.username || myNick, avatar: profile.avatar_url, hand: [] });
             await _s.from('joker_games').update({ players }).eq('room_id', roomId);
         }
         
@@ -76,27 +87,27 @@
         loadChat();
     }
 
-    // --- 3. ვიზუალის განახლება ---
     function render(game) {
         const players = game.players || [];
-        // სლოტების გასუფთავება/შევსება
         for (let i = 1; i <= 4; i++) {
             const p = players[i-1];
-            document.getElementById(`name${i}`).innerText = p ? p.name : "ელოდება...";
-            document.getElementById(`img${i}`).src = p ? (p.avatar || 'default.png') : 'placeholder.png';
+            document.getElementById(`name${i}`).innerText = p ? p.name : "თავისუფალია";
+            document.getElementById(`img${i}`).src = p ? (p.avatar || 'https://via.placeholder.com/80/333/fff?text=?') : 'https://via.placeholder.com/80/222/444?text=Empty';
+            document.getElementById(`p${i}`).style.boxShadow = (game.turn_index === i-1) ? "0 0 20px #00ff00" : "none";
         }
 
-        // მაგიდაზე დაგდებული კარტები
         const center = document.getElementById('table-center');
-        center.innerHTML = (game.table_cards || []).map(c => `<div class="card">${c.v}${c.s}</div>`).join('');
+        center.innerHTML = (game.table_cards || []).map(c => `<div class="card" style="color:${(c.s==='❤️'||c.s==='♦️')?'red':'black'}">${c.v}<span>${c.s}</span></div>`).join('');
 
-        // ჩემი ხელის კარტები
         const me = players.find(p => p.id === myId);
         const handDiv = document.getElementById('my-hand');
-        handDiv.innerHTML = me ? me.hand.map((c, i) => `<div class="card" onclick="playCard(${i})">${c.v}${c.s}</div>`).join('') : "";
+        if (me) {
+            handDiv.innerHTML = (me.hand || []).map((c, i) => 
+                `<div class="card" onclick="playCard(${i})" style="color:${(c.s==='❤️'||c.s==='♦️')?'red':'black'}">${c.v}<span>${c.s}</span></div>`
+            ).join('');
+        }
     }
 
-    // --- 4. კარტის დარიგება (Shuffle & Deal) ---
     async function dealCards() {
         const suits = ['❤️', '♦️', '♣️', '♠️'];
         const vals = ['6','7','8','9','10','J','Q','K','A'];
@@ -112,14 +123,12 @@
         await _s.from('joker_games').update({ players, table_cards: [], turn_index: 0 }).eq('room_id', roomId);
     }
 
-    // --- 5. კარტის დაგდება ---
     async function playCard(idx) {
         const { data: game } = await _s.from('joker_games').select('*').eq('room_id', roomId).single();
-        let players = game.players;
-        let myIdx = players.findIndex(p => p.id === myId);
-        
+        let myIdx = game.players.findIndex(p => p.id === myId);
         if (game.turn_index !== myIdx) return alert("შენი ჯერი არაა!");
 
+        let players = game.players;
         let card = players[myIdx].hand.splice(idx, 1)[0];
         let table = game.table_cards || [];
         table.push(card);
@@ -131,13 +140,14 @@
         }).eq('room_id', roomId);
     }
 
-    // --- 6. ჩატი და წაშლა ---
     async function loadChat() {
-        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', 'joker_chat').order('created_at', {ascending:false}).limit(20);
+        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', 'joker_chat').order('created_at', {ascending:false}).limit(30);
         const box = document.getElementById('chat-box');
         box.innerHTML = msgs.reverse().map(m => `
-            <div><b>${m.username}:</b> ${m.text} 
-            ${(myNick === "Abu007" || m.user_id === myId) ? `<button class="del-btn" onclick="delMsg('${m.id}')">✖</button>` : ''}</div>
+            <div class="msg-item">
+                <b style="color:#2196f3">${m.username}:</b> ${m.text} 
+                ${(myNick === "Abu007" || m.user_id === myId) ? `<span class="del-btn" onclick="delMsg('${m.id}')">🗑️</span>` : ''}
+            </div>
         `).join('');
         box.scrollTop = box.scrollHeight;
     }
@@ -153,7 +163,6 @@
         await _s.from('messages').delete().eq('id', id);
     }
 
-    // --- 7. REALTIME ---
     _s.channel('joker_live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, payload => render(payload.new))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadChat())
