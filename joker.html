@@ -2,63 +2,61 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>Joker - Final Fix</title>
+    <title>Joker Game - Abu007 Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --table-green: #1a4d33; --gold: #ffd700; }
         body { background: #0a0f0a; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        #game-area { position: relative; width: 900px; height: 500px; background: radial-gradient(#266b45, #164028); border: 12px solid #3e2723; border-radius: 150px; margin-top: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
-        .slot { position: absolute; width: 100px; text-align: center; }
-        #p1 { bottom: 20px; left: 400px; } #p2 { left: 40px; top: 200px; } #p3 { top: 20px; left: 400px; } #p4 { right: 40px; top: 200px; }
-        .ava { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff; background: #222; }
-        .active { border-color: var(--gold); box-shadow: 0 0 20px var(--gold); }
-        #my-hand { margin-top: 20px; display: flex; gap: 8px; justify-content: center; min-height: 100px; }
-        .card { width: 55px; height: 80px; background: white; color: black; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; border: 1px solid #000; }
-        #chat { position: fixed; right: 20px; bottom: 20px; width: 250px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; border: 1px solid #333; }
-        #chat-box { height: 120px; overflow-y: auto; font-size: 13px; margin-bottom: 5px; }
+        #game-area { position: relative; width: 950px; height: 550px; background: radial-gradient(circle, #266b45 0%, #164028 100%); border: 15px solid #3e2723; border-radius: 200px; margin-top: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.9); }
+        .slot { position: absolute; width: 120px; text-align: center; }
+        #p1 { bottom: 20px; left: 415px; } #p2 { left: 40px; top: 210px; } #p3 { top: 20px; left: 415px; } #p4 { right: 40px; top: 210px; }
+        .ava { width: 85px; height: 85px; border-radius: 50%; border: 4px solid #fff; background: #222; transition: 0.3s; }
+        .active { border-color: var(--gold) !important; box-shadow: 0 0 25px var(--gold); transform: scale(1.1); }
+        #my-hand { margin-top: 25px; padding: 15px; display: flex; gap: 10px; justify-content: center; }
+        .card { width: 65px; height: 95px; background: white; color: black; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; cursor: pointer; border: 1px solid #ccc; box-shadow: 3px 5px 12px rgba(0,0,0,0.4); }
     </style>
 </head>
 <body>
 
+<h2 id="table-title" style="color:var(--gold)">Joker Room: Abu007's Table</h2>
 <div id="game-area">
     <div id="p1" class="slot"><img id="img1" class="ava"><div id="name1">...</div></div>
     <div id="p2" class="slot"><img id="img2" class="ava"><div id="name2">...</div></div>
     <div id="p3" class="slot"><img id="img3" class="ava"><div id="name3">...</div></div>
     <div id="p4" class="slot"><img id="img4" class="ava"><div id="name4">...</div></div>
-    <div id="table-cards" style="position: absolute; top: 200px; left: 300px; display: flex; gap: 10px;"></div>
+    <div id="table-cards" style="position: absolute; top: 210px; left: 325px; display: flex; gap: 15px;"></div>
 </div>
 
 <div id="my-hand"></div>
 
-<div id="chat">
-    <div id="chat-box"></div>
-    <input type="text" id="chat-in" style="width:70%;" placeholder="დაწერე...">
-    <button onclick="sendMsg()">OK</button>
-</div>
-
 <script>
     const S_URL = 'https://ofqogvowfkbqsnmmsjqy.supabase.co';
-    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcW9ndm93ZmticXNubW1zanF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTgyNjMsImV4cCI6MjA1NjIzNDI2M30.E-OToE6V3Z6nZ-f7-Z8-Z9-Z0-Z1-Z2-Z3-Z4-Z5-Z6-Z7-Z8';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcW9ndm93ZmticXNubW1zanF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTgyNjMsImV4cCI6MjA1NjIzNDI2M30.E-OToE6V3Z6nZ-f7-Z8-Z9-Z0-Z1-Z2-Z3-Z4-Z5-Z6-Z7-Z8'; //
     const _s = supabase.createClient(S_URL, S_KEY);
 
-    let myId = localStorage.getItem('user_id') || 'u_' + Math.random().toString(36).substr(2, 9);
-    let myNick = localStorage.getItem('nickname') || prompt("შეიყვანე ნიკი:");
+    // ავტომატურად ვქმნით იუზერს, რომ "ავტორიზაცია" აღარ იკითხოს
+    let myId = localStorage.getItem('user_id') || 'abu_' + Math.floor(Math.random() * 1000);
+    let myNick = localStorage.getItem('nickname') || 'Abu007';
     localStorage.setItem('user_id', myId);
     localStorage.setItem('nickname', myNick);
 
     async function init() {
-        // შენი ბაზიდან ვიღებთ ოთახს 'main_table'
+        // ვიყენებთ შენს ცხრილს და ოთახს: main_table
         let { data: game } = await _s.from('joker_games').select('*').eq('room_id', 'main_table').single();
         
+        if (!game) return console.error("ოთახი ვერ მოიძებნა!");
+
         let ps = game.players || [];
+        // თუ მაგიდაზე არ ხარ, ჩაგსვამს
         if (!ps.find(p => p.id === myId) && ps.length < 4) {
-            ps.push({ id: myId, name: myNick, avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed='+myNick, hand: [] });
+            ps.push({ id: myId, name: myNick, avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=' + myNick, hand: [] });
             const { data: updated } = await _s.from('joker_games').update({ players: ps }).eq('room_id', 'main_table').select().single();
             game = updated;
         }
 
         render(game);
-        _s.channel('game').on('postgres_changes', {event:'*', schema:'public', table:'joker_games'}, p => render(p.new)).subscribe();
+        // Realtime განახლება
+        _s.channel('any').on('postgres_changes', {event:'*', schema:'public', table:'joker_games'}, p => render(p.new)).subscribe();
     }
 
     function render(game) {
@@ -66,17 +64,18 @@
         for (let i = 0; i < 4; i++) {
             const p = ps[i];
             document.getElementById(`name${i+1}`).innerText = p ? p.name : "...";
-            document.getElementById(`img${i+1}`).src = p ? p.avatar : 'https://via.placeholder.com/80/111/333?text=?';
-            // ვიყენებთ შენს სვეტს: current_turn_index
+            document.getElementById(`img${i+1}`).src = p ? p.avatar : 'https://via.placeholder.com/85/111/333?text=?';
+            // შენი სვეტის სახელი ბაზაში: current_turn_index
             document.getElementById(`img${i+1}`).className = (game.current_turn_index === i) ? "ava active" : "ava";
         }
 
         const me = ps.find(p => p.id === myId);
-        document.getElementById('my-hand').innerHTML = (me?.hand || []).map(c => `<div class="card">${c.v}${c.s}</div>`).join('');
+        if(me) {
+            document.getElementById('my-hand').innerHTML = (me.hand || []).map(c => `<div class="card">${c.v}${c.s}</div>`).join('');
+        }
         document.getElementById('table-cards').innerHTML = (game.table_cards || []).map(c => `<div class="card">${c.v}${c.s}</div>`).join('');
     }
 
-    // ჩატი და სხვა ფუნქციები...
     init();
 </script>
 </body>
