@@ -2,177 +2,86 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Joker Game - Abu007</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --gold: #ffd700; --red: #ff4d4d; --green: #1a4d33; }
-        body { background: #0a0f0a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        
-        #game-area { 
-            position: relative; width: 850px; height: 480px; 
-            background: radial-gradient(circle, #266b45 0%, #11331f 100%); 
-            border: 10px solid #3e2723; border-radius: 180px; margin-top: 30px; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
-        }
-
-        .slot { position: absolute; padding: 10px 20px; border-radius: 20px; background: rgba(0,0,0,0.5); border: 2px solid transparent; font-weight: bold; }
-        #p1 { bottom: -20px; border-color: var(--gold); color: var(--gold); } /* Abu007 */
-        #p2 { left: -30px; }
-        #p3 { top: -20px; }
-        #p4 { right: -30px; }
-        .active-turn { box-shadow: 0 0 20px var(--gold); background: rgba(255, 215, 0, 0.2); }
-
-        #table-cards { display: flex; gap: 15px; min-height: 110px; align-items: center; }
-        #my-hand { margin-top: 50px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; max-width: 900px; }
-
-        .card { 
-            width: 70px; height: 100px; background: white; color: black; 
-            border-radius: 8px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; font-weight: bold; 
-            font-size: 20px; cursor: pointer; border: 1px solid #ccc;
-            transition: transform 0.2s, box-shadow 0.2s; box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-        }
-        .card:hover { transform: translateY(-15px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .red { color: var(--red); }
-        .joker { color: #2196F3; }
-
-        .btn { 
-            margin-top: 20px; padding: 12px 30px; background: #b71c1c; 
-            color: white; border: none; border-radius: 5px; cursor: pointer; 
-            font-weight: bold; font-size: 16px; transition: 0.3s;
-        }
-        .btn:hover { background: #ff1744; transform: scale(1.05); }
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        #table { width: 800px; height: 400px; background: radial-gradient(#1a472a, #0d2617); border: 15px solid #3d2b1f; border-radius: 200px; position: relative; box-shadow: 0 0 50px red; }
+        .player { position: absolute; padding: 10px; border: 2px solid gold; border-radius: 10px; background: rgba(0,0,0,0.7); }
+        #me { bottom: -20px; left: 350px; }
+        #p2 { left: 20px; top: 180px; }
+        #p3 { top: -20px; left: 350px; }
+        #p4 { right: 20px; top: 180px; }
+        #hand { margin-top: 50px; display: flex; gap: 10px; }
+        .card { width: 60px; height: 90px; background: white; color: black; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid #000; }
+        .red { color: red; }
+        button { margin-top: 20px; padding: 15px 30px; background: red; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <h1 style="color: var(--gold); margin-bottom: 5px;">JOKER TABLE</h1>
-    <p>მოთამაშე: <span id="player-name">Abu007</span></p>
+    <h1>კაიფმანია 🃏</h1>
 
-    <div id="game-area">
-        <div id="p3" class="slot">Player 3</div>
-        <div id="p2" class="slot">Player 2</div>
-        <div id="p4" class="slot">Player 4</div>
-        <div id="p1" class="slot">Abu007 (შენ)</div>
-
-        <div id="table-cards"></div>
+    <div id="table">
+        <div id="me" class="player">Abu007 (შენ)</div>
+        <div id="p2" class="player">Player 2</div>
+        <div id="p3" class="player">Player 3</div>
+        <div id="p4" class="player">Player 4</div>
+        <div id="table-cards" style="position:absolute; top:150px; left:300px; display:flex; gap:10px;"></div>
     </div>
 
-    <div id="my-hand"></div>
-    
-    <div style="display: flex; gap: 10px;">
-        <button class="btn" onclick="dealCards()">ახალი დარიგება 🃏</button>
-    </div>
+    <div id="hand"></div>
+    <button onclick="start()">ახალი დარიგება</button>
 
     <script>
-        // --- SUPABASE CONFIG ---
         const SB_URL = "https://fftciebnywbondaiarnc.supabase.co"; 
-        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"; 
-        const gameId = "b22aa812-511c-4ab8-a769-e390522639c7"; 
-        const myName = "Abu007";
+        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const gameId = "b22aa812-511c-4ab8-a769-e390522639c7";
 
         const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        // 1. კარტების გენერატორი
-        function generateDeck() {
+        async function start() {
+            console.log("დარიგება დაიწყო...");
             const suits = [{s:'♥', c:'red'}, {s:'♦', c:'red'}, {s:'♣', c:'black'}, {s:'♠', c:'black'}];
-            const values = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+            const vals = ['6','7','8','9','10','J','Q','K','A'];
             let deck = [];
-            suits.forEach(suit => {
-                values.forEach(val => {
-                    deck.push({ v: val, s: suit.s, c: suit.c });
-                });
-            });
-            deck.push({ v: 'JK', s: 'Joker', c: 'joker' });
-            deck.push({ v: 'JK', s: 'Joker', c: 'joker' });
-            return deck.sort(() => Math.random() - 0.5);
-        }
+            suits.forEach(s => vals.forEach(v => deck.push({v, s:s.s, c:s.c})));
+            deck.sort(() => Math.random() - 0.5);
 
-        // 2. დარიგება
-        async function dealCards() {
-            const deck = generateDeck();
             const players = [
-                { name: "Abu007", hand: deck.splice(0, 9), taken: 0 },
-                { name: "Player 2", hand: deck.splice(0, 9), taken: 0 },
-                { name: "Player 3", hand: deck.splice(0, 9), taken: 0 },
-                { name: "Player 4", hand: deck.splice(0, 9), taken: 0 }
+                {name: "Abu007", hand: deck.splice(0,9)},
+                {name: "P2", hand: deck.splice(0,9)},
+                {name: "P3", hand: deck.splice(0,9)},
+                {name: "P4", hand: deck.splice(0,9)}
             ];
 
             const { error } = await _supabase.from('joker_games').update({
                 players: players,
                 table_cards: [],
-                current_turn_index: 0,
-                status: 'playing'
+                current_turn_index: 0
             }).eq('id', gameId);
-            
-            if(error) alert("შეცდომა ბაზასთან: " + error.message);
+
+            if(error) alert("შეცდომა: " + error.message);
         }
 
-        // 3. კარტის დადება
-        async function playCard(cardIndex) {
-            let { data: game } = await _supabase.from('joker_games').select('*').eq('id', gameId).single();
-            
-            if (game.players[game.current_turn_index].name !== myName) {
-                alert("ჯერ შენი ჯერი არ არის!");
-                return;
-            }
-
-            let players = game.players;
-            let card = players[game.current_turn_index].hand.splice(cardIndex, 1)[0];
-            let table = game.table_cards || [];
-            table.push({ card, player: myName });
-
-            await _supabase.from('joker_games').update({
-                players: players,
-                table_cards: table,
-                current_turn_index: (game.current_turn_index + 1) % 4
-            }).eq('id', gameId);
-        }
-
-        // 4. ვიზუალის განახლება
-        function updateUI(game) {
-            // ჩემი ხელი
-            const me = game.players.find(p => p.name === myName);
-            const handDiv = document.getElementById('my-hand');
+        function draw(game) {
+            const handDiv = document.getElementById('hand');
             handDiv.innerHTML = '';
-            me.hand.forEach((card, i) => {
-                const div = document.createElement('div');
-                div.className = `card ${card.c}`;
-                div.innerHTML = `<span>${card.v}</span><span>${card.s}</span>`;
-                div.onclick = () => playCard(i);
-                handDiv.appendChild(div);
+            game.players[0].hand.forEach((c, i) => {
+                const d = document.createElement('div');
+                d.className = `card ${c.c}`;
+                d.innerHTML = c.v + c.s;
+                handDiv.appendChild(d);
             });
-
-            // მაგიდა
-            const tableDiv = document.getElementById('table-cards');
-            tableDiv.innerHTML = '';
-            game.table_cards.forEach(t => {
-                const div = document.createElement('div');
-                div.className = `card ${t.card.c}`;
-                div.style.transform = "scale(0.85)";
-                div.innerHTML = `<small style="font-size:10px">${t.player}</small><b>${t.card.v}</b>`;
-                tableDiv.appendChild(div);
-            });
-
-            // ჯერი
-            for(let i=1; i<=4; i++) document.getElementById('p'+i).classList.remove('active-turn');
-            document.getElementById('p' + (game.current_turn_index + 1)).classList.add('active-turn');
         }
 
-        // 5. Realtime კავშირი
-        _supabase.channel('joker_room')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'joker_games' }, payload => {
-                updateUI(payload.new);
-            })
-            .subscribe();
-
-        // საწყისი ჩატვირთვა
-        async function init() {
+        _supabase.channel('any').on('postgres_changes', {event:'UPDATE', schema:'public', table:'joker_games'}, p => draw(p.new)).subscribe();
+        
+        async function load() {
             let { data } = await _supabase.from('joker_games').select('*').eq('id', gameId).single();
-            if (data) updateUI(data);
+            if(data) draw(data);
         }
-        init();
+        load();
     </script>
 </body>
 </html>
