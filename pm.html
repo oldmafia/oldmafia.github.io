@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PM SYSTEM - Abu007</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: sans-serif; background: #050000; color: white; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .header { padding: 12px; text-align: center; border-bottom: 1px solid #300; background: #000; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; }
+        
+        /* კონტენტის ზონა ჰედერის ქვეშ */
+        .content-body { flex: 1; overflow-y: auto; margin-top: 60px; /* ჰედერის სიმაღლე */ padding-bottom: 80px; /* ბოთომ-ბარის ადგილი */ }
+        
+        #inbox-view, #chat-view { display: none; padding: 10px; }
+        .active { display: block !important; }
+
+        /* მესიჯების სტილი */
+        .message-row { display: flex; gap: 10px; margin-bottom: 15px; width: 100%; align-items: flex-end; }
+        .avatar-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #500; object-fit: cover; background: #111; cursor: pointer; flex-shrink: 0; }
+        .bubble { padding: 12px; border-radius: 18px; max-width: 75%; border: 1px solid #300; background: #150505; border-bottom-left-radius: 4px; position: relative; }
+        .my-msg { justify-content: flex-end; }
+        .my-msg .bubble { background: #0a1520; border-color: #004466; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; } 
+
+        .msg-sender { font-size: 11px; font-weight: bold; margin-bottom: 3px; display: block; color: #f33; cursor: pointer; }
+        .my-msg .msg-sender { color: #0cf; text-align: right; }
+        
+        /* GIF-ები მესიჯში */
+        .msg-text img { max-width: 110px; border-radius: 8px; display: block; margin-top: 5px; min-height: 50px; }
+
+        /* ინბოქსის იუზერები */
+        .inbox-user { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s; }
+        .inbox-user:hover { background: #100; }
+
+        /* სმაილების პანელი */
+        #emoji-picker { position: fixed; bottom: 80px; left: 5%; right: 5%; background: #000; border: 2px solid #f00; border-radius: 12px; padding: 10px; display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; z-index: 2000; max-height: 250px; overflow-y: auto; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
+        .emoji-item { width: 100%; height: 65px; cursor: pointer; object-fit: contain; background: #111; border: 1px solid #222; border-radius: 8px; }
+
+        /* ქვედა ბარი */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 12px; border-top: 1px solid #200; display: none; gap: 10px; align-items: center; z-index: 1000; }
+        input { flex: 1; background: #0a0a0a; border: 1px solid #333; color: white; padding: 12px 15px; border-radius: 25px; outline: none; font-size: 16px; }
+        .send-btn { font-size: 26px; cursor: pointer; color: red; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div onclick="goBack()" style="cursor:pointer; font-size: 24px;">⬅</div>
+    <div id="view-title" style="color:red; font-weight:bold; letter-spacing: 1px;">PM SYSTEM</div>
+    <div onclick="location.reload()" style="cursor:pointer; font-size: 20px;">🔄</div>
+</div>
+
+<div class="content-body">
+    <div id="inbox-view" class="active"></div>
+    <div id="chat-view"></div>
+</div>
+
+<div id="emoji-picker"></div>
+
+<div class="bottom-bar" id="input-bar">
+    <div onclick="toggleEmojis()" style="font-size:26px; cursor:pointer">😊</div>
+    <input type="text" id="msg-input" placeholder="დაწერე მესიჯი...">
+    <div onclick="sendMessage()" class="send-btn">✈</div>
+</div>
+
+<script>
+    // Supabase კლიენტი (გამოიყენე შენი მონაცემები)
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    
+    // შენი ნიკი (დროებით Abu007, სანამ ავტორიზაციას გამართავ)
+    let myNick = localStorage.getItem('nickname') || "Abu007";
+    let activeP = null; // ვის ვეჩატავებით
+    let userAvatars = {}; // ქეში ავატარებისთვის
+
+    // GIF-ების პარსერი [img]link[/img]
+    function parseBBCode(text) {
+        if(!text) return "";
+        return text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" onerror="this.outerHTML=\'<b>[GIF]</b>\'">');
+    }
+
+    // 1. ინბოქსის (ჩატების სიის) ჩატვირთვა
+    async function loadInbox() {
+        try {
+            document.getElementById('view-title').innerText = "PM SYSTEM";
+            document.getElementById('input-bar').style.display = 'none'; // ვმალავთ წერის პანელს
+            activeP = null;
+
+            // პროფილების წამოღება ავატარებისთვის
+            const { data: profs } = await _s.from('profiles').select('username, avatar_url');
+            profs?.forEach(p => userAvatars[p.username] = p.avatar_url);
+
+            // მესიჯების წამოღება (სადაც მე ვარ გამგზავნი ან მიმღები)
+            const { data: msgs } = await _s.from('private_messages')
+                .select('*')
+                .or(`sender.eq."${myNick}",receiver.eq."${myNick}"`)
+                .order('created_at', { ascending: false });
+            
+            const box = document.getElementById('inbox-view');
+            box.innerHTML = "";
+            const partners = {};
+            
+            // ვპოულობთ უნიკალურ ჩატის პარტნიორებს
+            msgs?.forEach(m => {
+                const p = m.sender === myNick ? m.receiver : m.sender;
+                if (!partners[p]) partners[p] = { text: m.text, unread: (m.receiver === myNick && !m.is_read) };
+            });
+
+            // სიის გენერაცია
+            for (let p in partners) {
+                const ava = userAvatars[p] || `https://api.dicebear.com/7.x/bottts/svg?seed=${p}`;
+                box.innerHTML += `
+                    <div class="inbox-user" onclick="openChat('${p}')">
+                        <img src="${ava}" class="avatar-img" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${p}'">
+                        <div style="flex:1; margin-left:12px;">
+                            <b style="color:red">${p}</b><br>
+                            <small style="color:#666">${partners[p].text.substring(0,30)}...</small>
+                        </div>
+                        ${partners[p].unread ? '<span style="color:red; font-size:20px;">●</span>' : ''}
+                    </div>`;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // 2. კონკრეტული ჩატის გახსნა
+    async function openChat(p) {
+        if(!p) return;
+        activeP = p; 
+        document.getElementById('view-title').innerText = p;
+        
+        // ხედების გადართვა
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('input-bar').style.display = 'flex'; // ვაჩენთ წერის პანელს
+        
+        // მესიჯების წაკითხულად მონიშვნა
+        await _s.from('private_messages').update({ is_read: true }).match({ sender: p, receiver: myNick });
+        
+        loadMessages();
+    }
+
+    // 3. მესიჯების ჩატვირთვა ჩატში
+    async function loadMessages() {
+        if(!activeP) return;
+        const { data: msgs } = await _s.from('private_messages')
+            .select('*')
+            .or(`and(sender.eq."${myNick}",receiver.eq."${activeP}"),and(sender.eq."${activeP}",receiver.eq."${myNick}")`)
+            .order('created_at', { ascending: true });
+            
+        const area = document.getElementById('chat-view'); 
+        area.innerHTML = "";
+        
+        msgs?.forEach(m => {
+            const isMe = m.sender === myNick;
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const ava = userAvatars[m.sender] || `https://api.dicebear.com/7.x/bottts/svg?seed=${m.sender}`;
+            
+            area.innerHTML += `
+                <div class="message-row ${isMe ? 'my-msg' : ''}">
+                    ${!isMe ? `<img src="${ava}" class="avatar-img" onclick="goToProfile('${m.sender}')" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${m.sender}'">` : ''}
+                    <div class="bubble">
+                        ${!isMe ? `<span class="msg-sender" onclick="goToProfile('${m.sender}')">${m.sender}</span>` : ''}
+                        <div class="msg-text">${parseBBCode(m.text)}</div>
+                        <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:#555;">
+                            <span>${time}</span>
+                            ${myNick==='Abu007' ? `<span onclick="deleteMsg('${m.id}')" style="color:red; cursor:pointer; margin-left:10px;">🗑️</span>`:''}
+                        </div>
+                    </div>
+                </div>`;
+        });
+        area.scrollTop = area.scrollHeight; // ავტომატური სკროლი დაბლა
+    }
+
+    // მესიჯის გაგზავნა
+    async function sendMessage() {
+        const i = document.getElementById('msg-input');
+        if (!i.value.trim() || !activeP) return;
+        
+        const textToSend = i.value;
+        i.value = ""; // ეგრევე ვასუფთავებთ ინპუტს
+
+        const { error } = await _s.from('private_messages').insert([{ 
+            sender: myNick, 
+            receiver: activeP, 
+            text: textToSend, 
+            is_read: false 
+        }]);
+        
+        if(error) { console.error(error); i.value = textToSend; /* შეცდომისას ვაბრუნებთ ტექსტს */ }
+        else { loadMessages(); }
+    }
+
+    // სმაილების პანელის ჩართვა/გამორთვა
+    async function toggleEmojis() {
+        const picker = document.getElementById('emoji-picker');
+        if (picker.style.display === 'grid') { picker.style.display = 'none'; return; }
+        
+        const { data } = await _s.from('emojis').select('*');
+        if(data) {
+            picker.innerHTML = data.map(e => `
+                <img src="${e.emoji_url}" class="emoji-item" 
+                     onclick="addEmoji('${e.emoji_url}')" 
+                     onerror="this.src='https://via.placeholder.com/60?text=Error'">
+            `).join('');
+            picker.style.display = 'grid';
+        }
+    }
+
+    // სმაილის ჩამატება ინპუტში
+    function addEmoji(url) {
+        document.getElementById('msg-input').value += `[img]${url}[/img]`;
+        document.getElementById('emoji-picker').style.display = 'none';
+        document.getElementById('msg-input').focus();
+    }
+
+    // მესიჯის წაშლა (ადმინისთვის)
+    async function deleteMsg(id) { 
+        if(confirm("წავშალოთ მესიჯი?")) { 
+            await _s.from('private_messages').delete().eq('id', id); 
+            loadMessages(); 
+        } 
+    }
+    
+    // უკან დაბრუნება
+    function goBack() { 
+        if(activeP) { 
+            loadInbox(); // თუ ჩატში ვართ, ვბრუნდებით ინბოქსში
+            document.getElementById('chat-view').classList.remove('active');
+            document.getElementById('inbox-view').classList.add('active');
+        } else { 
+            window.history.back(); // თუ ინბოქსში ვართ, ვბრუნდებით წინა გვერდზე
+        } 
+    }
+
+    function goToProfile(user) { window.location.href=`profile.html?user=${user}`; }
+
+    // 🚀 მთავარი ლოგიკა: ვამოწმებთ, პროფილიდან მოვედით თუ პირდაპირ
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatWith = urlParams.get('chat');
+        
+        if (chatWith) {
+            // თუ URL-ში არის ?chat=NIKI, პირდაპირ ვხსნით ჩატს
+            loadInbox().then(() => openChat(chatWith));
+        } else {
+            // თორემ ვხსნით ინბოქსს
+            loadInbox();
+        }
+    };
+</script>
+</body>
+</html>
