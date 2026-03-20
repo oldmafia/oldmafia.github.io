@@ -10,19 +10,18 @@
         body { margin: 0; font-family: sans-serif; background: #050000; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
         .header { padding: 12px; text-align: center; border-bottom: 1px solid #300; background: #000; display: flex; align-items: center; justify-content: space-between; }
-        #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 100px; display: none; }
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 100px; display: none; }
         .active { display: block !important; }
 
-        /* მესიჯების განლაგება */
-        .msg-container { display: flex; width: 100%; margin-bottom: 15px; }
-        .my-msg { justify-content: flex-end; } /* შენი - მარჯვნივ */
-        .other-msg { justify-content: flex-start; } /* სხვისი - მარცხნივ */
+        /* მესიჯების დიზაინი */
+        .msg-container { display: flex; width: 100%; margin-bottom: 15px; align-items: flex-end; }
+        .my-msg { flex-direction: row-reverse; } /* შენი მარჯვნივ */
         
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 75%; border: 1px solid #333; position: relative; }
-        .my-msg .bubble { background: #001a33; border-color: #004466; border-bottom-right-radius: 2px; }
-        .other-msg .bubble { background: #1a0505; border-color: #660000; border-bottom-left-radius: 2px; }
+        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 75%; border: 1px solid #333; position: relative; line-height: 1.4; }
+        .my-msg .bubble { background: #001a33; border-color: #004466; margin-right: 8px; }
+        .other-msg .bubble { background: #1a0505; border-color: #660000; margin-left: 8px; }
 
-        .avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid #444; margin: 0 8px; }
+        .avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #444; }
 
         /* სმაილების პანელი (ბადე) */
         #emoji-picker { 
@@ -31,11 +30,10 @@
             padding: 10px; display: none; 
             grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); 
             gap: 10px; z-index: 3000; max-height: 250px; overflow-y: auto;
-            box-shadow: 0 0 20px rgba(255,0,0,0.5);
         }
         .emoji-img { width: 100%; cursor: pointer; object-fit: contain; background: #111; border-radius: 5px; }
 
-        /* ქვედა ზოლი (Input) - ძალდატანებითი ჩვენება */
+        /* ქვედა ზოლი (Input) */
         .bottom-bar { position: fixed; bottom: 0; width: 100%; background: #000; padding: 12px; border-top: 1px solid #222; display: none; gap: 10px; align-items: center; z-index: 2000; }
         .input-box { flex: 1; background: #0a0a0a; border: 1px solid #444; color: white; padding: 12px; border-radius: 25px; outline: none; }
     </style>
@@ -44,7 +42,7 @@
 
 <div class="header">
     <div onclick="goBack()" style="cursor:pointer; font-size: 20px;">⬅</div>
-    <div id="view-title" style="color:red; font-weight:bold;">პირადი</div>
+    <div id="view-title" style="color:red; font-weight:bold; text-transform: uppercase;">პირადი</div>
     <div onclick="location.reload()" style="cursor:pointer;">🔄</div>
 </div>
 
@@ -61,54 +59,78 @@
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     let myNick = localStorage.getItem('nickname') || 'Abu007';
-    let activeP = null;
+    let activeP = new URLSearchParams(window.location.search).get('to');
     let userAvatars = {};
 
     function parseBBCode(text) {
-        return text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="width:60px; display:block; margin:5px 0;" onerror="this.src=\'https://via.placeholder.com/50\'">');
+        return text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="width:50px; display:inline-block; vertical-align:middle;">');
     }
 
-    async function loadInbox() {
+    async function loadData() {
+        // ავატარების ჩატვირთვა
         const { data: profs } = await _s.from('profiles').select('username, avatar_url');
         profs?.forEach(p => userAvatars[p.username] = p.avatar_url);
 
+        if (activeP) {
+            openChat(activeP);
+        } else {
+            loadInbox();
+        }
+    }
+
+    async function loadInbox() {
         const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
-        const box = document.getElementById('inbox-view'); box.innerHTML = "";
+        const box = document.getElementById('inbox-view'); 
+        box.innerHTML = "";
+        box.classList.add('active');
+        
         const partners = {};
         msgs?.forEach(m => {
             const p = m.sender === myNick ? m.receiver : m.sender;
             if (!partners[p]) partners[p] = { text: m.text, unread: (m.receiver === myNick && !m.is_read) };
         });
 
+        if (Object.keys(partners).length === 0) {
+            box.innerHTML = "<p style='text-align:center; color:#555; margin-top:50px;'>მესიჯები არ არის</p>";
+        }
+
         for (let p in partners) {
-            box.innerHTML += `<div style="display:flex; padding:15px; border-bottom:1px solid #111; align-items:center; cursor:pointer" onclick="openChat('${p}')"><img src="${userAvatars[p] || ''}" class="avatar"><div style="flex:1;"><b style="color:red">${p}</b><br><small style="color:#555">${partners[p].text.substring(0,30)}</small></div>${partners[p].unread ? '🔴' : ''}</div>`;
+            box.innerHTML += `
+                <div style="display:flex; padding:15px; border-bottom:1px solid #111; align-items:center; cursor:pointer" onclick="openChat('${p}')">
+                    <img src="${userAvatars[p] || ''}" class="avatar">
+                    <div style="flex:1; margin-left:12px;">
+                        <b style="color:red">${p}</b><br>
+                        <small style="color:#555">${partners[p].text.substring(0,30)}...</small>
+                    </div>
+                    ${partners[p].unread ? '🔴' : ''}
+                </div>`;
         }
     }
 
     async function openChat(p) {
-        activeP = p; 
+        activeP = p;
         document.getElementById('view-title').innerText = p;
-        document.getElementById('inbox-view').style.display = 'none';
+        document.getElementById('inbox-view').classList.remove('active');
         document.getElementById('chat-view').classList.add('active');
-        document.getElementById('input-bar').style.display = 'flex'; // აქ აჩენს საწერს!
+        document.getElementById('input-bar').style.display = 'flex';
         loadMessages();
     }
 
     async function loadMessages() {
+        if (!activeP) return;
         const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${activeP}"),and(sender.eq."${activeP}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
-        const area = document.getElementById('chat-view'); area.innerHTML = "";
+        const area = document.getElementById('chat-view'); 
+        area.innerHTML = "";
         
         msgs?.forEach(m => {
             const isMe = m.sender === myNick;
-            const ava = userAvatars[m.sender] || '';
             area.innerHTML += `
                 <div class="msg-container ${isMe ? 'my-msg' : 'other-msg'}">
-                    ${!isMe ? `<img src="${ava}" class="avatar">` : ''}
+                    <img src="${userAvatars[m.sender] || ''}" class="avatar">
                     <div class="bubble">
-                        <div style="color:${isMe ? '#0cf' : 'red'}; font-size:11px; font-weight:bold;">${m.sender}</div>
-                        <div style="margin-top:5px;">${parseBBCode(m.text)}</div>
+                        <div style="color:${isMe ? '#0cf' : 'red'}; font-size:11px; font-weight:bold; margin-bottom:4px;">${m.sender}</div>
+                        <div>${parseBBCode(m.text)}</div>
                     </div>
-                    ${isMe ? `<img src="${ava}" class="avatar">` : ''}
                 </div>`;
         });
         area.scrollTop = area.scrollHeight;
@@ -118,11 +140,7 @@
         const picker = document.getElementById('emoji-picker');
         if (picker.style.display === 'grid') { picker.style.display = 'none'; return; }
         const { data } = await _s.from('emojis').select('*');
-        if(!data || data.length === 0) {
-            picker.innerHTML = "<p style='color:gray; padding:10px;'>სმაილები ვერ ჩაიტვირთა...</p>";
-        } else {
-            picker.innerHTML = data.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('');
-        }
+        picker.innerHTML = data?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('');
         picker.style.display = 'grid';
     }
 
@@ -134,17 +152,13 @@
 
     async function sendMessage() {
         const i = document.getElementById('msg-input');
-        if (!i.value.trim()) return;
-        const { error } = await _s.from('private_messages').insert([{ sender: myNick, receiver: activeP, text: i.value, is_read: false }]);
-        if (error) { alert("შეცდომა: ბაზა კვლავ ჩაკეტილია!"); console.log(error); }
+        if (!i.value.trim() || !activeP) return;
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeP, text: i.value, is_read: false }]);
         i.value = ""; loadMessages();
     }
 
-    function goBack() { 
-        if(activeP) { activeP = null; location.reload(); }
-        else { location.href = 'chat.html'; }
-    }
-    window.onload = loadInbox;
+    function goBack() { window.location.href = 'chat.html'; }
+    window.onload = loadData;
 </script>
 </body>
 </html>
