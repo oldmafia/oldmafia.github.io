@@ -12,27 +12,27 @@
         #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 100px; display: none; }
         .active { display: block !important; }
 
-        /* მესიჯები */
-        .msg-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        /* მესიჯების სტილი */
+        .msg-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
         .avatar { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #333; object-fit: cover; cursor: pointer; }
-        .bubble { background: #0d0d0d; border: 1px solid #222; padding: 10px; border-radius: 12px; max-width: 80%; }
-        .nick { font-weight: bold; font-size: 13px; color: #ff0000; margin-bottom: 4px; display: block; }
+        .bubble { background: #0d0d0d; border: 1px solid #222; padding: 10px; border-radius: 12px; max-width: 80%; position: relative; }
+        .nick { font-weight: bold; font-size: 13px; color: #ff0000; margin-bottom: 4px; display: block; cursor: pointer; }
         .txt { font-size: 14px; color: #eee; word-break: break-word; }
-        .del-btn { color: #500; cursor: pointer; font-weight: bold; font-size: 11px; margin-top: 5px; display: inline-block; }
+        .del-x { color: #f00; cursor: pointer; font-weight: bold; margin-left: 8px; font-size: 12px; }
 
         /* პროფილის მოდალი */
         #profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; }
-        .modal-content { background: #000; width: 90%; max-width: 350px; border: 2px solid #500; border-radius: 20px; padding: 25px; text-align: center; }
+        .modal-content { background: #000; width: 90%; max-width: 340px; border: 2px solid #500; border-radius: 20px; padding: 25px; text-align: center; }
         .m-ava { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #f00; margin-bottom: 10px; }
-        .m-btn { width: 100%; padding: 12px; margin-top: 8px; border-radius: 10px; border: 1px solid #333; background: #0a0a0a; color: white; cursor: pointer; font-weight: bold; font-size: 14px; }
-        
-        /* სმაილების პანელი */
+        .m-btn { width: 100%; padding: 12px; margin-top: 8px; border-radius: 10px; border: 1px solid #333; background: #0a0a0a; color: white; cursor: pointer; font-size: 14px; font-weight: bold; }
+
+        /* სმაილების დაფა */
         #emoji-picker { position: fixed; bottom: 85px; left: 10px; right: 10px; background: #000; border: 2px solid #500; border-radius: 15px; padding: 10px; display: none; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; z-index: 9999; max-height: 200px; overflow-y: auto; }
         .emoji-img { width: 100%; cursor: pointer; }
 
-        /* ინპუტის ზოლი */
+        /* ქვედა ზოლი */
         .bottom-bar { position: fixed; bottom: 0; width: 100%; background: #000; padding: 15px; border-top: 1px solid #111; display: none; gap: 10px; align-items: center; }
-        .input-box { flex: 1; background: #080808; border: 1px solid #200; color: white; padding: 12px; border-radius: 25px; outline: none; }
+        .input-box { flex: 1; background: #080808; border: 1px solid #200; color: white; padding: 12px 18px; border-radius: 25px; outline: none; }
     </style>
 </head>
 <body>
@@ -50,16 +50,16 @@
 <div id="profile-modal" onclick="closeProfile()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <img id="m-ava" src="" class="m-ava">
-        <h2 id="m-nick" style="color:red; margin:0;"></h2>
-        <div id="m-role-box" style="margin: 10px 0; color: #888;">👤 მომხმარებელი</div>
+        <h2 id="m-nick" style="color:red; margin:5px 0;"></h2>
+        <div id="m-role-text" style="font-size:13px; color:#888; margin-bottom:15px;">👤 მომხმარებელი</div>
         
-        <div class="m-btn" style="background:#004444;" onclick="closeProfile()">✉ მიმოწერა</div>
+        <div class="m-btn" style="background:#003333;" onclick="closeProfile()">✉ მიმოწერა</div>
         
-        <div id="admin-tools">
+        <div id="admin-controls" style="display:none;">
             <div class="m-btn" onclick="updateRole('ადმინი')">🛡 ადმინად დანიშვნა</div>
             <div class="m-btn" onclick="updateRole('დამფუძნებელი')">👑 დამფუძნებლად დანიშვნა</div>
             <div class="m-btn" onclick="updateRole('მომხმარებელი')">✨ როლის ჩახსნა</div>
-            <div class="m-btn" style="color:red; border-color: #500;">🚫 დაბლოკვა (BAN)</div>
+            <div class="m-btn" style="color:#f33; border-color:#500;">🚫 დაბლოკვა (BAN)</div>
         </div>
 
         <div class="m-btn" onclick="closeProfile()" style="margin-top:10px; background:#111;">დახურვა</div>
@@ -118,7 +118,7 @@
                 <div class="bubble">
                     <span class="nick" onclick="showUser('${m.sender}')">${m.sender}</span>
                     <div class="txt">${parseBB(m.text)}</div>
-                    ${myNick === 'Abu007' ? `<span class="del-btn" onclick="deleteMsg('${m.id}')">წაშლა</span>` : ''}
+                    ${myNick === 'Abu007' ? `<span class="del-x" onclick="deleteMsg('${m.id}')">✖</span>` : ''}
                 </div>
             </div>`;
         });
@@ -129,21 +129,17 @@
         const u = uCache[n]; if(!u) return;
         document.getElementById('m-nick').innerText = u.username;
         document.getElementById('m-ava').src = u.avatar_url;
-        
-        const rBox = document.getElementById('m-role-box');
-        if(u.role === 'დამფუძნებელი') rBox.innerHTML = `👑 <span style="color:orange">დამფუძნებელი</span>`;
-        else if(u.role === 'ადმინი') rBox.innerHTML = `🛡 <span style="color:cyan">ადმინი</span>`;
-        else rBox.innerHTML = `👤 მომხმარებელი`;
+        document.getElementById('m-role-text').innerText = u.role || 'მომხმარებელი';
 
-        // შენთვის (Abu007) ყოველთვის გამოჩნდეს ღილაკები
-        document.getElementById('admin-tools').style.display = (myNick === 'Abu007') ? 'block' : 'none';
+        // მხოლოდ შენთვის (Abu007) ჩანს ღილაკები
+        document.getElementById('admin-controls').style.display = (myNick === 'Abu007') ? 'block' : 'none';
         document.getElementById('profile-modal').style.display = 'flex';
     }
 
     async function updateRole(r) {
         const target = document.getElementById('m-nick').innerText;
-        const { error } = await _s.from('profiles').update({ role: r }).eq('username', target);
-        if(!error) { alert("როლი განახლდა!"); location.reload(); }
+        await _s.from('profiles').update({ role: r }).eq('username', target);
+        alert("როლი განახლდა!"); location.reload();
     }
 
     async function toggleEmojis() {
@@ -154,12 +150,14 @@
         p.style.display = 'grid';
     }
 
-    // --- ეს ფუნქციაა მთავარი სმაილებისთვის ---
+    // სმაილების ჩამატება
     function addEmoji(url) {
-        const input = document.getElementById('main-input');
-        input.value += ` [img]${url}[/img] `; // ამატებს ტეგს
-        document.getElementById('emoji-picker').style.display = 'none'; // ხურავს პანელს
-        input.focus(); // აბრუნებს კურსორს
+        const inp = document.getElementById('main-input');
+        if (inp) {
+            inp.value += ` [img]${url}[/img] `;
+            document.getElementById('emoji-picker').style.display = 'none';
+            inp.focus();
+        }
     }
 
     async function sendMsg() {
@@ -174,10 +172,7 @@
     }
 
     function closeProfile() { document.getElementById('profile-modal').style.display = 'none'; }
-    function goBack() { 
-        if(activeUser) { activeUser = null; location.href = 'pm.html'; } 
-        else { location.href = 'chat.html'; }
-    }
+    function goBack() { if(activeUser) { activeUser = null; location.href = 'pm.html'; } else { location.href = 'chat.html'; } }
     window.onload = init;
 </script>
 </body>
