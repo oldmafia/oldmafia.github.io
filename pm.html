@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; }
+        
+        /* კონვერტის ღილაკი */
+        .mail-icon { position: fixed; top: 20px; left: 20px; font-size: 30px; cursor: pointer; z-index: 100; }
+        
+        /* მარცხენა პანელი (ნიკების სია) */
+        .pm-side { 
+            position: fixed; left: -320px; top: 0; width: 300px; height: 100vh; 
+            background: #0a0a0a; border-right: 2px solid #e60000; transition: 0.3s; z-index: 99;
+        }
+        .pm-side.open { left: 0; }
+        .pm-head { padding: 20px; background: #e60000; font-weight: bold; text-align: center; }
+        
+        /* კონტაქტების სტილი */
+        .contact-item { 
+            display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #222; cursor: pointer; 
+        }
+        .contact-item:hover { background: #111; }
+        .c-img { width: 45px; height: 45px; border-radius: 50%; border: 1px solid #e60000; margin-right: 12px; }
+        
+        /* ჩატის ფანჯარა */
+        .chat-win { 
+            display: none; position: fixed; left: 300px; right: 0; top: 0; height: 100vh; 
+            flex-direction: column; background: #000; 
+        }
+        .chat-header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+        .msg-flow { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        /* მესიჯი */
+        .m-line { margin-bottom: 15px; display: flex; gap: 10px; }
+        .m-bubble { background: #222; padding: 10px; border-radius: 8px; position: relative; }
+        .m-time { font-size: 10px; color: #666; display: block; margin-top: 5px; }
+        .del-msg { color: #e60000; cursor: pointer; font-size: 12px; margin-left: 10px; }
+
+        /* ადმინ პანელი */
+        .admin-tools { padding: 10px; background: #111; border-top: 1px solid #e60000; }
+        input { background: #222; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; }
+        button { background: #e60000; color: #fff; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="mail-icon" onclick="togglePM()">📩</div>
+
+<div id="pm-side" class="pm-side">
+    <div class="pm-head">📩 შემოსულები</div>
+    <div id="contacts-list"></div>
+</div>
+
+<div id="chat-win" class="chat-win">
+    <div class="chat-header">
+        <span id="chat-with-nick">ნიკი</span>
+        <button onclick="closeChat()">✖</button>
+    </div>
+    <div id="msg-flow" class="msg-flow"></div>
+    
+    <div class="admin-tools">
+        <input type="text" id="new-emoji" placeholder="სმაილის URL...">
+        <button onclick="addEmoji()">➕ სმაილი</button>
+        <hr style="border:0.5px solid #222">
+        <input type="text" id="pm-text" placeholder="დაწერე მესიჯი...">
+        <button onclick="sendPM()">✈️</button>
+    </div>
+</div>
+
+<script>
+    let activeChatId = null;
+
+    // 1. მენიუს გახსნა/დახურვა
+    function togglePM() {
+        document.getElementById('pm-side').classList.toggle('open');
+        loadContacts();
+    }
+
+    // 2. კონტაქტების წამოღება (ავატარი + ნიკი)
+    async function loadContacts() {
+        const myId = supabase.auth.user().id;
+        const { data } = await supabase.from('private_messages')
+            .select('*').eq('receiver_id', myId).order('created_at', {ascending: false});
+
+        const list = document.getElementById('contacts-list');
+        list.innerHTML = '';
+        const seen = new Set();
+
+        data.forEach(m => {
+            if (!seen.has(m.sender_id)) {
+                seen.add(m.sender_id);
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="contact-item" onclick="openChat('${m.sender_id}', '${m.sender_nickname}')">
+                        <img src="${m.sender_avatar || 'default.png'}" class="c-img">
+                        <span>${m.sender_nickname}</span>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // 3. ჩატის გახსნა
+    async function openChat(uid, nick) {
+        activeChatId = uid;
+        document.getElementById('chat-with-nick').innerText = nick;
+        document.getElementById('chat-win').style.display = 'flex';
+        fetchMessages();
+    }
+
+    // 4. მესიჯების წამოღება (წაშლის ფუნქციით ადმინისთვის)
+    async function fetchMessages() {
+        const { data } = await supabase.from('private_messages')
+            .select('*').or(`sender_id.eq.${activeChatId},receiver_id.eq.${activeChatId}`);
+        
+        const flow = document.getElementById('msg-flow');
+        flow.innerHTML = '';
+        data.forEach(m => {
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            // აქ დაამატე შენი ID რომ წაშლის ღილაკი მხოლოდ შენ გქონდეს
+            const delBtn = `<span class="del-msg" onclick="deleteMsg('${m.id}')">[წაშლა]</span>`;
+            
+            flow.insertAdjacentHTML('beforeend', `
+                <div class="m-line">
+                    <img src="${m.sender_avatar || 'default.png'}" style="width:30px;height:30px;border-radius:50%">
+                    <div class="m-bubble">
+                        <b>${m.sender_nickname}:</b> ${m.content}
+                        <span class="m-time">${time} ${delBtn}</span>
+                    </div>
+                </div>
+            `);
+        });
+        flow.scrollTop = flow.scrollHeight;
+    }
+
+    // 5. სმაილის დამატება ბაზაში
+    async function addEmoji() {
+        const url = document.getElementById('new-emoji').value;
+        if(!url) return;
+        await supabase.from('emojis').insert([{ url: url, added_by: supabase.auth.user().id }]);
+        alert("სმაილი დაემატა!");
+    }
+
+    // 6. მესიჯის წაშლა
+    async function deleteMsg(id) {
+        if(confirm("წავშალოთ?")) {
+            await supabase.from('private_messages').delete().eq('id', id);
+            fetchMessages();
+        }
+    }
+
+    function closeChat() { document.getElementById('chat-win').style.display = 'none'; }
+</script>
+</body>
+</html>
