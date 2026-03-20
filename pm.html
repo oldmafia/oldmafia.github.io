@@ -1,0 +1,35 @@
+// ... (სტილები იგივე დატოვე, რაც წინა მესიჯში მოგწერე)
+
+async function loadMessages() {
+    if(!activeP) return;
+    const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${activeP}"),and(sender.eq."${activeP}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+    const area = document.getElementById('chat-view'); area.innerHTML = "";
+    
+    msgs?.forEach(m => {
+        const isMe = m.sender === myNick;
+        const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        // რობოტების ლინკი ამოღებულია, მხოლოდ ბაზის ფოტოს იღებს
+        const ava = userAvatars[m.sender] || ''; 
+        
+        area.innerHTML += `
+            <div class="message-row ${isMe ? 'my-msg' : ''}">
+                <img src="${ava}" class="avatar-img" onerror="this.style.display='none'">
+                <div class="bubble">
+                    <span class="msg-sender">${m.sender}</span>
+                    <div class="msg-text">${parseBBCode(m.text)}</div>
+                    <div class="msg-info"><span>${time}</span>${myNick==='Abu007' ? `<span class="del-btn" onclick="deleteMsg('${m.id}')">🗑️</span>`:''}</div>
+                </div>
+            </div>`;
+    });
+    area.scrollTop = area.scrollHeight;
+}
+
+async function toggleEmojis() {
+    const p = document.getElementById('emoji-picker');
+    p.style.display = p.style.display === 'grid' ? 'none' : 'grid';
+    if(p.style.display === 'grid') {
+        const { data } = await _s.from('emojis').select('*');
+        // აქ "emoji" არის ის სვეტი, რაც SQL-ში დავწერეთ
+        p.innerHTML = data ? data.map(e => `<img src="${e.emoji}" class="emoji-item" onclick="addEmoji('${e.emoji}')">`).join('') : "";
+    }
+}
