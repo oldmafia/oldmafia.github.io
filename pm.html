@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>პირადი - Abu007</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: sans-serif; background: #050000; color: white; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .header { padding: 12px; text-align: center; border-bottom: 1px solid #300; background: #000; display: flex; align-items: center; justify-content: space-between; }
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 90px; display: none; }
+        .active { display: block !important; }
+
+        /* მესიჯების დიზაინი */
+        .message-row { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; }
+        .my-msg { flex-direction: row-reverse; } 
+        .avatar-img { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #500; object-fit: cover; }
+        
+        .bubble { padding: 10px; border-radius: 12px; max-width: 75%; position: relative; border: 1px solid #300; }
+        .my-msg .bubble { background: #0a1520; border-color: #004466; } 
+        .other-msg .bubble { background: #150505; border-color: #500; }
+
+        .msg-text { font-size: 14px; color: #eee; }
+        .msg-text img { max-width: 100px; display: block; margin: 5px 0; border-radius: 5px; }
+
+        .msg-info { display: flex; justify-content: space-between; margin-top: 5px; font-size: 10px; color: #444; }
+        .del-btn { color: #800; cursor: pointer; font-weight: bold; }
+
+        /* სმაილების პანელი GIF-ებისთვის */
+        #emoji-picker { position: fixed; bottom: 80px; left: 5%; right: 5%; background: #000; border: 1px solid #f00; border-radius: 10px; padding: 10px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 3000; max-height: 250px; overflow-y: auto; }
+        .emoji-img { width: 100%; cursor: pointer; object-fit: contain; background: #111; border-radius: 5px; }
+
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; padding: 10px; border-top: 1px solid #200; display: none; gap: 10px; align-items: center; }
+        input { flex: 1; background: #0a0a0a; border: 1px solid #300; color: white; padding: 12px; border-radius: 25px; outline: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div onclick="goBack()" style="cursor:pointer; font-size: 20px;">⬅</div>
+    <div id="view-title" style="color:red; font-weight:bold;">პირადი</div>
+    <div onclick="location.reload()" style="cursor:pointer;">🔄</div>
+</div>
+
+<div id="inbox-view" class="active"></div>
+<div id="chat-view"></div>
+<div id="emoji-picker"></div>
+
+<div class="bottom-bar" id="input-bar">
+    <div onclick="toggleEmojis()" style="font-size:24px; cursor:pointer">😊</div>
+    <input type="text" id="msg-input" placeholder="დაწერე მესიჯი...">
+    <div onclick="sendMessage()" style="font-size:24px; cursor:pointer; color:red">✈</div>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname');
+    let activeP = null;
+    let userAvatars = {};
+
+    function parseBBCode(text) {
+        return text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" onerror="this.style.display=\'none\'">');
+    }
+
+    async function loadInbox() {
+        const { data: profs } = await _s.from('profiles').select('username, avatar_url');
+        profs?.forEach(p => userAvatars[p.username] = p.avatar_url);
+
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+        const box = document.getElementById('inbox-view'); box.innerHTML = "";
+        const partners = {};
+        
+        msgs?.forEach(m => {
+            const p = m.sender === myNick ? m.receiver : m.sender;
+            if (!partners[p]) partners[p] = { text: m.text, unread: (m.receiver === myNick && !m.is_read) };
+        });
+
+        for (let p in partners) {
+            const ava = userAvatars[p] || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p}`;
+            box.innerHTML += `<div class="message-row" style="padding:10px; border-bottom:1px solid #111" onclick="openChat('${p}')"><img src="${ava}" class="avatar-img"><div style="flex:1; margin-left:10px;"><b style="color:red">${p}</b><br><small style="color:#555">${partners[p].text.substring(0,20)}</small></div>${partners[p].unread ? '🔴' : ''}</div>`;
+        }
+    }
+
+    async function openChat(p) {
+        activeP = p; document.getElementById('view-title').innerText = p;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('input-bar').style.display = 'flex';
+        await _s.from('private_messages').update({ is_read: true }).match({ sender: p, receiver: myNick });
+        loadMessages();
+    }
+
+    async function loadMessages() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${activeP}"),and(sender.eq."${activeP}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+        const area = document.getElementById('chat-view'); area.innerHTML = "";
+        msgs?.forEach(m => {
+            const isMe = m.sender === myNick;
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            area.innerHTML += `
+                <div class="message-row ${isMe ? 'my-msg' : 'other-msg'}">
+                    <img src="${userAvatars[m.sender] || ''}" class="avatar-img">
+                    <div class="bubble">
+                        <div style="color:${isMe ? '#0cf' : 'red'}; font-size:11px; font-weight:bold">${m.sender}</div>
+                        <div class="msg-text">${parseBBCode(m.text)}</div>
+                        <div class="msg-info"><span>${time}</span>${myNick==='Abu007' ? `<span class="del-btn" onclick="deleteMsg('${m.id}')">✖</span>`:''}</div>
+                    </div>
+                </div>`;
+        });
+        area.scrollTop = area.scrollHeight;
+    }
+
+    async function toggleEmojis() {
+        const picker = document.getElementById('emoji-picker');
+        if (picker.style.display === 'grid') { picker.style.display = 'none'; return; }
+        const { data } = await _s.from('emojis').select('*');
+        picker.innerHTML = data?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('');
+        picker.style.display = 'grid';
+    }
+
+    function addEmoji(url) {
+        document.getElementById('msg-input').value += `[img]${url}[/img]`;
+        document.getElementById('emoji-picker').style.display = 'none';
+    }
+
+    async function sendMessage() {
+        const i = document.getElementById('msg-input');
+        if (!i.value.trim()) return;
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: activeP, text: i.value, is_read: false }]);
+        i.value = ""; loadMessages();
+    }
+
+    async function deleteMsg(id) { if(confirm("წავშალოთ?")) { await _s.from('private_messages').delete().eq('id', id); loadMessages(); } }
+    function goBack() { if(activeP) location.href='pm.html'; else location.href='chat.html'; }
+    window.onload = loadInbox;
+</script>
+</body>
+</html>
