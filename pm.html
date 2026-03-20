@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PM SYSTEM</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: sans-serif; background: #000; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        .header { padding: 15px; background: #050505; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .header b { color: #ff0000; text-transform: uppercase; }
+
+        #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 15px; display: none; }
+        .active { display: block !important; }
+
+        /* მესიჯების განლაგება - ყველა მარცხნივ */
+        .msg-row { display: flex; gap: 12px; margin-bottom: 15px; align-items: flex-start; width: 100%; justify-content: flex-start; }
+        .ava { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #ff0000; object-fit: cover; cursor: pointer; background: #111; flex-shrink: 0; }
+        
+        .bubble { padding: 12px; border-radius: 18px; border-bottom-left-radius: 4px; background: #1a1a1a; border: 1px solid #333; max-width: 75%; }
+        .my-msg .bubble { background: #001a33; border-color: #004466; }
+
+        .sender-name { font-size: 11px; font-weight: bold; color: #ff3333; margin-bottom: 4px; display: block; }
+        .msg-text img { max-width: 120px; border-radius: 8px; display: block; margin-top: 8px; }
+
+        /* ქვედა ზოლი */
+        .bottom { padding: 15px; background: #050505; border-top: 1px solid #222; display: none; gap: 10px; align-items: center; }
+        input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 30px; outline: none; }
+
+        /* Modal სტილი (ზუსტად როგორც მთავარზე) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: #000; border: 2px solid #ff0000; border-radius: 20px; width: 85%; max-width: 340px; text-align: center; padding: 25px; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+        .modal-ava { width: 110px; height: 110px; border-radius: 50%; border: 2px solid #f00; margin-bottom: 15px; object-fit: cover; }
+        .modal-btn { display: block; width: 100%; padding: 12px; margin-top: 8px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-red { background: #ff0000; color: white; }
+        .btn-dark { background: #151515; color: white; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div onclick="goBack()" style="cursor:pointer; font-size:22px;">⬅️</div>
+    <b id="title">PRIVATE</b>
+    <div onclick="location.reload()" style="cursor:pointer; font-size:20px;">🔄</div>
+</div>
+
+<div id="inbox-view" class="active"></div>
+<div id="chat-view"></div>
+
+<div class="bottom" id="input-bar">
+    <div onclick="toggleEmojis()" style="font-size:24px; cursor:pointer">😊</div>
+    <input type="text" id="msg-input" placeholder="დაწერე მესიჯი...">
+    <div onclick="sendMessage()" style="font-size:24px; cursor:pointer; color:red">✈️</div>
+</div>
+
+<div id="profile-modal" class="modal">
+    <div class="modal-content">
+        <img id="m-ava" src="" class="modal-ava">
+        <h3 id="m-name" style="color:red; margin:0;">სახელი</h3>
+        <p id="m-status" style="color:#666; font-size:13px; margin: 10px 0;">მომხმარებელი</p>
+        <button class="modal-btn btn-red" onclick="closeModal()">💬 მიმოწერა</button>
+        <div id="admin-tools" style="display:none">
+            <button class="modal-btn btn-dark">🛡️ ადმინად დანიშვნა</button>
+            <button class="modal-btn btn-dark">👑 დამფუძნებლად დანიშვნა</button>
+            <button class="modal-btn btn-dark">✨ როლის ჩახსნა</button>
+            <button class="modal-btn btn-red">🚫 დაბლოკვა (BAN)</button>
+        </div>
+        <button class="modal-btn btn-dark" style="margin-top:15px;" onclick="closeModal()">დახურვა</button>
+    </div>
+</div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname') || "Abu007";
+    let activeP = null;
+    let userAvatars = {};
+
+    function parseMsg(text) {
+        if(!text) return "";
+        return text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" onerror="this.outerHTML=\'<b>[GIF]</b>\'">');
+    }
+
+    // ავატარების წამოღება ბაზიდან
+    async function loadAvatars() {
+        const { data: profs } = await _s.from('profiles').select('username, avatar_url');
+        if(profs) {
+            profs.forEach(p => {
+                if(p.avatar_url && p.avatar_url.trim() !== "") {
+                    userAvatars[p.username] = p.avatar_url;
+                }
+            });
+        }
+    }
+
+    async function loadInbox() {
+        await loadAvatars();
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+        
+        const box = document.getElementById('inbox-view'); box.innerHTML = "";
+        const partners = {};
+        
+        msgs?.forEach(m => {
+            const p = m.sender === myNick ? m.receiver : m.sender;
+            if (!partners[p]) partners[p] = { text: m.text, unread: (m.receiver === myNick && !m.is_read) };
+        });
+
+        for (let p in partners) {
+            const ava = userAvatars[p] || `https://api.dicebear.com/7.x/bottts/svg?seed=${p}`;
+            box.innerHTML += `
+                <div class="msg-row" style="padding:10px; border-bottom:1px solid #111; cursor:pointer" onclick="openChat('${p}')">
+                    <img src="${ava}" class="ava" onclick="event.stopPropagation(); showProfile('${p}')">
+                    <div style="flex:1; margin-left:12px;">
+                        <b style="color:red">${p}</b><br>
+                        <small style="color:#444">${partners[p].text.substring(0,30)}...</small>
+                    </div>
+                    ${partners[p].unread ? '<span style="color:red">●</span>' : ''}
+                </div>`;
+        }
+    }
+
+    async function openChat(p) {
+        activeP = p;
+        document.getElementById('title').innerText = p;
+        document.getElementById('inbox-view').classList.remove('active');
+        document.getElementById('chat-view').classList.add('active');
+        document.getElementById('input-bar').style.display = 'flex';
+        await _s.from('private_messages').update({ is_read: true }).match({ sender: p, receiver: myNick });
+        loadMessages();
+    }
+
+    async function loadMessages() {
+        if(!activeP) return;
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${activeP}"),and(sender.eq."${activeP}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+        const area = document.getElementById('chat-view'); area.innerHTML = "";
+        
+        msgs?.forEach(m => {
+            const isMe = m.sender === myNick;
+            const ava = userAvatars[m.sender] || `https://api.dicebear.com/7.x/bottts/svg?seed=${m.sender}`;
+            area.innerHTML += `
+                <div class="msg-row">
+                    <img src="${ava}" class="ava" onclick="showProfile('${m.sender}')">
+                    <div class="bubble ${isMe ? 'my-msg' : ''}">
+                        <span class="sender-name">${m.sender}</span>
+                        <div class="msg-text">${parseMsg(m.text)}</div>
+                    </div>
+                </div>`;
+        });
+        area.scrollTop = area.scrollHeight;
+    }
+
+    function showProfile(name) {
+        const ava = userAvatars[name] || `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`;
+        document.getElementById('m-name').innerText = name;
+        document.getElementById('m-ava').src = ava;
+        document.getElementById('admin-tools').style.display = (myNick === "Abu007") ? "block" : "none";
+        document.getElementById('profile-modal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('profile-modal').style.display = 'none'; }
+    function goBack() { if(activeP) { activeP=null; location.reload(); } else { window.history.back(); } }
+    
+    window.onload = loadInbox;
+</script>
+</body>
+</html>
