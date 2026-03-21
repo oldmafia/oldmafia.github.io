@@ -18,20 +18,24 @@
         #chat-view { padding: 15px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 100px; }
         .msg-row { display: flex; align-items: flex-start; gap: 10px; }
         .mini-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid red; object-fit: cover; background: #222; }
-        .bubble { background: #111; border: 1px solid #333; padding: 10px; border-radius: 12px; max-width: 75%; border-left: 3px solid red; }
+        .bubble { background: #111; border: 1px solid #333; padding: 10px; border-radius: 12px; max-width: 75%; border-left: 3px solid red; position: relative; }
         .msg-nick { color: red; font-size: 11px; font-weight: bold; margin-bottom: 4px; display: block; }
-        .msg-text { color: #eee; font-size: 14px; line-height: 1.4; }
+        .msg-text { color: #eee; font-size: 14px; line-height: 1.4; word-break: break-all; }
         .msg-text img { width: 28px; vertical-align: middle; margin: 2px; }
-        .msg-text .big-img { max-width: 150px; width: auto; border-radius: 8px; display: block; margin-top: 5px; }
         .msg-info { font-size: 9px; color: #444; margin-top: 5px; display: flex; justify-content: space-between; }
         .del-btn { color: #f00; cursor: pointer; font-weight: bold; margin-left: 10px; }
+
+        /* Emoji Picker */
+        #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; background: #080808; border: 2px solid red; border-radius: 15px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
+        .emoji-wrapper { position: relative; display: inline-block; width: 100%; }
+        .emoji-img { width: 100%; cursor: pointer; border-radius: 5px; transition: 0.2s; }
+        .emoji-img:active { transform: scale(0.9); }
+        .emoji-del { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid black; font-weight: bold; z-index: 10; }
+        .upload-btn { grid-column: span 5; background: red; color: white; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; margin-top: 10px; }
 
         /* Controls */
         .bottom-bar { position: fixed; bottom: 0; width: 100%; padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; box-sizing: border-box; }
         .input-box { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 12px; border-radius: 20px; outline: none; }
-        #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; background: #080808; border: 2px solid red; border-radius: 15px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-height: 250px; overflow-y: auto; z-index: 1000; }
-        .emoji-img { width: 100%; cursor: pointer; border-radius: 5px; }
-        .upload-btn { grid-column: span 5; background: red; color: white; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -65,7 +69,6 @@
     let emojiList = [];
 
     async function init() {
-        // პროფილების და სმაილების ჩატვირთვა
         const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
         profiles?.forEach(p => profMap[p.username] = p.avatar_url);
         
@@ -87,7 +90,6 @@
     async function loadInbox() {
         const { data: msgs } = await _s.from('private_messages').select('sender, receiver').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`);
         const partners = [...new Set(msgs?.map(m => m.sender === myNick ? m.receiver : m.sender))];
-
         document.getElementById('inbox-view').innerHTML = partners.map(p => `
             <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
                 <img src="${profMap[p] || ''}" class="inbox-avatar">
@@ -98,18 +100,13 @@
 
     async function loadChat() {
         const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${partner}"),and(sender.eq."${partner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
-        
         if(msgs) {
             document.getElementById('chat-view').innerHTML = msgs.map(m => {
                 let text = m.text;
-                // მოკლე კოდების ჩანაცვლება
                 emojiList.forEach(e => {
                     const reg = new RegExp(`:e${e.id}:`, 'g');
                     text = text.replace(reg, `<img src="${e.emoji_url}">`);
                 });
-                // ძველი ფორმატის მხარდაჭერა
-                text = text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" class="big-img">');
-
                 const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 return `
                     <div class="msg-row">
@@ -148,9 +145,25 @@
         if(p.style.display === 'grid') {
             const { data } = await _s.from('emojis').select('*');
             emojiList = data || [];
-            p.innerHTML = emojiList.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.id}')">`).join('') +
+            p.innerHTML = emojiList.map(e => `
+                <div class="emoji-wrapper">
+                    <img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.id}')">
+                    ${myRole === 'დამფუძნებელი' ? `<div class="emoji-del" onclick="deleteEmoji('${e.id}', '${e.emoji_url}')">×</div>` : ''}
+                </div>
+            `).join('') +
             `<label class="upload-btn">➕ ატვირთვა<input type="file" hidden accept="image/*" onchange="upFile(this)"></label>`;
         }
+    }
+
+    async function deleteEmoji(id, url) {
+        if(!confirm("ნამდვილად გსურს ამ სმაილის წაშლა?")) return;
+        // 1. ბაზიდან წაშლა
+        await _s.from('emojis').delete().eq('id', id);
+        // 2. Storage-დან წაშლა (თუ ფაილის სახელს ამოვიღებთ URL-დან)
+        const fileName = url.split('/').pop();
+        await _s.storage.from('emojis').remove([fileName]);
+        
+        toggleEmoji(); // განახლება
     }
 
     async function upFile(input) {
