@@ -64,7 +64,7 @@
         .emoji-item:hover { transform: scale(1.1); }
         .del-emoji { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white; font-weight: bold; }
 
-        /* Profile Modal - Exact Style from your Image */
+        /* Profile Modal */
         .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: #080000; border: 2.5px solid var(--dark-red); padding: 30px 20px; border-radius: 35px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 0 30px rgba(128,0,0,0.6); }
         #targetAvatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--dark-red); object-fit: cover; margin-bottom: 10px; box-shadow: 0 0 10px var(--dark-red); }
@@ -107,6 +107,7 @@
         <img id="my-avatar-img" src="https://i.ibb.co/v3m6y6R/avatar.png" style="width:85px; height:85px; border-radius:50%; border:3px solid var(--dark-red); object-fit: cover; cursor:pointer;" onclick="document.getElementById('avatar-input').click()">
         <div id="my-nick-label" style="font-weight:bold; color:var(--bright-red); margin-top:10px; font-size:20px;">...</div>
         <div id="my-role-label" style="font-size: 13px; color: #888; margin-top: 4px;">...</div>
+        <div onclick="changeStatus()" style="font-size: 11px; color: #0c0; cursor:pointer; margin-top:8px; text-decoration: underline;">💬 სტატუსის შეცვლა</div>
     </div>
     <div class="rooms-list" style="flex:1; overflow-y:auto;">
         <div class="room-item active" onclick="changeRoom('☕ კაფე-ბარი', this)">☕ კაფე-ბარი</div>
@@ -155,7 +156,7 @@
             <div style="color:cyan; font-size:14px; font-weight:bold;">🔐 შიფროგრამა: <span id="t-cpts">0</span></div>
         </div>
         
-        <div id="targetStatusDisplay" style="color:#0f0; font-size:13px; margin:10px 0; font-style:italic;"></div>
+        <div id="targetStatusDisplay" style="color:#0f0; font-size:14px; margin:15px 0; font-style:italic; font-weight: bold; background: rgba(0,255,0,0.05); padding: 5px; border-radius: 5px;"></div>
         
         <div id="adminOptions"></div>
         
@@ -221,6 +222,16 @@
         box.scrollTop = box.scrollHeight;
     }
 
+    // სტატუსის შეცვლის ფუნქცია
+    async function changeStatus() {
+        const newStatus = prompt("ჩაწერე შენი დღიური სტატუსი:");
+        if (newStatus !== null) {
+            await _s.from('profiles').update({ status: newStatus }).eq('username', myNick);
+            alert("სტატუსი განახლდა!");
+            location.reload();
+        }
+    }
+
     async function openProfile(name) {
         if(!name || name.includes('BOT')) return;
         const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
@@ -231,13 +242,14 @@
         document.getElementById('targetRoleLabel').innerHTML = `👤 ${translateRole(p.role)}`;
         document.getElementById('t-pts').innerText = p.points || 0;
         document.getElementById('t-cpts').innerText = p.cipher_points || 0;
-        document.getElementById('targetStatusDisplay').innerText = p.status || "";
+        
+        // სხვისი სტატუსის ჩვენება
+        document.getElementById('targetStatusDisplay').innerText = p.status ? `"${p.status}"` : "";
         
         const adminZone = document.getElementById('adminOptions');
         adminZone.innerHTML = "";
 
         if (name !== myNick) {
-            // "მიმოწერა" - ლურჯი/მწვანე დიდი ღილაკი
             adminZone.innerHTML += `<button class="modal-btn" style="background:#004a4a; border-color: cyan; margin-top:15px;" onclick="location.href='pm.html?to=${name}'">✉️ მიმოწერა</button>`;
             
             if (myRole === "Owner") {
@@ -281,7 +293,6 @@
     function parseEmojis(text) {
         if(!text) return "";
         const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-        // პოულობს ტექსტში ნებისმიერ სიტყვას რომელიც მთავრდება .gif, .png და ა.შ და სვამს img tag-ში
         return text.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
     }
 
@@ -347,10 +358,7 @@
         document.getElementById('room-name').innerText = n; 
         document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active')); 
         el.classList.add('active'); 
-        
-        // ჯოკერის UI-ის გამოჩენა მხოლოდ ჯოკერის ოთახში
         document.getElementById('joker-ui').style.display = (n === '🃏 ჯოკერი') ? 'block' : 'none';
-        
         closeAll(); 
         loadMessages(); 
     }
