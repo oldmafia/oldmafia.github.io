@@ -7,54 +7,38 @@
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .header { padding: 15px; border-bottom: 2px solid red; background: #050505; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        #main-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
         
-        /* Inbox და Chat კონტეინერები */
-        #main-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
-        #inbox-view, #chat-view { display: none; padding: 15px; width: 100%; box-sizing: border-box; }
-        .active-view { display: block !important; }
+        /* Inbox Styles */
+        .inbox-item { padding: 15px; border-bottom: 1px solid #111; display: flex; align-items: center; cursor: pointer; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid red; object-fit: cover; margin-right: 15px; background: #111; }
+        .inbox-nick { font-weight: bold; font-size: 16px; flex: 1; }
 
-        /* Inbox-ის სტილები */
-        .inbox-item { padding: 12px; border-bottom: 1px solid #222; display: flex; align-items: center; cursor: pointer; transition: background 0.2s; }
-        .inbox-item:active { background: #111; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid red; object-fit: cover; background: #200; }
-        .inbox-info { margin-left: 15px; flex: 1; display: flex; flex-direction: column; }
-        .inbox-nick { color: white; font-weight: bold; font-size: 16px; }
-        .inbox-preview { color: #888; font-size: 12px; margin-top: 2px; }
-        .inbox-msg-count { background: red; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        /* Chat Styles */
+        #chat-view { padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 100px; }
+        .bubble { background: #111; border: 1px solid #333; padding: 10px; border-radius: 12px; max-width: 85%; align-self: flex-start; border-left: 3px solid red; }
+        .msg-nick { color: red; font-size: 10px; font-weight: bold; display: block; margin-bottom: 3px; }
+        .msg-info { font-size: 9px; color: #444; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .del-btn { color: #f00; cursor: pointer; font-weight: bold; margin-left: 10px; }
 
-        /* მიმოწერის სტილები */
-        #chat-view { padding-bottom: 90px; }
-        .bubble-wrapper { display: flex; flex-direction: column; margin-bottom: 10px; }
-        .bubble { padding: 12px; border-radius: 18px; max-width: 80%; position: relative; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-        .my-msg { background: #200; border: 1px solid #500; align-self: flex-end; border-bottom-right-radius: 4px; border-left: 3px solid red; }
-        .other-msg { background: #111; border: 1px solid #333; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .msg-nick { color: red; font-size: 10px; display: block; margin-bottom: 4px; font-weight: bold; }
-        .msg-text { color: white; }
-        .msg-info { font-size: 9px; color: #555; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .del-btn { color: #f00; cursor: pointer; margin-left: 10px; font-weight: bold; padding: 0 4px; }
-
-        /* სმაილების დაფა */
-        #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; background: #080808; border: 2px solid red; border-radius: 15px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
-        .emoji-img { width: 100%; cursor: pointer; border-radius: 5px; transition: 0.2s; }
-        .emoji-img:active { transform: scale(0.8); }
-        .upload-lbl { grid-column: span 5; background: red; color: white; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .loading-text { text-align: center; color: #888; font-size: 12px; margin-top: 10px; grid-column: span 5; }
-
-        /* ქვედა ბარი */
-        .bottom-bar { position: fixed; bottom: 0; width: 100%; padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; box-sizing: border-box; z-index: 100; }
-        .input-box { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 12px 18px; border-radius: 20px; outline: none; }
+        /* Bottom Bar & Emoji */
+        .bottom-bar { position: fixed; bottom: 0; width: 100%; padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; box-sizing: border-box; }
+        .input-box { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 12px; border-radius: 20px; outline: none; }
+        #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; background: #080808; border: 2px solid red; border-radius: 15px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-height: 250px; overflow-y: auto; z-index: 1000; }
+        .emoji-img { width: 100%; cursor: pointer; border-radius: 5px; }
+        .upload-btn { grid-column: span 5; background: red; color: white; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <b onclick="goBack()" style="cursor:pointer; color:red; font-size:24px;">⬅</b>
-        <span id="p-name" style="font-weight:bold; letter-spacing:1px; color:white;">შემოსულები</span>
-        <b onclick="location.reload()" style="cursor:pointer; font-size:20px; color:red;">🔄</b>
+        <b onclick="goBack()" style="cursor:pointer; color:red; font-size:22px;">⬅</b>
+        <span id="p-name">შემოსულები</span>
+        <b onclick="location.reload()">🔄</b>
     </div>
 
     <div id="main-container">
+        <div id="chat-view" style="display:none;"></div>
         <div id="inbox-view"></div>
-        <div id="chat-view"></div>
     </div>
 
     <div id="emoji-picker"></div>
@@ -68,168 +52,100 @@
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('nickname') || 'Abu007';
-    
-    // Force დამფუძნებლის უფლებები, თუ Abu007-ია
     if(myNick === 'Abu007') localStorage.setItem('role', 'დამფუძნებელი');
     const myRole = localStorage.getItem('role');
-    
-    let partner = new URLSearchParams(window.location.search).get('to');
-    let allProfiles = {}; // ქეში პროფილებისთვის
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const partner = urlParams.get('to');
 
     async function init() {
-        // 0. წინასწარ ჩავტვირთოთ პროფილები, რომ Inbox-ში ავატარები გამოჩნდეს
-        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
-        profiles?.forEach(p => allProfiles[p.username] = p.avatar_url);
-
         if (partner) {
-            showChat(partner);
+            document.getElementById('inbox-view').style.display = 'none';
+            document.getElementById('chat-view').style.display = 'flex';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('p-name').innerText = partner;
+            loadChat();
+            setInterval(loadChat, 4000);
         } else {
-            showInbox();
+            loadInbox();
         }
     }
 
-    async function showInbox() {
-        document.getElementById('inbox-view').classList.add('active-view');
-        document.getElementById('chat-view').classList.remove('active-view');
-        document.getElementById('controls').style.display = 'none';
-        document.getElementById('p-name').innerText = "შემოსულები";
-
-        // 1. Inbox-ისთვის მხოლოდ იუზერების სია წამოვიღოთ
-        const { data: msgs } = await _s.from('private_messages').select('sender, receiver, is_read').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('sender, receiver').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`);
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
         
         const partners = [...new Set(msgs?.map(m => m.sender === myNick ? m.receiver : m.sender))];
-        const unreadCounts = {};
-        msgs?.forEach(m => {
-            if(m.receiver === myNick && !m.is_read) {
-                unreadCounts[m.sender] = (unreadCounts[m.sender] || 0) + 1;
-            }
-        });
-        
-        document.getElementById('inbox-view').innerHTML = partners.map(p => {
-            const ava = allProfiles[p] || 'https://via.placeholder.com/50';
-            const unread = unreadCounts[p] ? `<div class="inbox-msg-count">${unreadCounts[p]}</div>` : '';
-            return `
-                <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
-                    <img src="${ava}" class="avatar">
-                    <div class="inbox-info">
-                        <span class="inbox-nick">${p}</span>
-                    </div>
-                    ${unread}
-                </div>
-            `;
-        }).join('') || '<p style="text-align:center; color:#555; margin-top:50px; font-size:14px;">მესიჯები არ არის</p>';
+        const profMap = {}; profiles?.forEach(p => profMap[p.username] = p.avatar_url);
+
+        document.getElementById('inbox-view').innerHTML = partners.map(p => `
+            <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
+                <img src="${profMap[p] || ''}" class="avatar">
+                <span class="inbox-nick">${p}</span>
+            </div>
+        `).join('') || '<p style="text-align:center; padding:20px; color:#555;">მესიჯები არ არის</p>';
     }
 
-    async function showChat(p) {
-        document.getElementById('inbox-view').classList.remove('active-view');
-        document.getElementById('chat-view').classList.add('active-view');
-        document.getElementById('controls').style.display = 'flex';
-        document.getElementById('p-name').innerText = p;
-
+    async function loadChat() {
         const { data } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${partner}"),and(sender.eq."${partner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
-        
-        if (data) {
+        if(data) {
             document.getElementById('chat-view').innerHTML = data.map(m => {
-                const isMe = m.sender === myNick;
                 const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 return `
-                    <div class="bubble-wrapper">
-                        <div class="bubble ${isMe ? 'my-msg' : 'other-msg'}">
-                            <span class="msg-nick">${m.sender}</span>
-                            <div class="msg-text">${m.text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:120px; border-radius:10px; margin-top:5px; display:block;">')}</div>
-                            <div class="msg-info">
-                                <span>${time}</span>
-                                ${(isMe || myRole === 'დამფუძნებელი') ? `<span class="del-btn" onclick="delMsg(${m.id})">✖</span>` : ''}
-                            </div>
+                    <div class="bubble">
+                        <b class="msg-nick">${m.sender}</b>
+                        <div style="word-break:break-all;">${m.text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:130px; border-radius:8px; display:block; margin-top:5px;">')}</div>
+                        <div class="msg-info">
+                            <span>${time}</span>
+                            ${(m.sender === myNick || myRole === 'დამფუძნებელი') ? `<span class="del-btn" onclick="delMsg(${m.id})">✖</span>` : ''}
                         </div>
                     </div>
                 `;
             }).join('');
             document.getElementById('chat-view').scrollTop = 99999;
         }
-
-        // ინდიკატორის გათიშვა
-        await _s.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', partner);
-    }
-
-    function goBack() {
-        partner ? (window.location.href = 'pm.html') : (window.location.href = 'chat.html');
-    }
-
-    async function delMsg(id) {
-        if(!confirm("წავშალოთ მესიჯი?")) return;
-        const { error } = await _s.from('private_messages').delete().eq('id', id);
-        if(!error) showChat(partner);
     }
 
     async function sendMsg() {
         const inp = document.getElementById('pm-input');
         if(!inp.value.trim()) return;
         await _s.from('private_messages').insert([{ sender: myNick, receiver: partner, text: inp.value, is_read: false }]);
-        inp.value = ""; 
-        showChat(partner);
+        inp.value = ""; loadChat();
     }
+
+    async function delMsg(id) {
+        if(confirm("წავშალოთ?")) { await _s.from('private_messages').delete().eq('id', id); loadChat(); }
+    }
+
+    function goBack() { window.location.href = partner ? 'pm.html' : 'chat.html'; }
 
     async function toggleEmoji() {
         const p = document.getElementById('emoji-picker');
         p.style.display = p.style.display === 'grid' ? 'none' : 'grid';
         if(p.style.display === 'grid') {
             const { data } = await _s.from('emojis').select('*');
-            p.innerHTML = (data || []).map(e => `
-                <img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">
-            `).join('') + 
-            `<label class="upload-lbl">
-                ➕ ატვირთე მოწყობილობიდან
-                <input type="file" id="emoji-file" hidden accept="image/*" onchange="uploadEmoji(this)">
-            </label>
-            <p class="loading-text" id="upload-status" style="display:none;">იტვირთება...</p>
-            `;
+            p.innerHTML = (data || []).map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('') +
+            `<label class="upload-btn">➕ ატვირთვა<input type="file" hidden accept="image/*" onchange="upFile(this)"></label>`;
         }
     }
 
-    async function uploadEmoji(input) {
-        if (!input.files || input.files.length === 0) return;
-        const status = document.getElementById('upload-status');
-        status.style.display = 'block';
-        
+    async function upFile(input) {
         const file = input.files[0];
-        const fileName = `${Date.now()}_${file.name}`; // უნიკალური სახელი
-
-        // 1. ვტვირთავთ Storage-ში
-        const { data: uploadData, error: uploadError } = await _s.storage
-            .from('emojis')
-            .upload(fileName, file);
-
-        if (uploadError) {
-            alert("ატვირთვის შეცდომა: " + uploadError.message);
-            status.style.display = 'none';
-            return;
+        const name = `${Date.now()}_${file.name}`;
+        const { data, error } = await _s.storage.from('emojis').upload(name, file);
+        if(!error) {
+            const { data: url } = _s.storage.from('emojis').getPublicUrl(name);
+            await _s.from('emojis').insert([{ emoji_url: url.publicUrl }]);
+            toggleEmoji();
         }
-
-        // 2. ვიღებთ საჯარო ლინკს
-        const { data: urlData } = _s.storage.from('emojis').getPublicUrl(fileName);
-        const publicUrl = urlData.publicUrl;
-
-        // 3. ვწერთ ბაზაში (emojis ცხრილში)
-        const { error: dbError } = await _s.from('emojis').insert([{ emoji_url: publicUrl }]);
-
-        if (dbError) {
-            alert("ბაზაში ჩაწერის შეცდომა: " + dbError.message);
-        } else {
-            alert("სმაილი წარმატებით აიტვირთა!");
-            toggleEmoji(); // განახლება
-        }
-        status.style.display = 'none';
     }
 
     function addEmoji(url) {
         document.getElementById('pm-input').value += ` [img]${url}[/img] `;
         document.getElementById('emoji-picker').style.display = 'none';
-        document.getElementById('pm-input').focus();
     }
 
     init();
-    if(partner) setInterval(() => showChat(partner), 4000); // მიმოწერის ავტომატური განახლება
 </script>
 </body>
 </html>
