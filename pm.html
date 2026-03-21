@@ -6,104 +6,122 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-        .header { padding: 15px; border-bottom: 2px solid #500; background: #050505; display: flex; justify-content: space-between; align-items: center; }
+        .header { padding: 15px; border-bottom: 2px solid red; background: #050505; display: flex; justify-content: space-between; align-items: center; }
         #inbox-view, #chat-view { flex: 1; overflow-y: auto; padding: 15px; display: none; }
         .active { display: block !important; }
-        .inbox-item { padding: 15px; border-bottom: 1px solid #222; display: flex; align-items: center; cursor: pointer; }
-        .inbox-item:active { background: #111; }
-        .bubble { background: #111; border: 1px solid #333; padding: 12px; border-radius: 15px; margin-bottom: 12px; max-width: 85%; }
-        .bottom-bar { padding: 12px; background: #000; display: flex; gap: 10px; align-items: center; border-top: 1px solid #222; }
+        .inbox-item { padding: 12px; border-bottom: 1px solid #222; display: flex; align-items: center; cursor: pointer; transition: 0.2s; }
+        .inbox-item:hover { background: #111; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid red; object-fit: cover; }
+        .bubble { padding: 12px; border-radius: 18px; margin-bottom: 8px; max-width: 75%; position: relative; font-size: 14px; line-height: 1.4; }
+        .my-msg { background: #200; border: 1px solid #500; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .other-msg { background: #111; border: 1px solid #333; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .msg-info { font-size: 9px; color: #666; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .del-btn { color: #f00; cursor: pointer; font-weight: bold; margin-left: 10px; padding: 2px 5px; }
+        .bottom-bar { padding: 12px; background: #000; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; }
         .input-box { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 12px; border-radius: 20px; outline: none; }
-        #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; background: #050505; border: 2px solid red; border-radius: 15px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 12px; max-height: 220px; overflow-y: auto; }
+        #emoji-picker { position: fixed; bottom: 80px; left: 10px; right: 10px; background: #080808; border: 2px solid red; border-radius: 15px; display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; max-height: 250px; overflow-y: auto; z-index: 2000; }
+        .emoji-img { width: 100%; cursor: pointer; border-radius: 5px; }
+        .emoji-img:hover { background: #222; }
     </style>
 </head>
 <body>
     <div class="header">
-        <b onclick="goBack()" style="cursor:pointer; color:red; font-size:22px;">⬅</b>
-        <span id="p-name" style="font-weight:bold;">შემოსულები</span>
-        <b onclick="location.reload()" style="cursor:pointer;">🔄</b>
+        <b onclick="goBack()" style="cursor:pointer; color:red; font-size:24px;">⬅</b>
+        <span id="title" style="font-weight:bold; letter-spacing:1px;">შემოსულები</span>
+        <b onclick="location.reload()" style="cursor:pointer; font-size:20px;">🔄</b>
     </div>
 
     <div id="inbox-view" class="active"></div>
     <div id="chat-view"></div>
     <div id="emoji-picker"></div>
 
-    <div id="controls" class="bottom-bar" style="display:none;">
-        <div onclick="toggleEmoji()" style="font-size:28px; cursor:pointer;">😊</div>
+    <div id="input-area" class="bottom-bar" style="display:none;">
+        <div onclick="toggleEmoji()" style="font-size:30px; cursor:pointer;">😊</div>
         <input type="text" id="pm-input" class="input-box" placeholder="დაწერე მესიჯი...">
-        <div onclick="sendMsg()" style="font-size:28px; color:red; cursor:pointer;">✈</div>
+        <div onclick="sendMsg()" style="font-size:30px; color:red; cursor:pointer;">✈</div>
     </div>
 
 <script>
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     const myNick = localStorage.getItem('nickname') || 'Abu007';
+    // ძალისმიერი მეთოდით დამფუძნებლის როლის მინიჭება, თუ ნიკი Abu007-ია
+    if(myNick === 'Abu007') localStorage.setItem('role', 'დამფუძნებელი');
+    const myRole = localStorage.getItem('role');
     let partner = new URLSearchParams(window.location.search).get('to');
 
     async function init() {
-        if (partner) {
-            showChat(partner);
-        } else {
-            showInbox();
-        }
+        if (partner) { loadChat(); } else { loadInbox(); }
     }
 
-    async function showInbox() {
-        document.getElementById('inbox-view').classList.add('active');
-        document.getElementById('chat-view').classList.remove('active');
-        document.getElementById('controls').style.display = 'none';
-        document.getElementById('p-name').innerText = "შემოსულები";
-
-        const { data } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+    async function loadInbox() {
+        document.getElementById('title').innerText = "შემოსულები";
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', { ascending: false });
+        const partners = [...new Set(msgs?.map(m => m.sender === myNick ? m.receiver : m.sender))];
         
-        const partners = [...new Set(data?.map(m => m.sender === myNick ? m.receiver : m.sender))];
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
         
-        document.getElementById('inbox-view').innerHTML = partners.length ? partners.map(p => `
-            <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
-                <div style="width:40px; height:40px; background:#200; border-radius:50%; display:flex; align-items:center; justify-content:center; color:red; font-weight:bold; border:1px solid red;">${p[0]}</div>
-                <b style="margin-left:15px; color:white;">${p}</b>
-            </div>
-        `).join('') : '<p style="text-align:center; color:#555;">მესიჯები არ არის</p>';
+        document.getElementById('inbox-view').innerHTML = partners.map(p => {
+            const prof = profiles?.find(x => x.username === p);
+            const ava = prof?.avatar_url || 'https://via.placeholder.com/50';
+            return `
+                <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
+                    <img src="${ava}" class="avatar">
+                    <b style="margin-left:15px; font-size:16px;">${p}</b>
+                </div>
+            `;
+        }).join('') || '<p style="text-align:center; color:#444; margin-top:50px;">მესიჯები არ არის</p>';
     }
 
-    async function showChat(p) {
+    async function loadChat() {
         document.getElementById('inbox-view').classList.remove('active');
         document.getElementById('chat-view').classList.add('active');
-        document.getElementById('controls').style.display = 'flex';
-        document.getElementById('p-name').innerText = p;
+        document.getElementById('input-area').style.display = 'flex';
+        document.getElementById('title').innerText = partner;
 
         const { data } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${partner}"),and(sender.eq."${partner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
         
-        document.getElementById('chat-view').innerHTML = data.map(m => `
-            <div style="display:flex; justify-content: ${m.sender === myNick ? 'flex-end' : 'flex-start'};">
-                <div class="bubble">
-                    <b style="color:red; font-size:11px; display:block; margin-bottom:5px;">${m.sender}</b>
-                    <div style="word-break:break-all;">${m.text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:120px; border-radius:8px; display:block; margin-top:5px;">')}</div>
+        document.getElementById('chat-view').innerHTML = data.map(m => {
+            const isMe = m.sender === myNick;
+            const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `
+                <div style="display:flex; flex-direction:column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; margin-bottom:10px;">
+                    <div class="bubble ${isMe ? 'my-msg' : 'other-msg'}">
+                        <b style="color:red; font-size:11px; display:block; margin-bottom:4px;">${m.sender}</b>
+                        <div style="word-break:break-all;">${m.text.replace(/\[img\](.*?)\[\/img\]/g, '<img src="$1" style="max-width:150px; border-radius:10px; margin-top:5px; display:block;">')}</div>
+                        <div class="msg-info">
+                            <span>${time}</span>
+                            ${(isMe || myRole === 'დამფუძნებელი') ? `<span class="del-btn" onclick="delMsg(${m.id})">✖</span>` : ''}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         document.getElementById('chat-view').scrollTop = 99999;
-
-        // ინდიკატორის გათიშვა
         await _s.from('private_messages').update({ is_read: true }).eq('receiver', myNick).eq('sender', partner);
     }
 
-    function goBack() {
-        partner ? (window.location.href = 'pm.html') : (window.location.href = 'chat.html');
+    async function delMsg(id) {
+        if(!confirm("წავშალოთ მესიჯი?")) return;
+        await _s.from('private_messages').delete().eq('id', id);
+        loadChat();
     }
 
     async function sendMsg() {
         const inp = document.getElementById('pm-input');
         if(!inp.value.trim()) return;
         await _s.from('private_messages').insert([{ sender: myNick, receiver: partner, text: inp.value, is_read: false }]);
-        inp.value = ""; showChat(partner);
+        inp.value = ""; loadChat();
     }
+
+    function goBack() { partner ? (window.location.href = 'pm.html') : (window.location.href = 'chat.html'); }
 
     async function toggleEmoji() {
         const p = document.getElementById('emoji-picker');
         p.style.display = p.style.display === 'grid' ? 'none' : 'grid';
         if(p.style.display === 'grid') {
             const { data } = await _s.from('emojis').select('*');
-            p.innerHTML = data.map(e => `<img src="${e.emoji_url}" style="width:100%; cursor:pointer;" onclick="addEmoji('${e.emoji_url}')">`).join('');
+            p.innerHTML = data.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('') + 
+            `<button onclick="window.location.href='admin_emojis.html'" style="grid-column: span 5; background:red; color:white; border:none; padding:10px; border-radius:5px; margin-top:10px; cursor:pointer;">➕ სმაილის დამატება</button>`;
         }
     }
 
@@ -113,8 +131,7 @@
         document.getElementById('pm-input').focus();
     }
 
-    init();
-    if(partner) setInterval(() => showChat(partner), 3000);
+    init(); if(partner) setInterval(loadChat, 4000);
 </script>
 </body>
 </html>
