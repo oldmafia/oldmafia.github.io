@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🃏 ჯოკერი - კარტის თამაში</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: #0a2f1f;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Tahoma', sans-serif;
+            overflow: hidden;
+        }
+
+        /* მთავარი კონტეინერი */
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            position: relative;
+            background: #1e4a2e;
+        }
+
+        /* მარცხენა მხარე - მწვანე მაგიდა */
+        .table-area {
+            flex: 3;
+            position: relative;
+            background: radial-gradient(circle at center, #2c7a3e, #0e3a1a);
+            margin: 20px;
+            border-radius: 60px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(255,215,0,0.3);
+            border: 8px solid #8b5a2b;
+        }
+
+        /* მაგიდის ცენტრი */
+        .felt-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 120px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: gold;
+            font-weight: bold;
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 0 #5a2a00;
+            border: 2px dashed gold;
+            font-family: monospace;
+        }
+
+        /* მოთამაშეების ადგილები */
+        .chair {
+            position: absolute;
+            width: 110px;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .chair img {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 3px solid #aa7c3c;
+            background: #1e2a1a;
+            object-fit: cover;
+        }
+        .chair.occupied img {
+            border-color: gold;
+            box-shadow: 0 0 15px gold;
+        }
+        .chair .name-tag {
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.8);
+            color: #ffd966;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-top: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .chair .bid-status {
+            font-size: 11px;
+            color: #ffaa44;
+            background: #000000aa;
+            border-radius: 15px;
+            padding: 2px 6px;
+            margin-top: 3px;
+        }
+
+        /* პოზიციები */
+        .chair-bottom { bottom: -20px; left: 50%; transform: translateX(-50%); }
+        .chair-top { top: -20px; left: 50%; transform: translateX(-50%); }
+        .chair-left { left: -20px; top: 50%; transform: translateY(-50%); }
+        .chair-right { right: -20px; top: 50%; transform: translateY(-50%); }
+
+        /* მარჯვენა პანელი - პულკები */
+        .score-panel {
+            width: 320px;
+            background: #1e2a1a;
+            border-left: 4px solid #d4a017;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+        }
+
+        .panel-header {
+            background: #2c2c1c;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px solid #d4a017;
+        }
+        .panel-header h2 {
+            color: gold;
+            font-size: 1.3rem;
+        }
+        .round-info {
+            color: #ffaa66;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* ცხრილი */
+        .stats-table {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #eee;
+            font-size: 12px;
+        }
+        th, td {
+            padding: 8px 4px;
+            border-bottom: 1px solid #4a6a3a;
+            text-align: center;
+        }
+        th {
+            background: #3a5a2a;
+            color: gold;
+            position: sticky;
+            top: 0;
+        }
+        .player-score-row {
+            font-weight: bold;
+        }
+        .total-score {
+            background: #2a3a1a;
+            border-top: 2px solid gold;
+        }
+
+        /* განაცხადის ველი */
+        .bid-input-area {
+            background: #0f1f0a;
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-top: 2px solid #d4a017;
+            border-bottom: 2px solid #d4a017;
+        }
+        .bid-input-area select, .bid-input-area button {
+            padding: 8px 12px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+        }
+        .bid-input-area button {
+            background: #d4a017;
+            color: #1e3a1a;
+            cursor: pointer;
+        }
+
+        /* ჩატი */
+        .mini-chat {
+            background: #0a1a0a;
+            height: 250px;
+            display: flex;
+            flex-direction: column;
+            border-top: 3px solid #d4a017;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            font-size: 12px;
+        }
+        .chat-messages div {
+            margin-bottom: 5px;
+            color: #ddd;
+            word-wrap: break-word;
+        }
+        .chat-messages strong {
+            color: #ffaa66;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 8px;
+            gap: 5px;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 20px;
+            border: none;
+            background: #2a3a2a;
+            color: white;
+        }
+        .chat-input-area button {
+            background: #d4a017;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            cursor: pointer;
+        }
+
+        /* დაბრუნების ღილაკი */
+        .back-btn {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background: #6a2a1a;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 100;
+            border: 1px solid gold;
+        }
+
+        @media (max-width: 800px) {
+            .score-panel { width: 260px; }
+            .chair { width: 80px; }
+            .chair img { width: 45px; height: 45px; }
+            .chair .name-tag { font-size: 9px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- მწვანე მაგიდის არე -->
+    <div class="table-area" id="tableArea">
+        <div class="felt-center">
+            <span id="trumpDisplay">🃏</span>
+        </div>
+        <div id="chairsContainer"></div>
+    </div>
+
+    <!-- მარჯვენა პანელი -->
+    <div class="score-panel">
+        <div class="panel-header">
+            <h2>📊 პულკები</h2>
+            <div class="round-info" id="roundInfo">რაუნდი: 1 / 26 | ლივები: 9</div>
+        </div>
+
+        <div class="bid-input-area" id="bidPanel">
+            <select id="bidSelect">
+                <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                <option value="9">9</option><option value="10">10</option><option value="11">11</option>
+                <option value="12">12</option><option value="13">13</option>
+            </select>
+            <button id="submitBidBtn">🎲 განაცხადი</button>
+            <button id="submitTricksBtn" style="background:#2a6a3a;">✅ ლივების ჩაწერა</button>
+        </div>
+
+        <div class="stats-table" id="statsTable">
+            <!-- ცხრილი აიქმნება JS-ით -->
+        </div>
+
+        <div class="mini-chat">
+            <div class="chat-messages" id="miniChatMsgs"></div>
+            <div class="chat-input-area">
+                <input type="text" id="miniChatInput" placeholder="თამაშის დროს საუბარი..." onkeypress="if(event.key==='Enter') sendMiniChat()">
+                <button onclick="sendMiniChat()">➤</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="chat.html" class="back-btn">← ჩატში დაბრუნება</a>
+
+<script>
+    // ==================== SUPABASE კონფიგი ====================
+    const supabase = supabase.createClient(
+        "https://ftfciebnywbondaiarnc.supabase.co",
+        "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+    );
+
+    // ==================== თამაშის მდგომარეობა ====================
+    let myNick = localStorage.getItem('nickname') || "მოთამაშე";
+    let myAvatar = localStorage.getItem('avatar') || "https://i.ibb.co/v3m6y6R/avatar.png";
+    let currentGameId = null;
+    let currentGame = null;
+    let myPlayerIndex = -1;
+
+    // 26 რაუნდის კონფიგი
+    const ROUNDS_CONFIG = [
+        9,8,7,6,5,4,3,2,1,  // 1-9
+        9,9,9,9,             // 10-13
+        9,8,7,6,5,4,3,2,1,  // 14-22
+        9,9,9,9              // 23-26
+    ];
+
+    // ==================== ფუნქციები ====================
+    async function initGame() {
+        // ვეძებთ აქტიურ თამაშს ან ვქმნით ახალს
+        let { data: games } = await supabase.from('joker_games').select('*').eq('status', 'waiting').limit(1);
+        let game = games?.[0];
+
+        if (!game) {
+            // ახალი თამაშის შექმნა
+            const { data: newGame } = await supabase.from('joker_games').insert([{
+                room_id: 'main_table',
+                players: [{ name: myNick, avatar: myAvatar, points: 0, bids: [], tricks: [] }],
+                status: 'waiting',
+                round_number: 1,
+                game_status: 'bidding'
+            }]).select().single();
+            game = newGame;
+        } else {
+            let players = game.players || [];
+            if (!players.find(p => p.name === myNick) && players.length < 4) {
+                players.push({ name: myNick, avatar: myAvatar, points: 0, bids: [], tricks: [] });
+                await supabase.from('joker_games').update({ players }).eq('id', game.id);
+                game.players = players;
+            }
+        }
+        currentGameId = game.id;
+        currentGame = game;
+        myPlayerIndex = (currentGame.players || []).findIndex(p => p.name === myNick);
+        
+        renderTable();
+        renderStats();
+        
+        // Realtime განახლება
+        supabase.channel('joker_game').on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games', filter: `id=eq.${currentGameId}` }, (payload) => {
+            currentGame = payload.new;
+            renderTable();
+            renderStats();
+        }).subscribe();
+    }
+
+    function renderTable() {
+        const players = currentGame?.players || [];
+        const positions = ['bottom', 'right', 'top', 'left'];
+        const container = document.getElementById('chairsContainer');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < 4; i++) {
+            const p = players[i];
+            const pos = positions[i];
+            const isOccupied = !!p;
+            container.innerHTML += `
+                <div class="chair chair-${pos} ${isOccupied ? 'occupied' : ''}">
+                    <img src="${p ? p.avatar : 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                    <div class="name-tag">${p ? p.name : 'ცარიელი'}</div>
+                    ${p ? `<div class="bid-status">${p.currentBid !== undefined ? `🎯 ${p.currentBid}` : '—'}</div>` : ''}
+                </div>
+            `;
+        }
+        
+        const roundNum = currentGame?.round_number || 1;
+        const tricksGoal = ROUNDS_CONFIG[roundNum - 1] || 9;
+        document.getElementById('roundInfo').innerHTML = `🎯 რაუნდი: ${roundNum} / 26 | ლივები: ${tricksGoal}`;
+        document.getElementById('trumpDisplay').innerHTML = currentGame?.trump_card ? `🃏 ${currentGame.trump_card.suit || '♥'}` : '🃏 JOKER';
+    }
+
+    function renderStats() {
+        const players = currentGame?.players || [];
+        const roundNum = currentGame?.round_number || 1;
+        const tricksGoal = ROUNDS_CONFIG[roundNum - 1];
+        
+        let html = `<table>
+            <tr><th>მოთამაშე</th><th>განაცხადი</th><th>აღებული</th><th>ქულა</th></tr>`;
+        
+        players.forEach((p, idx) => {
+            let bid = (p.roundBids && p.roundBids[roundNum-1]) !== undefined ? p.roundBids[roundNum-1] : '—';
+            let tricks = (p.roundTricks && p.roundTricks[roundNum-1]) !== undefined ? p.roundTricks[roundNum-1] : '—';
+            let scoreThisRound = (p.roundScores && p.roundScores[roundNum-1]) !== undefined ? p.roundScores[roundNum-1] : '—';
+            html += `<tr>
+                <td style="text-align:left">${p.name} ${idx === myPlayerIndex ? '(თქვენ)' : ''}</td>
+                <td>${bid}</td>
+                <td>${tricks}</td>
+                <td><b>${scoreThisRound}</b></td>
+            </tr>`;
+        });
+        
+        html += `<tr class="total-score"><td colspan="3"><b>ჯამური ქულა</b></td><td><b>${players.reduce((s,p) => s + (p.totalPoints || 0), 0)}</b></td></tr>`;
+        html += `</table>`;
+        document.getElementById('statsTable').innerHTML = html;
+    }
+
+    async function submitBid() {
+        if (!currentGame || myPlayerIndex === -1) return;
+        const bid = parseInt(document.getElementById('bidSelect').value);
+        const roundNum = currentGame.round_number;
+        
+        // შევინახოთ განაცხადი
+        let players = [...currentGame.players];
+        if (!players[myPlayerIndex].roundBids) players[myPlayerIndex].roundBids = [];
+        players[myPlayerIndex].roundBids[roundNum-1] = bid;
+        players[myPlayerIndex].currentBid = bid;
+        
+        await supabase.from('joker_games').update({ players }).eq('id', currentGameId);
+        alert(`განაცხადი ${bid} ლივი შენახულია!`);
+    }
+
+    async function submitTricks() {
+        if (!currentGame || myPlayerIndex === -1) return;
+        const tricks = parseInt(prompt("რამდენი ლივი აიღე? (0-13)", "0"));
+        if (isNaN(tricks) || tricks < 0 || tricks > 13) return;
+        
+        let players = [...currentGame.players];
+        if (!players[myPlayerIndex].roundTricks) players[myPlayerIndex].roundTricks = [];
+        players[myPlayerIndex].roundTricks[roundNum-1] = tricks;
+        
+        // ქულის გამოთვლა
+        const bid = players[myPlayerIndex].roundBids?.[roundNum-1] || 0;
+        let score = (bid === tricks) ? (10 + bid) : -Math.abs(bid - tricks);
+        if (!players[myPlayerIndex].roundScores) players[myPlayerIndex].roundScores = [];
+        players[myPlayerIndex].roundScores[roundNum-1] = score;
+        
+        // ჯამური ქულების გადათვლა
+        players[myPlayerIndex].totalPoints = (players[myPlayerIndex].roundScores || []).reduce((a,b)=>a+b,0);
+        
+        await supabase.from('joker_games').update({ players }).eq('id', currentGameId);
+        
+        // თუ ყველამ შეიყვანა -> ავტომატურად შემდეგ რაუნდზე გადასვლა
+        let allHaveTricks = players.every(p => p.roundTricks?.[roundNum-1] !== undefined);
+        if (allHaveTricks && roundNum < 26) {
+            await supabase.from('joker_games').update({ round_number: roundNum + 1 }).eq('id', currentGameId);
+        }
+    }
+
+    function sendMiniChat() {
+        const input = document.getElementById('miniChatInput');
+        if (!input.value.trim()) return;
+        const msg = input.value;
+        input.value = "";
+        const chatDiv = document.getElementById('miniChatMsgs');
+        chatDiv.innerHTML += `<div><strong>${myNick}:</strong> ${msg}</div>`;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+        // აქ შეგიძლია Supabase-შიც შეინახო სურვილისამებრ
+    }
+
+    document.getElementById('submitBidBtn').onclick = submitBid;
+    document.getElementById('submitTricksBtn').onclick = submitTricks;
+    
+    initGame();
+</script>
+</body>
+</html>
