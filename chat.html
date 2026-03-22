@@ -13,7 +13,6 @@
         }
         body { margin: 0; font-family: sans-serif; background: var(--bg-black); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* ტოპბარი */
         .topbar { background: black; padding: 10px 15px; display: flex; align-items: center; border-bottom: 2px solid var(--dark-red); height: 60px; flex-shrink: 0; z-index: 1000; }
         .menu-btn { cursor: pointer; font-size: 25px; color: var(--bright-red); }
         #room-name { font-weight: bold; color: var(--bright-red); flex: 1; text-align: center; font-size: 16px; }
@@ -36,7 +35,6 @@
         }
         @keyframes blinker { 50% { opacity: 0.3; } }
 
-        /* ჩატის არე */
         .chat-area { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 100px; display: flex; flex-direction: column; gap: 12px; background: radial-gradient(circle at center, #1a0000 0%, #030000 100%); transition: padding-top 0.3s; }
         .msg-container { display: flex; align-items: flex-start; gap: 10px; max-width: 95%; }
         .avatar-wrapper { position: relative; width: 42px; height: 42px; flex-shrink: 0; }
@@ -56,7 +54,6 @@
         .input-zone input { flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--blood-red); background: #080000; color: white; outline: none; }
         .send-btn { background: var(--dark-red); border: none; width: 45px; height: 45px; border-radius: 50%; color: cyan; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; }
 
-        /* სმაილების პიკერი */
         #emoji-picker { 
             display: none; position: fixed; bottom: 80px; left: 10px; 
             background: #080000; border: 2px solid var(--dark-red); 
@@ -73,7 +70,6 @@
         .admin-tools { display: none; gap: 5px; margin-top: 10px; border-top: 1px solid #222; padding-top: 5px; }
         .admin-add-btn { flex: 1; font-size: 10px; padding: 8px; background: #004a00; color: white; border: none; border-radius: 5px; cursor: pointer; }
 
-        /* მენიუები */
         .sidebar, .online-sidebar { position: fixed; top: 0; width: 280px; height: 100%; background: #050000; transition: 0.3s; z-index: 4000; display: flex; flex-direction: column; }
         .sidebar { left: -280px; border-right: 3px solid var(--dark-red); }
         .sidebar.active { left: 0; }
@@ -89,7 +85,6 @@
         .modal-content { background: #080000; border: 2px solid var(--dark-red); padding: 25px; border-radius: 25px; width: 320px; text-align: center; }
         .modal-btn { display: block; width: 100%; padding: 12px; margin: 7px 0; border: 1px solid var(--blood-red); background: #110000; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; }
         
-        /* === JOKER ROOM UI STYLES === */
         #joker-ui { 
             display: none; position: fixed; top: 60px; left: 0; width: 100%; 
             background: #051a05; border-bottom: 2px solid gold; padding: 15px; z-index: 1500; 
@@ -126,8 +121,6 @@
         .joker-mini-chat-box {
             display: flex; gap: 5px; margin-top: 15px; justify-content: center;
         }
-        /* === END JOKER STYLES === */
-
     </style>
 </head>
 <body onload="init()">
@@ -249,7 +242,6 @@
         loadMessages();
         _s.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages).subscribe();
 
-        // Realtime Joker Updates
         _s.channel('joker').on('postgres_changes', { event: '*', schema: 'public', table: 'joker_games' }, async (payload) => {
             if (currentRoom === JOKER_ROOM_NAME) {
                 currentJokerGame = payload.new;
@@ -258,16 +250,11 @@
         }).subscribe();
     }
 
-    // ავტომატური დაჯდომა მაგიდაზე
     async function joinJoker() {
         if (currentRoom !== JOKER_ROOM_NAME) return;
-        
-        // ვეძებთ არსებულ თამაშს
         const { data: games } = await _s.from('joker_games').select('*').eq('status', 'waiting').limit(1);
         let game = games && games.length > 0 ? games[0] : null;
-
         if (!game) {
-            // თუ თამაში არ არსებობს, ვქმნით ახალს და ვჯდებით
             const { data: newGame } = await _s.from('joker_games').insert([{
                 room_id: 'main_table',
                 players: [{ name: myNick, avatar: myAvatar, points: 0 }],
@@ -275,7 +262,6 @@
             }]).select().single();
             game = newGame;
         } else {
-            // თუ თამაში არსებობს, ვამოწმებთ უკვე ვზივართ თუ არა
             let players = game.players || [];
             if (!players.find(p => p.name === myNick) && players.length < 4) {
                 players.push({ name: myNick, avatar: myAvatar, points: 0 });
@@ -296,11 +282,9 @@
             return;
         }
         ui.style.display = 'block';
-        chat.style.paddingTop = '340px'; // მეტი ადგილი "ოთახისთვის"
-        
+        chat.style.paddingTop = '340px';
         const players = currentJokerGame.players || [];
         const positions = ['bottom', 'left', 'top', 'right'];
-
         let chairsHTML = "";
         for(let i=0; i<4; i++) {
             const p = players[i];
@@ -312,7 +296,6 @@
                 </div>
             `;
         }
-
         ui.innerHTML = `
             <div class="joker-room-view">
                 <div class="table-center">JOKER TABLE</div>
@@ -426,212 +409,4 @@
     async function deleteEmoji(id, fileName) {
         if(confirm("დარწმუნებული ხართ?")) {
             await _s.from('emojis').delete().eq('id', id);
-            if(fileName && fileName !== 'undefined') await _s.storage.from('emojis').remove([fileName]);
-            loadEmojis();
-        }
-    }
-
-    window.insertEmoji = function(name) {
-        const input = document.getElementById('msg-input');
-        input.value += name + " ";
-        input.focus();
-    };
-
-    async function loadMessages() {
-        const box = document.getElementById("chat"); if(!box) return;
-        const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: true });
-        const { data: profs } = await _s.from('profiles').select('*');
-        box.innerHTML = "";
-        
-        msgs?.forEach(m => {
-            const p = profs?.find(u => u.username === m.user_name);
-            const active = (p?.last_online && (new Date() - new Date(p.last_online) < 300000)) ? "active" : "";
-            const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00";
-            
-            const isBot = m.user_name && m.user_name.includes('BOT');
-            const bubbleStyle = isBot ? 'border: 2px solid #ff8c00 !important; background: rgba(45, 20, 0, 0.95) !important; box-shadow: 0 0 10px rgba(255, 140, 0, 0.4) !important;' : '';
-            const nickStyle = isBot ? 'color: #ff8c00 !important; font-weight: bold !important; text-shadow: 0 0 5px rgba(255, 140, 0, 0.5) !important;' : '';
-            const textStyle = isBot ? 'color: #ffffff !important; font-weight: 500 !important;' : '';
-
-            const isOwnerMsg = p?.role === "Owner";
-            const canDelete = (myRole === "Owner") || (myRole === "Admin" && !isOwnerMsg);
-            let delBtn = (canDelete && !isBot) ? `<span style="cursor:pointer;margin-left:8px;opacity:0.5;" onclick="deleteMsg(${m.id})">🗑️</span>` : "";
-
-            box.innerHTML += `
-                <div class="msg-container">
-                    <div class="avatar-wrapper" onclick="openProfile('${m.user_name}')">
-                        <img src="${isBot ? 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png' : (p?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png')}" class="msg-avatar">
-                        <div class="online-dot ${active}"></div>
-                    </div>
-                    <div class="bubble" style="${bubbleStyle}">
-                        <div class="m-nick" style="${nickStyle}" onclick="openProfile('${m.user_name}')">${m.user_name} ${delBtn}</div>
-                        <div class="m-text" style="${textStyle}">${parseEmojis(m.text)}</div>
-                        <div class="m-footer"><span class="m-time">${time}</span></div>
-                    </div>
-                </div>`;
-            handleQuizLogic(m);
-            handleCipherLogic(m);
-        });
-        box.scrollTop = box.scrollHeight;
-    }
-
-    function parseEmojis(text) {
-        if (!text) return "";
-        const baseUrl = "https://ftfciebnywbondaiarnc.supabase.co/storage/v1/object/public/emojis/";
-        return text.replace(/(\S+\.(gif|png|jpg|webp))/gi, `<img src="${baseUrl}$1">`);
-    }
-
-    async function openProfile(name) {
-        if(name && name.includes('BOT')) return;
-        const { data: p } = await _s.from('profiles').select('*').eq('username', name).maybeSingle();
-        if(!p) return;
-        document.getElementById('targetAvatar').src = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
-        document.getElementById('targetName').innerText = p.username;
-        document.getElementById('targetRoleLabel').innerText = translateRole(p.role);
-        document.getElementById('targetPointsLabel').innerHTML = `🏆 ვიქტორინა: ${p.points || 0} <br> 🔐 შიფროგრამა: ${p.cipher_points || 0}`;
-        document.getElementById('targetStatusDisplay').innerText = p.status || "";
-        
-        const adminZone = document.getElementById('adminOptions');
-        adminZone.innerHTML = "";
-        adminZone.style.display = "block";
-
-        if (name !== myNick) {
-            adminZone.innerHTML += `<button class="modal-btn" style="background:#004a4a; border-color:cyan;" onclick="location.href='pm.html?to=${name}'">✉️ მიმოწერა</button>`;
-            if (myRole === "Owner") {
-                adminZone.innerHTML += `
-                    <button class="modal-btn" onclick="setRole('Admin')">🛡️ ადმინად დანიშვნა</button>
-                    <button class="modal-btn" onclick="setRole('Owner')">👑 დამფუძნებლად დანიშვნა</button>
-                    <button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button>
-                    <button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა (BAN)</button>`;
-            } else if (myRole === "Admin" && p.role !== "Owner") {
-                adminZone.innerHTML += `
-                    <button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button>
-                    <button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა</button>`;
-            }
-        } else { adminZone.style.display = "none"; }
-        
-        document.getElementById('userModal').style.display = "flex";
-        window.selectedUser = name;
-    }
-
-    async function setRole(role) {
-        if(confirm("დარწმუნებული ხართ?")) {
-            await _s.from('profiles').update({ role: role }).eq('username', window.selectedUser);
-            closeModal(); loadMessages();
-        }
-    }
-
-    async function loadOnline() {
-        const { data: users } = await _s.from('profiles').select('*');
-        const list = document.getElementById('online-list-content');
-        if(!list || !users) return;
-        list.innerHTML = "";
-        const now = new Date();
-        users.filter(u => u.last_online && (now - new Date(u.last_online) < 300000)).forEach(u => {
-            let roleColor = u.role === 'Owner' ? "red" : (u.role === 'Admin' ? "cyan" : "#777");
-            list.innerHTML += `<div style="padding:12px 15px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #111; cursor:pointer;" onclick="openProfile('${u.username}')">
-                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:35px; height:35px; border-radius:50%; border:1.5px solid ${roleColor}; object-fit: cover;">
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-size:14px; color:#eee;">${u.username}</span>
-                    <span style="font-size:9px; color:${roleColor};">${translateRole(u.role)}</span>
-                </div>
-            </div>`;
-        });
-    }
-
-    async function deleteMsg(id) { if(confirm("წავშალო?")) { await _s.from('messages').delete().eq('id', id); loadMessages(); } }
-    
-    async function sendMsg() {
-        const i = document.getElementById("msg-input"); if(!i.value.trim() || myRole === "Banned") return;
-        const msgText = i.value;
-        i.value = "";
-        await _s.from('messages').insert([{ user_name: myNick, text: msgText, room_name: currentRoom }]);
-    }
-
-    async function uploadAvatar(el) {
-        const file = el.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            await _s.from('profiles').update({ avatar_url: e.target.result }).eq('username', myNick);
-            location.reload();
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async function changeStatus() {
-        const s = prompt("ახალი სტატუსი:");
-        if(s !== null) { await _s.from('profiles').update({ status: s }).eq('username', myNick); location.reload(); }
-    }
-
-    function changeRoom(n, el) {
-        currentRoom = n; 
-        document.getElementById('room-name').innerText = n;
-        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active'); 
-        closeAll(); 
-        loadMessages();
-        
-        // UI Cleanups
-        document.getElementById('joker-ui').style.display = 'none';
-        const mainInput = document.getElementById('main-input-zone');
-        
-        currentQuizQ = null;
-        currentCipher = null;
-        currentJokerGame = null;
-
-        if(n === JOKER_ROOM_NAME) {
-            mainInput.style.display = 'none';
-            joinJoker();
-        } else {
-            mainInput.style.display = 'flex';
-            if(n === QUIZ_ROOM_NAME) setTimeout(startQuiz, 1000);
-            if(n === CIPHER_ROOM_NAME) setTimeout(startCipher, 1000);
-        }
-    }
-
-    async function checkPMs() {
-        const { count } = await _s.from('private_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
-        const badge = document.getElementById('pm-count');
-        if (badge) {
-            if (count > 0) {
-                badge.innerText = count; 
-                badge.style.display = 'inline-flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    }
-
-    function logout() { localStorage.clear(); location.href = 'index.html'; }
-
-    // === JOKER LOGIC ADDITIONS (ETAPA 2) ===
-
-    function createJokerDeck() {
-        const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-        const ranks = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-        let deck = [];
-        suits.forEach(suit => ranks.forEach(rank => deck.push({ suit, rank, type: 'normal' })));
-        deck.push({ suit: 'joker', rank: 'red', type: 'joker' });
-        deck.push({ suit: 'joker', rank: 'black', type: 'joker' });
-        return shuffleDeck(deck);
-    }
-
-    function shuffleDeck(deck) {
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
-        return deck;
-    }
-
-    function playEvilLaugh() {
-        // "შეგეტენა ძმაოო" + ბოროტული სიცილი
-        const audio = new Audio('https://www.myinstants.com/media/sounds/evil-laugh.mp3'); 
-        audio.play();
-        // აქ შეგიძლია დაამატო შენი ხმოვანი ფაილის ლინკი მომავალში
-    }
-
-    // === END JOKER LOGIC ===
-</script>
-</body>
-</html>
+            if(fileName && fileName !== '
