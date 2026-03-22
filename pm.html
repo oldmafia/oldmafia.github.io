@@ -22,7 +22,7 @@
             --inbox-hover: #1a0000;
         }
         
-        /* დღის რეჟიმი — 6 დიდი, ბრჭყვიალა, 3D ❤️ (ზუსტად როგორც ფოტოზე) */
+        /* დღის რეჟიმი — CSS გულებით */
         body.day-mode {
             --bg-color: #fff8f0;
             --text-color: #2c2418;
@@ -35,35 +35,24 @@
             --topbar-bg: #fff4e6;
             --inbox-border: #f0e4cc;
             --inbox-hover: #fff0e6;
-            /* 6 დიდი, ბრჭყვიალა, 3D ❤️ */
-            background-image: 
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text x="20" y="45" font-size="68" fill="%23ff4d4d" style="filter:drop-shadow(0 0 18px %23ff8888) drop-shadow(0 0 12px %23ff6666)">❤️</text></svg>'),
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text x="85" y="30" font-size="60" fill="%23ff4d4d" style="filter:drop-shadow(0 0 15px %23ff8888) drop-shadow(0 0 10px %23ff6666)">❤️</text></svg>'),
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text x="95" y="90" font-size="75" fill="%23ff4d4d" style="filter:drop-shadow(0 0 20px %23ff8888) drop-shadow(0 0 14px %23ff6666)">❤️</text></svg>'),
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text x="12" y="100" font-size="55" fill="%23ff4d4d" style="filter:drop-shadow(0 0 12px %23ff8888) drop-shadow(0 0 8px %23ff6666)">❤️</text></svg>'),
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text x="48" y="55" font-size="62" fill="%23ff4d4d" style="filter:drop-shadow(0 0 16px %23ff8888) drop-shadow(0 0 10px %23ff6666)">❤️</text></svg>'),
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text x="65" y="82" font-size="58" fill="%23ff4d4d" style="filter:drop-shadow(0 0 14px %23ff8888) drop-shadow(0 0 9px %23ff6666)">❤️</text></svg>');
-            background-repeat: no-repeat;
-            background-position: 3% 12%, 85% 5%, 92% 72%, 2% 88%, 42% 45%, 68% 85%;
-            background-size: 105px 105px, 98px 98px, 115px 115px, 95px 95px, 102px 102px, 100px 100px;
-            background-attachment: fixed;
+            position: relative;
         }
         
-        /* ღაჟღაჟა ანიმაცია */
-        @keyframes heartGlow {
-            0% { filter: drop-shadow(0 0 2px #ff6699); opacity: 0.7; transform: scale(1); }
-            50% { filter: drop-shadow(0 0 22px #ff88aa) drop-shadow(0 0 35px #ff4466); opacity: 1; transform: scale(1.06); }
-            100% { filter: drop-shadow(0 0 2px #ff6699); opacity: 0.7; transform: scale(1); }
+        /* CSS გულები */
+        .heart-bg {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            font-size: 55px;
+            animation: heartFloat 3s infinite ease-in-out;
+            filter: drop-shadow(0 0 8px #ff6699);
+            color: #ff4d4d;
         }
         
-        body.day-mode {
-            animation: bgPulse 2.5s infinite ease-in-out;
-        }
-        
-        @keyframes bgPulse {
-            0% { background-blend-mode: normal; }
-            50% { background-blend-mode: overlay; }
-            100% { background-blend-mode: normal; }
+        @keyframes heartFloat {
+            0% { transform: translateY(0px) scale(1); opacity: 0.6; }
+            50% { transform: translateY(-15px) scale(1.08); opacity: 1; filter: drop-shadow(0 0 18px #ff8888); }
+            100% { transform: translateY(0px) scale(1); opacity: 0.6; }
         }
         
         body {
@@ -75,6 +64,7 @@
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
+            position: relative;
         }
         
         .header {
@@ -119,6 +109,8 @@
             flex: 1;
             overflow-y: auto;
             background: transparent;
+            position: relative;
+            z-index: 1;
         }
         
         /* Inbox */
@@ -158,7 +150,6 @@
             background: #ff5555;
             border-radius: 50%;
             margin-left: 10px;
-            animation: heartGlow 1s infinite;
         }
         
         /* Chat View */
@@ -220,6 +211,7 @@
             display: flex;
             gap: 12px;
             align-items: center;
+            z-index: 100;
         }
         .input-box {
             flex: 1;
@@ -273,18 +265,51 @@
     const partner = new URLSearchParams(window.location.search).get('to');
     let profMap = {};
 
+    // CSS გულების დამატება
+    function addHearts() {
+        removeHearts();
+        if (document.body.classList.contains('day-mode')) {
+            const hearts = ['❤️', '❤️', '❤️', '❤️', '❤️', '❤️'];
+            const positions = [
+                { top: '8%', left: '5%' }, { top: '5%', left: '85%' },
+                { top: '70%', left: '90%' }, { top: '85%', left: '3%' },
+                { top: '42%', left: '45%' }, { top: '78%', left: '60%' }
+            ];
+            const sizes = ['65px', '58px', '75px', '52px', '62px', '55px'];
+            
+            for (let i = 0; i < hearts.length; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart-bg';
+                heart.innerHTML = hearts[i];
+                heart.style.position = 'fixed';
+                heart.style.top = positions[i].top;
+                heart.style.left = positions[i].left;
+                heart.style.fontSize = sizes[i];
+                heart.style.animationDelay = `${i * 0.5}s`;
+                heart.style.zIndex = '0';
+                document.body.appendChild(heart);
+            }
+        }
+    }
+    
+    function removeHearts() {
+        const hearts = document.querySelectorAll('.heart-bg');
+        hearts.forEach(h => h.remove());
+    }
+
     function setTheme(theme) {
         const body = document.body;
         body.classList.remove('night-mode', 'day-mode');
         if (theme === 'day') {
             body.classList.add('day-mode');
             document.getElementById('themeToggle').innerHTML = '🌙';
-            localStorage.setItem('pm_theme', 'day');
+            localStorage.setItem('theme', 'day');
         } else {
             body.classList.add('night-mode');
             document.getElementById('themeToggle').innerHTML = '☀️';
-            localStorage.setItem('pm_theme', 'night');
+            localStorage.setItem('theme', 'night');
         }
+        addHearts();
     }
     
     function toggleTheme() {
@@ -293,7 +318,8 @@
     }
     
     async function init() {
-        const savedTheme = localStorage.getItem('pm_theme') || 'night';
+        // ვიყენებთ იგივე 'theme' პარამეტრს, როგორც chat.html
+        const savedTheme = localStorage.getItem('theme') || 'night';
         setTheme(savedTheme);
         
         const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
