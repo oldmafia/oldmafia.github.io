@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>🃏 ჯოკერი - ტესტი</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a3a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-container {
+            background: #1e5a2e;
+            padding: 30px;
+            border-radius: 60px;
+            border: 8px solid #d4a017;
+            width: 900px;
+            max-width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .green-table {
+            background: radial-gradient(circle at center, #2c8a3e, #0e3a1a);
+            border-radius: 120px;
+            padding: 60px;
+            position: relative;
+            min-height: 450px;
+            border: 4px solid #b87c2e;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
+        }
+        .table-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: gold;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 2px 2px 4px #1e3a1a;
+            background: rgba(0,0,0,0.3);
+            padding: 15px 30px;
+            border-radius: 60px;
+            border: 2px dashed gold;
+            white-space: nowrap;
+        }
+        .chairs-container {
+            position: relative;
+            height: 350px;
+        }
+        .chair {
+            position: absolute;
+            text-align: center;
+            width: 110px;
+        }
+        .chair img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #b87c2e;
+            background: #1e3a1a;
+            object-fit: cover;
+        }
+        .chair .name {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ffd966;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 8px;
+            border-radius: 20px;
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+        .chair-bottom { bottom: -80px; left: 50%; transform: translateX(-50%); }
+        .chair-top { top: -80px; left: 50%; transform: translateX(-50%); }
+        .chair-left { left: -100px; top: 50%; transform: translateY(-50%); }
+        .chair-right { right: -100px; top: 50%; transform: translateY(-50%); }
+        
+        .info-panel {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .info {
+            background: #0f2a0f;
+            padding: 12px;
+            border-radius: 30px;
+            color: gold;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        button {
+            background: gold;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .back-btn {
+            display: inline-block;
+            background: #8b3a2a;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 40px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="green-table">
+        <div class="chairs-container" id="chairsContainer"></div>
+        <div class="table-center">🃏 მწვანე მაგიდა 🃏</div>
+    </div>
+
+    <div class="info-panel">
+        <div class="info" id="info">მოთამაშეები: 0 / 4</div>
+        <button id="sitBtn">🪑 დაჯდომა (ჩემი ნიკით)</button>
+        <br>
+        <a href="chat.html" class="back-btn">← ჩატში დაბრუნება</a>
+    </div>
+</div>
+
+<script>
+    // შენი მონაცემები
+    let myNick = localStorage.getItem('nickname');
+    let myAvatar = localStorage.getItem('avatar');
+    
+    if (!myNick) myNick = "მოთამაშე";
+    if (!myAvatar) myAvatar = "https://i.ibb.co/v3m6y6R/avatar.png";
+    
+    // ტესტური მოთამაშეები (4 ცალი)
+    let players = [
+        {name: "გიო", avatar: "https://i.ibb.co/v3m6y6R/avatar.png"},
+        {name: "ნიკა", avatar: "https://i.ibb.co/v3m6y6R/avatar.png"},
+        {name: "ზურა", avatar: "https://i.ibb.co/v3m6y6R/avatar.png"},
+        {name: "დათო", avatar: "https://i.ibb.co/v3m6y6R/avatar.png"}
+    ];
+    
+    const positions = ['bottom', 'right', 'top', 'left'];
+    
+    function renderChairs() {
+        const container = document.getElementById('chairsContainer');
+        let html = '';
+        
+        for (let i = 0; i < 4; i++) {
+            let name = 'ცარიელი';
+            let avatar = 'https://i.ibb.co/v3m6y6R/avatar.png';
+            let occupiedClass = '';
+            
+            if (players[i]) {
+                name = players[i].name;
+                avatar = players[i].avatar;
+                occupiedClass = 'occupied';
+            }
+            
+            html += `
+                <div class="chair chair-${positions[i]} ${occupiedClass}">
+                    <img src="${avatar}">
+                    <div class="name">${name}</div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        document.getElementById('info').innerHTML = `👥 მოთამაშეები: ${players.length} / 4`;
+        
+        // თუ 4 მოთამაშეა, ვაჩვენოთ თამაშის დაწყების ღილაკი
+        if (players.length === 4) {
+            if (!document.getElementById('startBtn')) {
+                const btn = document.createElement('button');
+                btn.id = 'startBtn';
+                btn.innerHTML = '🎮 თამაშის დაწყება';
+                btn.style.background = '#d4a017';
+                btn.style.marginTop = '15px';
+                btn.onclick = startGame;
+                document.querySelector('.info-panel').appendChild(btn);
+            }
+        } else {
+            const existingBtn = document.getElementById('startBtn');
+            if (existingBtn) existingBtn.remove();
+        }
+    }
+    
+    function sitDown() {
+        // ვამოწმებ უკვე ვზივარ თუ არა
+        for (let i = 0; i < players.length; i++) {
+            if (players[i].name === myNick) {
+                alert('თქვენ უკვე ზიხართ მაგიდაზე!');
+                return;
+            }
+        }
+        
+        // თუ 4-ზე ნაკლებია, დაჯექი
+        if (players.length < 4) {
+            players.push({
+                name: myNick,
+                avatar: myAvatar
+            });
+            renderChairs();
+            alert(`${myNick} დაჯექით მაგიდაზე!`);
+        } else {
+            alert('ყველა სკამი დაკავებულია!');
+        }
+    }
+    
+    function startGame() {
+        alert('🎉 თამაში იწყება! 4 მოთამაშე შეიკრიბა.');
+        // აქ შემდეგ ეტაპზე დავამატებთ კარტების დარიგებას
+    }
+    
+    document.getElementById('sitBtn').onclick = sitDown;
+    renderChairs();
+</script>
+
+</body>
+</html>
