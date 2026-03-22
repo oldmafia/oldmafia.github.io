@@ -28,7 +28,7 @@
             --role-admin: #66ccff;
         }
         
-        /* დღის რეჟიმი */
+        /* დღის რეჟიმი — გულებით (უფრო მუქი, შესამჩნევი) */
         body.day-mode {
             --bg-color: #fff8f0;
             --text-color: #2c2418;
@@ -46,9 +46,13 @@
             --modal-border: #e8d4b0;
             --role-owner: #d45a2a;
             --role-admin: #2a7a9a;
-            background-image: radial-gradient(circle at 15% 25%, rgba(255, 77, 77, 0.2) 3px, transparent 3px),
-                              radial-gradient(circle at 75% 60%, rgba(255, 77, 77, 0.15) 2.5px, transparent 2.5px);
-            background-size: 55px 55px, 40px 40px;
+            /* გულები ფონზე — უფრო მუქი, შესამჩნევი */
+            background-image: radial-gradient(circle at 15% 25%, rgba(210, 70, 70, 0.45) 4px, transparent 4px),
+                              radial-gradient(circle at 75% 60%, rgba(210, 70, 70, 0.4) 3.5px, transparent 3.5px),
+                              radial-gradient(circle at 45% 85%, rgba(210, 70, 70, 0.35) 3px, transparent 3px);
+            background-size: 60px 60px, 45px 45px, 75px 75px;
+            background-position: 0 0, 30px 50px, 80px 20px;
+            background-attachment: fixed;
         }
         
         body.day-mode #my-role-label {
@@ -458,7 +462,7 @@
                 adminZone.innerHTML += `<button class="modal-btn" style="background:#220000;" onclick="setRole('Member')">✨ როლის ჩახსნა</button><button class="modal-btn" style="background:#440000; color:red;" onclick="setRole('Banned')">🚫 დაბლოკვა</button>`;
             }
             
-            // მეგობრების ღილაკი
+            // მეგობრების ღილაკი (მხოლოდ ერთი!)
             const friendBtn = document.createElement('button');
             friendBtn.className = 'friend-btn';
             const isFriendStatus = await isFriend(name);
