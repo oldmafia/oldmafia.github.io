@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🃏 ჯოკერი</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a3a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1e5a2e;
+            border-radius: 50px;
+            border: 8px solid #d4a017;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: gold;
+            margin-bottom: 20px;
+        }
+        .green-table {
+            background: radial-gradient(circle at center, #2c8a3e, #0e3a1a);
+            border-radius: 80px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 4px solid #b87c2e;
+        }
+        .table-center {
+            text-align: center;
+            color: gold;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .chairs {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .chair {
+            text-align: center;
+            background: rgba(0,0,0,0.4);
+            padding: 12px;
+            border-radius: 25px;
+            width: 130px;
+        }
+        .chair img {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 3px solid #d4a017;
+            object-fit: cover;
+        }
+        .chair .name {
+            font-weight: bold;
+            color: #ffd966;
+            margin-top: 6px;
+            font-size: 14px;
+        }
+        .chair .status {
+            font-size: 11px;
+            color: #ffaa66;
+            margin-top: 4px;
+        }
+        .panel {
+            background: #0f2a0f;
+            padding: 15px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .panel button {
+            background: gold;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .back-btn {
+            display: inline-block;
+            background: #8b3a2a;
+            color: white;
+            text-decoration: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            text-align: center;
+        }
+        .info {
+            color: gold;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🃏 ჯოკერი 🃏</h1>
+
+    <div class="green-table">
+        <div class="table-center">🃏 მწვანე მაგიდა 🃏</div>
+        <div class="chairs" id="chairsContainer"></div>
+    </div>
+
+    <div class="panel">
+        <div class="info" id="info">მოთამაშეები: 0 / 4</div>
+        <button id="sitBtn">🪑 მაგიდაზე დაჯდომა</button>
+        <button id="startBtn" style="display:none;">🎮 თამაშის დაწყება</button>
+        <br><br>
+        <a href="chat.html" class="back-btn">← ჩატში დაბრუნება</a>
+    </div>
+</div>
+
+<script>
+    // ========== მომხმარებლის მონაცემები ==========
+    let myNick = localStorage.getItem('nickname');
+    let myAvatar = localStorage.getItem('avatar');
+    
+    if (!myNick) myNick = "მოთამაშე";
+    if (!myAvatar) myAvatar = "https://i.ibb.co/v3m6y6R/avatar.png";
+    
+    // ========== მოთამაშეების სია ==========
+    let players = [];
+    let myIndex = -1;
+    
+    // ========== ჩვენება ==========
+    function render() {
+        const container
