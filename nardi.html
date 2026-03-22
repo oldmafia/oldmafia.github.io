@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🎲 ნარდი · Backgammon</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -21,7 +22,7 @@
             padding: 16px;
         }
         .game {
-            max-width: 650px;
+            max-width: 700px;
             width: 100%;
             background: #c9a87b;
             border-radius: 48px;
@@ -87,6 +88,15 @@
             font-weight: bold;
             color: #3a2a1a;
             box-shadow: inset 0 0 0 3px #b97f3a, 0 5px 10px black;
+            transition: transform 0.2s;
+        }
+        .die.rolling {
+            animation: roll 0.3s ease-in-out;
+        }
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
         }
         button {
             background: #e4a842;
@@ -101,6 +111,67 @@
         button:active {
             transform: scale(0.97);
         }
+        .seat-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            gap: 10px;
+        }
+        .seat {
+            background: #2c2418;
+            border-radius: 40px;
+            padding: 8px 12px;
+            text-align: center;
+            flex: 1;
+            cursor: pointer;
+            border: 2px solid #e8c28e;
+        }
+        .seat.occupied {
+            border-color: #ffaa66;
+            background: #4a3a2a;
+        }
+        .seat .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 4px;
+        }
+        .seat .name {
+            font-size: 12px;
+            color: #ffefb9;
+            font-weight: bold;
+        }
+        .mini-chat {
+            margin-top: 16px;
+            background: #2c2418;
+            border-radius: 30px;
+            padding: 8px;
+        }
+        .chat-messages {
+            height: 80px;
+            overflow-y: auto;
+            font-size: 11px;
+            padding: 5px;
+            color: #ffefb9;
+        }
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 30px;
+            border: none;
+            background: #4a3a2a;
+            color: white;
+        }
+        .chat-input button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
         .back-link {
             display: block;
             text-align: center;
@@ -112,7 +183,7 @@
         @media (max-width: 550px) {
             .die { width: 45px; height: 45px; font-size: 28px; }
             button { padding: 6px 14px; font-size: 0.8rem; }
-            .turn { font-size: 0.75rem; }
+            .seat .avatar { width: 30px; height: 30px; }
         }
     </style>
 </head>
@@ -131,289 +202,404 @@
         </div>
         <button id="resetBtn">⟳ ახალი</button>
     </div>
+    
+    <!-- დაჯდომის ადგილები -->
+    <div class="seat-area">
+        <div class="seat" id="seatWhite" onclick="sitDown('white')">
+            <img class="avatar" id="whiteAvatar" src="https://i.ibb.co/v3m6y6R/avatar.png">
+            <div class="name" id="whiteName">თეთრი</div>
+        </div>
+        <div class="seat" id="seatBlack" onclick="sitDown('black')">
+            <img class="avatar" id="blackAvatar" src="https://i.ibb.co/v3m6y6R/avatar.png">
+            <div class="name" id="blackName">შავი</div>
+        </div>
+    </div>
+    
+    <!-- პატარა ჩატი -->
+    <div class="mini-chat">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="თამაშის დროს საუბარი...">
+            <button onclick="sendChatMsg()">➤</button>
+        </div>
+    </div>
+    
     <a href="chat.html" class="back-link">← ჩატში დაბრუნება</a>
 </div>
 
 <script>
-    (function(){
-        const canvas = document.getElementById('boardCanvas');
-        const ctx = canvas.getContext('2d');
-
-        // 24 წერტილი (0 = თეთრის სახლი, 23 = შავის სახლი)
-        let board = [
+    const supabase = supabase.createClient(
+        "https://ftfciebnywbondaiarnc.supabase.co",
+        "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+    );
+    
+    const myNick = localStorage.getItem('nickname') || 'მოთამაშე';
+    const myAvatar = localStorage.getItem('avatar') || 'https://i.ibb.co/v3m6y6R/avatar.png';
+    
+    // ========== ქვების განლაგება (სტანდარტული) ==========
+    let board = [
+        2,0,0,0,0,-5,0,-3,0,0,0,0,  // 0-11
+        5,-2,0,0,0,0,3,0,0,0,0,-4   // 12-23
+    ];
+    let whiteBar = 0;
+    let blackBar = 0;
+    let whiteOff = 0;
+    let blackOff = 0;
+    let turn = 'white';
+    let dice = [0,0];
+    let rolled = false;
+    let possibleMoves = [];
+    let selectedPoint = null;
+    
+    // ========== დაჯდომის სისტემა ==========
+    let whitePlayer = null;
+    let blackPlayer = null;
+    
+    function sitDown(color) {
+        if (color === 'white' && whitePlayer) {
+            alert("თეთრის ადგილი უკვე დაკავებულია!");
+            return;
+        }
+        if (color === 'black' && blackPlayer) {
+            alert("შავის ადგილი უკვე დაკავებულია!");
+            return;
+        }
+        
+        if (color === 'white') {
+            whitePlayer = myNick;
+            document.getElementById('whiteAvatar').src = myAvatar;
+            document.getElementById('whiteName').innerHTML = myNick;
+            document.getElementById('seatWhite').classList.add('occupied');
+        } else {
+            blackPlayer = myNick;
+            document.getElementById('blackAvatar').src = myAvatar;
+            document.getElementById('blackName').innerHTML = myNick;
+            document.getElementById('seatBlack').classList.add('occupied');
+        }
+        
+        // თუ ორივე დაჯდა, თამაში იწყება
+        if (whitePlayer && blackPlayer) {
+            alert("თამაში იწყება! " + whitePlayer + " (თეთრი) vs " + blackPlayer + " (შავი)");
+            initGame();
+        }
+    }
+    
+    // ========== ჩატი ==========
+    let chatMessages = [];
+    
+    function sendChatMsg() {
+        const input = document.getElementById('chatInput');
+        if (!input.value.trim()) return;
+        const msg = {
+            user: myNick,
+            text: input.value,
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+        };
+        chatMessages.push(msg);
+        renderChat();
+        input.value = "";
+    }
+    
+    function renderChat() {
+        const container = document.getElementById('chatMessages');
+        container.innerHTML = chatMessages.slice(-10).map(m => 
+            `<div><strong>${m.user}:</strong> ${m.text} <span style="color:#888;">${m.time}</span></div>`
+        ).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    // ========== თამაშის ლოგიკა ==========
+    function initGame() {
+        board = [
             2,0,0,0,0,-5,0,-3,0,0,0,0,
             5,-2,0,0,0,0,3,0,0,0,0,-4
         ];
-        let whiteBar = 0;
-        let blackBar = 0;
-        let turn = 'white';
-        let dice = [0,0];
-        let rolled = false;
-        let possibleMoves = [];
-        let selectedPoint = null;
-
-        function initGame(){
-            board = [
-                2,0,0,0,0,-5,0,-3,0,0,0,0,
-                5,-2,0,0,0,0,3,0,0,0,0,-4
-            ];
-            whiteBar = 0; blackBar = 0;
-            turn = 'white';
-            dice = [0,0];
-            rolled = false;
-            possibleMoves = [];
-            selectedPoint = null;
-            drawBoard();
-            updateUI();
-        }
-
-        function getDiceSymbol(v){
-            const map = {1:'⚀',2:'⚁',3:'⚂',4:'⚃',5:'⚄',6:'⚅'};
-            return map[v];
-        }
-
-        function rollDice(){
-            if(rolled){
-                alert("უკვე დაყარე! გადაიტანე ქვები.");
-                return;
-            }
-            let d1 = Math.floor(Math.random()*6)+1;
-            let d2 = Math.floor(Math.random()*6)+1;
-            dice = [d1, d2];
-            document.getElementById('die1').innerHTML = getDiceSymbol(d1);
-            document.getElementById('die2').innerHTML = getDiceSymbol(d2);
-            rolled = true;
-            generateMoves();
-            if(possibleMoves.length === 0){
-                alert(`${turn === 'white' ? 'თეთრს' : 'შავს'} სვლა არ აქვს! ჯერი გადადის.`);
-                nextTurn();
-            }
-            drawBoard();
-        }
-
-        function generateMoves(){
-            possibleMoves = [];
-            let bar = (turn === 'white') ? whiteBar : blackBar;
-            let fromPoints = [];
-            if(bar > 0){
-                fromPoints.push(-1);
-            } else {
-                for(let i=0;i<24;i++){
-                    let val = board[i];
-                    if(turn === 'white' && val > 0) fromPoints.push(i);
-                    if(turn === 'black' && val < 0) fromPoints.push(i);
-                }
-            }
-            for(let from of fromPoints){
-                for(let d of dice){
-                    if(d===0) continue;
-                    let to;
-                    if(from === -1){
-                        to = (turn === 'white') ? d-1 : 24-d;
-                    } else {
-                        to = (turn === 'white') ? from + d : from - d;
-                    }
-                    if(isValidMove(from, to)){
-                        possibleMoves.push({from, to, dieValue:d});
-                    }
-                }
-            }
-            possibleMoves = possibleMoves.filter((v,i,a)=>a.findIndex(t=>t.from===v.from && t.to===v.to)===i);
-        }
-
-        function isValidMove(from, to){
-            if(to < 0 || to > 23) return false;
-            let bar = (turn === 'white') ? whiteBar : blackBar;
-            if(from === -1 && bar === 0) return false;
-            let srcCount = (from === -1) ? bar : (turn === 'white' ? board[from] : -board[from]);
-            if(srcCount <= 0) return false;
-            let destCount = (turn === 'white') ? board[to] : -board[to];
-            if(destCount < -1) return false;
-            return true;
-        }
-
-        function applyMove(move){
-            let {from, to} = move;
-            if(from === -1){
-                if(turn === 'white'){
-                    whiteBar--;
-                    if(board[to] < 0){
-                        blackBar++;
-                        board[to] = 1;
-                    } else {
-                        board[to] = (board[to] || 0) + 1;
-                    }
-                } else {
-                    blackBar--;
-                    if(board[to] > 0){
-                        whiteBar++;
-                        board[to] = -1;
-                    } else {
-                        board[to] = (board[to] || 0) - 1;
-                    }
-                }
-            } else {
-                if(turn === 'white'){
-                    board[from]--;
-                    if(board[to] < 0){
-                        blackBar++;
-                        board[to] = 1;
-                    } else {
-                        board[to] = (board[to] || 0) + 1;
-                    }
-                } else {
-                    board[from]++;
-                    if(board[to] > 0){
-                        whiteBar++;
-                        board[to] = -1;
-                    } else {
-                        board[to] = (board[to] || 0) - 1;
-                    }
-                }
-            }
-        }
-
-        function nextTurn(){
-            turn = (turn === 'white') ? 'black' : 'white';
-            rolled = false;
-            dice = [0,0];
-            document.getElementById('die1').innerHTML = '⚀';
-            document.getElementById('die2').innerHTML = '⚀';
-            possibleMoves = [];
-            selectedPoint = null;
-            updateUI();
-            drawBoard();
-        }
-
-        function tryMove(from, to){
-            if(!rolled){
-                alert("ჯერ კამათელი უნდა ყარო!");
-                return false;
-            }
-            let valid = possibleMoves.find(m => m.from === from && m.to === to);
-            if(!valid){
-                alert("არასწორი სვლა!");
-                return false;
-            }
-            applyMove(valid);
-            let idx = dice.indexOf(valid.dieValue);
-            if(idx !== -1) dice[idx] = 0;
-            generateMoves();
-            drawBoard();
-            if(possibleMoves.length === 0){
-                nextTurn();
-            }
-            return true;
-        }
-
-        function drawBoard(){
-            const w = canvas.width, h = canvas.height;
-            ctx.clearRect(0,0,w,h);
-            // ხის ფონი
-            ctx.fillStyle = '#c49a6c';
-            ctx.fillRect(0,0,w,h);
-            // ხაზები
-            ctx.strokeStyle = '#aa7a44';
-            ctx.lineWidth = 1.5;
-            for(let i=0;i<24;i++){
-                let x = (i%12)* (w/12);
-                let y = (i<12) ? 0 : h/2;
-                ctx.strokeRect(x, y, w/12, h/2);
-            }
-            // ცენტრალური ზოლი
-            ctx.fillStyle = '#8b5a2b';
-            ctx.fillRect(w/2-12, 0, 24, h);
-            ctx.fillStyle = '#e8bc8c';
-            ctx.fillRect(w/2-6, 0, 12, h);
-            
-            // ქვების დახატვა
-            for(let i=0;i<24;i++){
-                let cnt = board[i];
-                if(cnt===0) continue;
-                let isWhite = cnt>0;
-                let absCnt = Math.min(Math.abs(cnt),5);
-                let x = (i%12)* (w/12) + 12;
-                let yBase = (i<12) ? h/2-28 : h-48;
-                let step = 11;
-                for(let j=0;j<absCnt;j++){
-                    ctx.fillStyle = isWhite ? '#f5f5f5' : '#4a3a2a';
-                    ctx.beginPath();
-                    ctx.arc(x+8, yBase - j*step, 11, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.strokeStyle = '#222';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    // 3D ეფექტი
-                    ctx.fillStyle = isWhite ? '#ddd' : '#2a1a0a';
-                    ctx.beginPath();
-                    ctx.arc(x+6, yBase - j*step - 2, 4, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            }
-            // ზოლის ქვები
-            if(whiteBar > 0){
-                for(let j=0;j<Math.min(whiteBar,5);j++){
-                    ctx.fillStyle = '#f5f5f5';
-                    ctx.beginPath();
-                    ctx.arc(w/2-25, h-50 - j*12, 11, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            }
-            if(blackBar > 0){
-                for(let j=0;j<Math.min(blackBar,5);j++){
-                    ctx.fillStyle = '#4a3a2a';
-                    ctx.beginPath();
-                    ctx.arc(w/2+25, 30 + j*12, 11, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            }
-            
-            // არჩეული წერტილის მონიშვნა
-            if(selectedPoint !== null && selectedPoint >=0 && selectedPoint <24){
-                let x = (selectedPoint%12)*(w/12);
-                let y = (selectedPoint<12) ? 0 : h/2;
-                ctx.fillStyle = '#ffcc44aa';
-                ctx.fillRect(x, y, w/12, h/2);
-            }
-        }
-
-        function updateUI(){
-            document.getElementById('turnLabel').innerHTML = (turn === 'white') ? '⚪ თეთრის ჯერი' : '⚫ შავის ჯერი';
-        }
-
-        // კლიკის დამუშავება
-        canvas.addEventListener('click', (e)=>{
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            let mouseX = (e.clientX - rect.left) * scaleX;
-            let mouseY = (e.clientY - rect.top) * scaleY;
-            let point = Math.floor(mouseX / (canvas.width/12));
-            if(point<0 || point>23) return;
-            let isTopHalf = mouseY < canvas.height/2;
-            let idx = isTopHalf ? point : point+12;
-            
-            if(selectedPoint === null){
-                // არჩევა
-                let val = board[idx];
-                if(turn === 'white' && val>0) selectedPoint = idx;
-                else if(turn === 'black' && val<0) selectedPoint = idx;
-                else if(turn === 'white' && whiteBar>0 && idx=== -1) selectedPoint = -1;
-                else if(turn === 'black' && blackBar>0 && idx=== -1) selectedPoint = -1;
-                else { alert("ეს შენი ქვა არ არის!"); return; }
-                drawBoard();
-            } else {
-                // გადატანა
-                tryMove(selectedPoint, idx);
-                selectedPoint = null;
-                drawBoard();
-            }
+        whiteBar = 0; blackBar = 0;
+        whiteOff = 0; blackOff = 0;
+        turn = 'white';
+        dice = [0,0];
+        rolled = false;
+        possibleMoves = [];
+        selectedPoint = null;
+        drawBoard();
+        updateUI();
+        addChatMessage("system", "თამაში დაიწყო! თეთრი იწყებს.");
+    }
+    
+    function addChatMessage(sender, text) {
+        chatMessages.push({
+            user: sender === 'system' ? '🎲 ნარდი' : sender,
+            text: text,
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
         });
-
-        document.getElementById('rollBtn').onclick = rollDice;
-        document.getElementById('resetBtn').onclick = ()=>{ initGame(); selectedPoint=null; };
-        initGame();
-    })();
+        renderChat();
+    }
+    
+    function getDiceSymbol(v){
+        const map = {1:'⚀',2:'⚁',3:'⚂',4:'⚃',5:'⚄',6:'⚅'};
+        return map[v];
+    }
+    
+    function animateDice(d1, d2) {
+        const die1 = document.getElementById('die1');
+        const die2 = document.getElementById('die2');
+        die1.classList.add('rolling');
+        die2.classList.add('rolling');
+        setTimeout(() => {
+            die1.classList.remove('rolling');
+            die2.classList.remove('rolling');
+        }, 300);
+    }
+    
+    function rollDice(){
+        if (!whitePlayer || !blackPlayer) {
+            alert("ჯერ ორივე მოთამაშე უნდა დაჯდეს!");
+            return;
+        }
+        if(rolled){
+            alert("უკვე დაყარე! გადაიტანე ქვები.");
+            return;
+        }
+        let d1 = Math.floor(Math.random()*6)+1;
+        let d2 = Math.floor(Math.random()*6)+1;
+        dice = [d1, d2];
+        animateDice(d1, d2);
+        document.getElementById('die1').innerHTML = getDiceSymbol(d1);
+        document.getElementById('die2').innerHTML = getDiceSymbol(d2);
+        rolled = true;
+        generateMoves();
+        if(possibleMoves.length === 0){
+            addChatMessage("system", `${turn === 'white' ? 'თეთრს' : 'შავს'} სვლა არ აქვს! ჯერი გადადის.`);
+            nextTurn();
+        }
+        drawBoard();
+    }
+    
+    function generateMoves(){
+        possibleMoves = [];
+        let bar = (turn === 'white') ? whiteBar : blackBar;
+        let fromPoints = [];
+        if(bar > 0){
+            fromPoints.push(-1);
+        } else {
+            for(let i=0;i<24;i++){
+                let val = board[i];
+                if(turn === 'white' && val > 0) fromPoints.push(i);
+                if(turn === 'black' && val < 0) fromPoints.push(i);
+            }
+        }
+        for(let from of fromPoints){
+            for(let d of dice){
+                if(d===0) continue;
+                let to;
+                if(from === -1){
+                    to = (turn === 'white') ? d-1 : 24-d;
+                } else {
+                    to = (turn === 'white') ? from + d : from - d;
+                }
+                if(isValidMove(from, to)){
+                    possibleMoves.push({from, to, dieValue:d});
+                }
+            }
+        }
+        possibleMoves = possibleMoves.filter((v,i,a)=>a.findIndex(t=>t.from===v.from && t.to===v.to)===i);
+    }
+    
+    function isValidMove(from, to){
+        if(to < 0 || to > 23) return false;
+        let bar = (turn === 'white') ? whiteBar : blackBar;
+        if(from === -1 && bar === 0) return false;
+        let srcCount = (from === -1) ? bar : (turn === 'white' ? board[from] : -board[from]);
+        if(srcCount <= 0) return false;
+        let destCount = (turn === 'white') ? board[to] : -board[to];
+        if(destCount < -1) return false;
+        return true;
+    }
+    
+    function applyMove(move){
+        let {from, to} = move;
+        if(from === -1){
+            if(turn === 'white'){
+                whiteBar--;
+                if(board[to] < 0){
+                    blackBar++;
+                    board[to] = 1;
+                    addChatMessage("system", `თეთრმა მოკლა შავის ქვა!`);
+                } else {
+                    board[to] = (board[to] || 0) + 1;
+                }
+            } else {
+                blackBar--;
+                if(board[to] > 0){
+                    whiteBar++;
+                    board[to] = -1;
+                    addChatMessage("system", `შავმა მოკლა თეთრის ქვა!`);
+                } else {
+                    board[to] = (board[to] || 0) - 1;
+                }
+            }
+        } else {
+            if(turn === 'white'){
+                board[from]--;
+                if(board[to] < 0){
+                    blackBar++;
+                    board[to] = 1;
+                    addChatMessage("system", `თეთრმა მოკლა შავის ქვა!`);
+                } else {
+                    board[to] = (board[to] || 0) + 1;
+                }
+            } else {
+                board[from]++;
+                if(board[to] > 0){
+                    whiteBar++;
+                    board[to] = -1;
+                    addChatMessage("system", `შავმა მოკლა თეთრის ქვა!`);
+                } else {
+                    board[to] = (board[to] || 0) - 1;
+                }
+            }
+        }
+    }
+    
+    function nextTurn(){
+        turn = (turn === 'white') ? 'black' : 'white';
+        rolled = false;
+        dice = [0,0];
+        document.getElementById('die1').innerHTML = '⚀';
+        document.getElementById('die2').innerHTML = '⚀';
+        possibleMoves = [];
+        selectedPoint = null;
+        updateUI();
+        drawBoard();
+        addChatMessage("system", `${turn === 'white' ? 'თეთრის' : 'შავის'} ჯერია.`);
+    }
+    
+    function tryMove(from, to){
+        if(!rolled){
+            alert("ჯერ კამათელი უნდა ყარო!");
+            return false;
+        }
+        let valid = possibleMoves.find(m => m.from === from && m.to === to);
+        if(!valid){
+            alert("არასწორი სვლა!");
+            return false;
+        }
+        applyMove(valid);
+        let idx = dice.indexOf(valid.dieValue);
+        if(idx !== -1) dice[idx] = 0;
+        generateMoves();
+        drawBoard();
+        if(possibleMoves.length === 0){
+            nextTurn();
+        }
+        return true;
+    }
+    
+    function drawBoard(){
+        const w = canvas.width, h = canvas.height;
+        ctx.clearRect(0,0,w,h);
+        ctx.fillStyle = '#c49a6c';
+        ctx.fillRect(0,0,w,h);
+        ctx.strokeStyle = '#aa7a44';
+        ctx.lineWidth = 1.5;
+        for(let i=0;i<24;i++){
+            let x = (i%12)* (w/12);
+            let y = (i<12) ? 0 : h/2;
+            ctx.strokeRect(x, y, w/12, h/2);
+        }
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(w/2-12, 0, 24, h);
+        ctx.fillStyle = '#e8bc8c';
+        ctx.fillRect(w/2-6, 0, 12, h);
+        
+        for(let i=0;i<24;i++){
+            let cnt = board[i];
+            if(cnt===0) continue;
+            let isWhite = cnt>0;
+            let absCnt = Math.min(Math.abs(cnt),5);
+            let x = (i%12)* (w/12) + 12;
+            let yBase = (i<12) ? h/2-28 : h-48;
+            let step = 11;
+            for(let j=0;j<absCnt;j++){
+                ctx.fillStyle = isWhite ? '#f5f5f5' : '#4a3a2a';
+                ctx.beginPath();
+                ctx.arc(x+8, yBase - j*step, 11, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#222';
+                ctx.stroke();
+                ctx.fillStyle = isWhite ? '#ddd' : '#2a1a0a';
+                ctx.beginPath();
+                ctx.arc(x+6, yBase - j*step - 2, 4, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        
+        if(whiteBar > 0){
+            for(let j=0;j<Math.min(whiteBar,5);j++){
+                ctx.fillStyle = '#f5f5f5';
+                ctx.beginPath();
+                ctx.arc(w/2-25, h-50 - j*12, 11, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        if(blackBar > 0){
+            for(let j=0;j<Math.min(blackBar,5);j++){
+                ctx.fillStyle = '#4a3a2a';
+                ctx.beginPath();
+                ctx.arc(w/2+25, 30 + j*12, 11, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        
+        if(selectedPoint !== null && selectedPoint >=0 && selectedPoint <24){
+            let x = (selectedPoint%12)*(w/12);
+            let y = (selectedPoint<12) ? 0 : h/2;
+            ctx.fillStyle = '#ffcc44aa';
+            ctx.fillRect(x, y, w/12, h/2);
+        }
+    }
+    
+    function updateUI(){
+        const currentPlayer = (turn === 'white') ? whitePlayer : blackPlayer;
+        document.getElementById('turnLabel').innerHTML = (turn === 'white') ? 
+            `⚪ ${currentPlayer || 'თეთრი'} - ჯერი` : 
+            `⚫ ${currentPlayer || 'შავი'} - ჯერი`;
+    }
+    
+    const canvas = document.getElementById('boardCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.addEventListener('click', (e)=>{
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let mouseX = (e.clientX - rect.left) * scaleX;
+        let mouseY = (e.clientY - rect.top) * scaleY;
+        let point = Math.floor(mouseX / (canvas.width/12));
+        if(point<0 || point>23) return;
+        let isTopHalf = mouseY < canvas.height/2;
+        let idx = isTopHalf ? point : point+12;
+        
+        if(selectedPoint === null){
+            let val = board[idx];
+            if(turn === 'white' && val>0) selectedPoint = idx;
+            else if(turn === 'black' && val<0) selectedPoint = idx;
+            else if(turn === 'white' && whiteBar>0 && idx=== -1) selectedPoint = -1;
+            else if(turn === 'black' && blackBar>0 && idx=== -1) selectedPoint = -1;
+            else { alert("ეს შენი ქვა არ არის!"); return; }
+            drawBoard();
+        } else {
+            tryMove(selectedPoint, idx);
+            selectedPoint = null;
+            drawBoard();
+        }
+    });
+    
+    document.getElementById('rollBtn').onclick = rollDice;
+    document.getElementById('resetBtn').onclick = ()=>{ initGame(); selectedPoint=null; };
+    
+    drawBoard();
+    updateUI();
 </script>
 </body>
 </html>
