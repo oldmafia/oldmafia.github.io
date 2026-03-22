@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+        
+        /* ღამის რეჟიმი */
+        body.night-mode {
+            --bg-color: #030000;
+            --text-color: white;
+            --chat-bg: radial-gradient(circle at center, #1a0000 0%, #030000 100%);
+            --bubble-bg: rgba(25, 0, 0, 0.9);
+            --bubble-border: #660000;
+            --nick-color: #ff6666;
+            --input-bg: #080000;
+            --input-border: #660000;
+            --topbar-bg: black;
+            --inbox-border: #150000;
+            --inbox-hover: #1a0000;
+            --heart-color: #ff6666;
+        }
+        
+        /* დღის რეჟიმი — გულები ფონზე მიმოფანტული */
+        body.day-mode {
+            --bg-color: #fff8f0;
+            --text-color: #2c2418;
+            --chat-bg: #fffef7;
+            --bubble-bg: #ffffff;
+            --bubble-border: #e8d4b0;
+            --nick-color: #c55a3a;
+            --input-bg: #ffffff;
+            --input-border: #e8d4b0;
+            --topbar-bg: #fff4e6;
+            --inbox-border: #f0e4cc;
+            --inbox-hover: #fff0e6;
+            --heart-color: #ff4d4d;
+            /* გულები ფონზე მიმოფანტული */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="10" y="20" font-size="18">❤️</text><text x="45" y="45" font-size="22">❤️</text><text x="75" y="15" font-size="16">❤️</text><text x="85" y="70" font-size="20">❤️</text><text x="15" y="85" font-size="24">❤️</text><text x="55" y="90" font-size="18">❤️</text><text x="30" y="60" font-size="28">❤️</text></svg>');
+            background-repeat: repeat;
+            background-size: 90px 90px;
+            background-position: 0 0, 45px 60px;
+            background-attachment: fixed;
+        }
+        
+        /* ღაჟღაჟა გულების ანიმაცია */
+        @keyframes heartGlow {
+            0% { filter: drop-shadow(0 0 2px #ff6699) drop-shadow(0 0 4px #ff3366); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 12px #ff88aa) drop-shadow(0 0 20px #ff4466); transform: scale(1.05); }
+            100% { filter: drop-shadow(0 0 2px #ff6699) drop-shadow(0 0 4px #ff3366); transform: scale(1); }
+        }
+        
+        body {
+            margin: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            padding: 15px;
+            border-bottom: 2px solid var(--nick-color);
+            background: var(--topbar-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .header b:first-child {
+            cursor: pointer;
+            color: var(--nick-color);
+            font-size: 22px;
+        }
+        #p-name {
+            font-weight: bold;
+            color: var(--nick-color);
+        }
+        .header b:last-child {
+            cursor: pointer;
+            color: var(--nick-color);
+            font-size: 18px;
+        }
+        
+        #main-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background: transparent;
+        }
+        
+        /* Inbox View */
+        .inbox-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--inbox-border);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        body.night-mode .inbox-item {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .inbox-item:hover {
+            background: var(--inbox-hover);
+        }
+        .inbox-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--nick-color);
+            object-fit: cover;
+            margin-right: 15px;
+            background: #333;
+        }
+        .inbox-nick {
+            font-weight: bold;
+            font-size: 16px;
+            flex: 1;
+            color: var(--text-color);
+        }
+        .unread-dot {
+            width: 12px;
+            height: 12px;
+            background: #ff4444;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff4444;
+            margin-left: 10px;
+            animation: heartGlow 1s infinite;
+        }
+        
+        /* Chat View */
+        #chat-view {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-bottom: 100px;
+        }
+        .msg-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            position: relative;
+        }
+        .mini-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 1px solid var(--nick-color);
+            object-fit: cover;
+            background: #333;
+        }
+        .bubble {
+            background: var(--bubble-bg);
+            border: 1px solid var(--bubble-border);
+            padding: 10px;
+            border-radius: 12px;
+            max-width: 75%;
+            border-left: 3px solid var(--nick-color);
+            position: relative;
+        }
+        .msg-nick {
+            color: var(--nick-color);
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .msg-text {
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+        .msg-text img {
+            width: 28px;
+            vertical-align: middle;
+            margin: 2px;
+        }
+        .msg-info {
+            font-size: 9px;
+            color: #888;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .del-btn {
+            color: #ff6666;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        /* Controls */
+        #emoji-picker {
+            position: fixed;
+            bottom: 80px;
+            left: 10px;
+            right: 10px;
+            background: var(--bubble-bg);
+            border: 2px solid var(--bubble-border);
+            border-radius: 15px;
+            display: none;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .emoji-wrapper {
+            position: relative;
+        }
+        .emoji-img {
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .emoji-del {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: red;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid #000;
+        }
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            padding: 12px;
+            background: var(--topbar-bg);
+            border-top: 1px solid var(--bubble-border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .input-box {
+            flex: 1;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 20px;
+            outline: none;
+        }
+        .upload-btn {
+            grid-column: span 5;
+            background: var(--nick-color);
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <b onclick="goBack()" style="cursor:pointer;">⬅</b>
+        <span id="p-name">შემოსულები</span>
+        <div style="display: flex; align-items: center;">
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+            <b onclick="location.reload()" style="cursor:pointer;">🔄</b>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="chat-view" style="display:none;"></div>
+        <div id="inbox-view"></div>
+    </div>
+
+    <div id="emoji-picker"></div>
+
+    <div id="controls" class="bottom-bar" style="display:none;">
+        <div onclick="toggleEmoji()" style="font-size:30px; cursor:pointer;">😊</div>
+        <input type="text" id="pm-input" class="input-box" placeholder="დაწერე მესიჯი...">
+        <div onclick="sendMsg()" style="font-size:30px; color:var(--nick-color); cursor:pointer;">✈</div>
+    </div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('nickname') || 'Abu007';
+    const myRole = localStorage.getItem('role');
+    const partner = new URLSearchParams(window.location.search).get('to');
+    let profMap = {};
+    let emojiList = [];
+
+    function setTheme(theme) {
+        const body = document.body;
+        body.classList.remove('night-mode', 'day-mode');
+        if (theme === 'day') {
+            body.classList.add('day-mode');
+            document.getElementById('themeToggle').innerHTML = '🌙';
+            localStorage.setItem('pm_theme', 'day');
+        } else {
+            body.classList.add('night-mode');
+            document.getElementById('themeToggle').innerHTML = '☀️';
+            localStorage.setItem('pm_theme', 'night');
+        }
+    }
+    
+    function toggleTheme() {
+        if (document.body.classList.contains('night-mode')) setTheme('day');
+        else setTheme('night');
+    }
+    
+    async function init() {
+        const savedTheme = localStorage.getItem('pm_theme') || 'night';
+        setTheme(savedTheme);
+        
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
+        if (profiles) {
+            profiles.forEach(p => {
+                profMap[p.username] = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
+            });
+        }
+        
+        const { data: emojis } = await _s.from('emojis').select('*');
+        emojiList = emojis || [];
+
+        if (partner) {
+            document.getElementById('inbox-view').style.display = 'none';
+            document.getElementById('chat-view').style.display = 'flex';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('p-name').innerText = partner;
+            await markAsRead();
+            loadChat();
+            setInterval(loadChat, 4000);
+        } else {
+            loadInbox();
+        }
+    }
+
+    async function markAsRead() {
+        await _s.from('private_messages')
+            .update({ is_read: true })
+            .eq('sender', partner)
+            .eq('receiver', myNick);
+    }
+
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', {ascending: false});
+        const partners = [...new Set(msgs?.map(m => m.sender === myNick ? m.receiver : m.sender))];
+        const unreadFrom = msgs?.filter(m => m.receiver === myNick && !m.is_read).map(m => m.sender);
+
+        document.getElementById('inbox-view').innerHTML = (partners || []).map(p => `
+            <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
+                <img src="${profMap[p] || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="inbox-avatar" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+                <span class="inbox-nick">${p}</span>
+                ${unreadFrom?.includes(p) ? '<div class="unread-dot"></div>' : ''}
+            </div>
+        `).join('') || '<p style="text-align:center; padding:20px; color:#888;">💬 მესიჯები არ არის</p>';
+    }
+
+    async function loadChat() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${partner}"),and(sender.eq."${partner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+        if(msgs) {
+            document.getElementById('chat-view').innerHTML = msgs.map(m => {
+                let text = m.text;
+                emojiList.forEach(e => {
+                    const reg = new RegExp(`:e${e.id}:`, 'g');
+                    text = text.replace(reg, `<img src="${e.emoji_url}">`);
+                });
+                const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `<div class="msg-row">
+                    <img src="${profMap[m.sender] || 'https://i.ibb.co/v3m6y6R/avatar.png'}" class="mini-avatar" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+                    <div class="bubble">
+                        <b class="msg-nick">${m.sender}</b>
+                        <div class="msg-text">${text}</div>
+                        <div class="msg-info"><span>${time}</span>${(m.sender === myNick || myRole === 'Owner' || myRole === '👑 დამფუძნებელი') ? `<span class="del-btn" onclick="delMsg(${m.id})">✖</span>` : ''}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('chat-view').scrollTop = 99999;
+        }
+    }
+
+    async function sendMsg() {
+        const inp = document.getElementById('pm-input');
+        if(!inp.value.trim()) return;
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: partner, text: inp.value, is_read: false }]);
+        inp.value = ""; loadChat();
+    }
+
+    async function delMsg(id) {
+        if(confirm("წავშალოთ?")) { await _s.from('private_messages').delete().eq('id', id); loadChat(); }
+    }
+
+    function goBack() { window.location.href = partner ? 'pm.html' : 'chat.html'; }
+
+    async function toggleEmoji() {
+        const p = document.getElementById('emoji-picker');
+        p.style.display = p.style.display === 'grid' ? 'none' : 'grid';
+        if(p.style.display === 'grid') {
+            const { data } = await _s.from('emojis').select('*');
+            emojiList = data || [];
+            p.innerHTML = emojiList.map(e => `<div class="emoji-wrapper">
+                <img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.id}')" onerror="this.style.display='none'">
+                ${myRole === 'Owner' || myRole === '👑 დამფუძნებელი' ? `<div class="emoji-del" onclick="deleteEmoji('${e.id}')">×</div>` : ''}
+            </div>`).join('') + `<label class="upload-btn">➕ ატვირთვა<input type="file" hidden accept="image/*" onchange="upFile(this)"></label>`;
+        }
+    }
+
+    async function deleteEmoji(id) {
+        if(confirm("წავშალოთ სმაილი?")) { await _s.from('emojis').delete().eq('id', id); toggleEmoji(); }
+    }
+
+    async function upFile(input) {
+        const file = input.files[0];
+        const name = `${Date.now()}_${file.name}`;
+        const { error } = await _s.storage.from('emojis').upload(name, file);
+        if(!error) {
+            const { data: url } = _s.storage.from('emojis').getPublicUrl(name);
+            await _s.from('emojis').insert([{ emoji_url: url.publicUrl }]);
+            toggleEmoji();
+        }
+    }
+
+    function addEmoji(id) {
+        document.getElementById('pm-input').value += ` :e${id}: `;
+        document.getElementById('emoji-picker').style.display = 'none';
+        document.getElementById('pm-input').focus();
+    }
+
+    document.getElementById('themeToggle').onclick = toggleTheme;
+    init();
+</script>
+</body>
+</html>
