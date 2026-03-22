@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🃏 ჯოკერი - სრული ვერსია</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(145deg, #0a2f1a 0%, #051a0a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 1300px;
+            width: 100%;
+            background: #1e4a2a;
+            border-radius: 70px;
+            padding: 25px;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.5);
+            border: 1px solid #e4b363;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #f9e281, #d4a017);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+        }
+        .felt {
+            background: radial-gradient(ellipse at 30% 40%, #2a8642, #0d4a1a);
+            border-radius: 90px;
+            padding: 25px 15px;
+            border: 4px solid #b87c2e;
+            box-shadow: inset 0 0 35px rgba(0,0,0,0.5);
+        }
+        .players-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 35px;
+        }
+        .player-card {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 50px;
+            padding: 12px 10px;
+            width: 145px;
+            text-align: center;
+            border: 1px solid #e4b363;
+        }
+        .player-card img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid gold;
+            object-fit: cover;
+        }
+        .player-card .name {
+            font-weight: bold;
+            color: #ffefb9;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .player-card .bid-status {
+            font-size: 12px;
+            color: #ffcc77;
+            background: #00000077;
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 30px;
+            margin-top: 5px;
+        }
+        .center-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 60px;
+            padding: 15px 20px;
+        }
+        .trump-box {
+            background: #1e2a1a;
+            padding: 8px 20px;
+            border-radius: 60px;
+            color: gold;
+            font-weight: bold;
+        }
+        .table-cards {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: #1d3a1d80;
+            padding: 8px 16px;
+            border-radius: 50px;
+        }
+        .table-card {
+            background: white;
+            width: 65px;
+            height: 90px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 2px 4px 8px black;
+        }
+        .my-hand {
+            background: #102010e0;
+            border-radius: 50px;
+            padding: 18px;
+            margin-top: 25px;
+        }
+        .hand-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .game-card {
+            background: #fef9e6;
+            width: 75px;
+            height: 105px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.07s linear;
+            box-shadow: 3px 5px 10px black;
+        }
+        .action-panel {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        button, select {
+            background: #f5bc4e;
+            border: none;
+            font-weight: bold;
+            padding: 10px 22px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        select {
+            background: #2c472c;
+            color: white;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #ffdd99;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <h1>🃏 ჯოკერი · 4 მოთამაშე 🃏</h1>
+
+    <div class="felt">
+        <div class="players-row" id="playersList"></div>
+        <div class="center-area">
+            <div class="trump-box" id="trumpInfo">🃏 ტრამპი: —</div>
+            <div class="table-cards" id="tableCardsArea"></div>
+        </div>
+    </div>
+
+    <div class="my-hand">
+        <h3 style="color:gold;">🃏 შენი კარტები</h3>
+        <div class="hand-cards" id="myHandCards"></div>
+    </div>
+
+    <div class="action-panel">
+        <button id="sitBtn">🪑 დაჯდომა</button>
+        <select id="bidSelect">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
+            <option>10</option><option>11</option><option>12</option><option>13</option>
+        </select>
+        <button id="bidBtn">📢 განაცხადი</button>
+        <button id="startBtn">🎮 თამაშის დაწყება</button>
+    </div>
+
+    <a href="chat.html" class="back-link">← ჩატში დაბრუნება</a>
+</div>
+
+<script>
+    // ==================== მომხმარებლის მონაცემები ====================
+    let myNick = localStorage.getItem('nickname') || "მოთამაშე";
+    let myAvatar = localStorage.getItem('avatar') || "https://i.ibb.co/v3m6y6R/avatar.png";
+
+    // ==================== ყველა მოთამაშე ინახება localStorage-ში ====================
+    let players = JSON.parse(localStorage.getItem('joker_players')) || [];
+    let myIndex = players.findIndex(p => p.name === myNick);
+    let gameActive = false;
+    let currentRound = 1;
+    let roundBids = [null, null, null, null];
+    let roundTricks = [null, null, null, null];
+    let totalScores = [0, 0, 0, 0];
+    let trumpCard = null;
+    let tableCards = [];
+
+    const ROUNDS_CONFIG = [9,8,7,6,5,4,3,2,1, 9,9,9,9, 9,8,7,6,5,4,3,2,1, 9,9,9,9];
+
+    // ==================== შენახვა ====================
+    function savePlayers() {
+        localStorage.setItem('joker_players', JSON.stringify(players));
+    }
+
+    // ==================== დაჯდომა ====================
+    function sitDown() {
+        if (players.find(p => p.name === myNick)) {
+            alert("თქვენ უკვე ზიხართ მაგიდაზე!");
+            return;
+        }
+        if (players.length >= 4) {
+            alert("მაგიდა სავსეა!");
+            return;
+        }
+        players.push({
+            name: myNick,
+            avatar: myAvatar,
+            bid: null,
+            trick: null,
+            totalScore: 0
+        });
+        myIndex = players.length - 1;
+        savePlayers();
+        renderUI();
+        alert(`${myNick} დაჯექით მაგიდაზე! (${players.length}/4)`);
+    }
+
+    // ==================== თამაშის დაწყება ====================
+    function startGame() {
+        if (players.length !== 4) {
+            alert("საჭიროა 4 მოთამაშე!");
+            return;
+        }
+        currentRound = 1;
+        totalScores = [0, 0, 0, 0];
+        roundBids = [null, null, null, null];
+        roundTricks = [null, null, null, null];
+        tableCards = [];
+        trumpCard = { suit: '♠', rank: 'A' }; // ტესტისთვის
+        gameActive = true;
+        for (let i = 0; i < players.length; i++) {
+            players[i].bid = null;
+            players[i].trick = null;
+            players[i].totalScore = 0;
+        }
+        savePlayers();
+        renderUI();
+        alert(`თამაში დაიწყო! რაუნდი 1/26 | ლივები: ${ROUNDS_CONFIG[0]}`);
+    }
+
+    // ==================== განაცხადი ====================
+    function makeBid() {
+        if (!gameActive) {
+            alert("თამაში ჯერ არ დაწყებულა!");
+            return;
+        }
+        if (roundBids[myIndex] !== null) {
+            alert("უკვე გააკეთეთ განაცხადი ამ რაუნდში!");
+            return;
+        }
+        let bid = parseInt(document.getElementById("bidSelect").value);
+        roundBids[myIndex] = bid;
+        players[myIndex].bid = bid;
+        savePlayers();
+        renderUI();
+
+        if (roundBids.every(b => b !== null)) {
+            alert("ყველამ გააკეთა განაცხადი! ახლა შეიყვანეთ აღებული ლივები.");
+            askTricks();
+        }
+    }
+
+    function askTricks() {
+        let tricks = prompt(`რაუნდი ${currentRound}/26\nრამდენი ლივი აიღეთ? (0-${ROUNDS_CONFIG[currentRound-1]})`, "0");
+        tricks = parseInt(tricks);
+        if (isNaN(tricks)) tricks = 0;
+        roundTricks[myIndex] = tricks;
+        players[myIndex].trick = tricks;
+
+        let bid = roundBids[myIndex];
+        let score = (bid === tricks) ? (10 + bid) : -Math.abs(bid - tricks);
+        totalScores[myIndex] += score;
+        players[myIndex].totalScore = totalScores[myIndex];
+        savePlayers();
+        renderUI();
+
+        if (roundTricks.every(t => t !== null)) {
+            let msg = `✅ რაუნდი ${currentRound} დასრულდა!\nქულები: ${totalScores.join(" | ")}\n`;
+            if (currentRound < 26) {
+                if (confirm(msg + "გადავიდეთ შემდეგ რაუნდზე?")) {
+                    currentRound++;
+                    roundBids = [null, null, null, null];
+                    roundTricks = [null, null, null, null];
+                    for (let i = 0; i < players.length; i++) {
+                        players[i].bid = null;
+                        players[i].trick = null;
+                    }
+                    savePlayers();
+                    renderUI();
+                    alert(`რაუნდი ${currentRound}/26 | ლივები: ${ROUNDS_CONFIG[currentRound-1]}`);
+                }
+            } else {
+                let winnerIdx = totalScores.reduce((maxIdx, sc, i, arr) => sc > arr[maxIdx] ? i : maxIdx, 0);
+                alert(msg + `🏆 თამაში დასრულდა! გამარჯვებული: ${players[winnerIdx].name} (${totalScores[winnerIdx]} ქულა)`);
+                gameActive = false;
+            }
+        } else {
+            alert("ლივები ჩაიწერა. ელოდეთ სხვა მოთამაშეებს.");
+        }
+    }
+
+    // ==================== UI რენდერი ====================
+    function renderUI() {
+        const container = document.getElementById("playersList");
+        container.innerHTML = "";
+        for (let i = 0; i < 4; i++) {
+            let p = players[i];
+            if (p) {
+                container.innerHTML += `
+                    <div class="player-card">
+                        <img src="${p.avatar}">
+                        <div class="name">${p.name} ${i === myIndex ? "(თქვენ)" : ""}</div>
+                        <div class="bid-status">${p.bid !== null ? "🎯 " + p.bid : "—"}</div>
+                        <div class="bid-status">🏆 ${p.totalScore}</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML += `
+                    <div class="player-card">
+                        <img src="https://i.ibb.co/v3m6y6R/avatar.png">
+                        <div class="name">ცარიელი</div>
+                        <div class="bid-status">—</div>
+                    </div>
+                `;
+            }
+        }
+        document.getElementById("trumpInfo").innerHTML = trumpCard ? `🃏 ტრამპი: ${trumpCard.suit} ${trumpCard.rank}` : "🃏 ტრამპი: —";
+        document.getElementById("tableCardsArea").innerHTML = tableCards.map(tc => `<div class="table-card">${tc.card?.rank || "?"}</div>`).join("");
+        let handDiv = document.getElementById("myHandCards");
+        if (players[myIndex] && players[myIndex].cards) {
+            handDiv.innerHTML = players[myIndex].cards.map(c => `<div class="game-card">${c.rank}<br>${c.suit}</div>`).join("");
+        } else {
+            handDiv.innerHTML = "<span style='color:#aaa'>კარტები ჯერ არ არის დარიგებული</span>";
+        }
+    }
+
+    document.getElementById("sitBtn").onclick = sitDown;
+    document.getElementById("startBtn").onclick = startGame;
+    document.getElementById("bidBtn").onclick = makeBid;
+
+    renderUI();
+    if (players.length === 4 && !gameActive) {
+        alert("4 მოთამაშეა! დააჭირეთ 'თამაშის დაწყებას'");
+    }
+</script>
+</body>
+</html>
