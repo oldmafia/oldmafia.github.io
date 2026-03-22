@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        
+        /* ღამის რეჟიმი */
+        body.night-mode {
+            --bg-color: #0a0a0a;
+            --text-color: #eee;
+            --bubble-bg: #1a1a1a;
+            --bubble-border: #333;
+            --nick-color: #ff8888;
+            --input-bg: #1a1a1a;
+            --input-border: #333;
+            --topbar-bg: #111;
+            --inbox-border: #222;
+            --inbox-hover: #1f1f1f;
+            --avatar-border: #ff8888;
+        }
+        
+        /* დღის რეჟიმი */
+        body.day-mode {
+            --bg-color: #faf8f0;
+            --text-color: #2c2418;
+            --bubble-bg: #ffffff;
+            --bubble-border: #e0d0b8;
+            --nick-color: #c55a3a;
+            --input-bg: #ffffff;
+            --input-border: #e0d0b8;
+            --topbar-bg: #f5efe0;
+            --inbox-border: #e8dcc8;
+            --inbox-hover: #fff5e8;
+            --avatar-border: #c55a3a;
+            /* მსუბუქი გულები ფონზე */
+            background-image: radial-gradient(circle at 15% 20%, rgba(255, 100, 100, 0.2) 12px, transparent 12px);
+            background-size: 80px 80px;
+            background-position: 0 0;
+        }
+        
+        body {
+            margin: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--inbox-border);
+            background: var(--topbar-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .header b:first-child {
+            cursor: pointer;
+            color: var(--nick-color);
+            font-size: 24px;
+        }
+        #p-name {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--nick-color);
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+        }
+        .reload-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--nick-color);
+        }
+        
+        #main-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        /* Inbox */
+        .inbox-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--inbox-border);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            background: var(--bg-color);
+        }
+        .inbox-item:hover {
+            background: var(--inbox-hover);
+        }
+        .inbox-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid var(--avatar-border);
+            object-fit: cover;
+            margin-right: 15px;
+            background: #ddd;
+        }
+        .inbox-nick {
+            font-weight: 600;
+            font-size: 16px;
+            flex: 1;
+            color: var(--text-color);
+        }
+        .unread-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff5555;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        /* Chat View */
+        #chat-view {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 80px;
+        }
+        .msg-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--avatar-border);
+            object-fit: cover;
+            background: #ddd;
+        }
+        .bubble {
+            background: var(--bubble-bg);
+            border: 1px solid var(--bubble-border);
+            padding: 10px 14px;
+            border-radius: 18px;
+            max-width: 75%;
+            border-left: 3px solid var(--nick-color);
+        }
+        .msg-nick {
+            color: var(--nick-color);
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .msg-text {
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .msg-info {
+            font-size: 10px;
+            color: #999;
+            margin-top: 6px;
+        }
+        
+        /* Bottom Bar */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            background: var(--topbar-bg);
+            border-top: 1px solid var(--inbox-border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .input-box {
+            flex: 1;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-color);
+            padding: 12px 16px;
+            border-radius: 30px;
+            outline: none;
+            font-size: 15px;
+        }
+        .send-btn {
+            font-size: 28px;
+            color: var(--nick-color);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <b onclick="goBack()">←</b>
+        <span id="p-name">შემოსულები</span>
+        <div class="header-right">
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+            <button class="reload-btn" onclick="location.reload()">⟳</button>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="chat-view" style="display:none;"></div>
+        <div id="inbox-view"></div>
+    </div>
+
+    <div id="controls" class="bottom-bar" style="display:none;">
+        <input type="text" id="pm-input" class="input-box" placeholder="დაწერე მესიჯი...">
+        <button class="send-btn" onclick="sendMsg()">✈</button>
+    </div>
+
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    const myNick = localStorage.getItem('nickname') || 'Abu007';
+    const partner = new URLSearchParams(window.location.search).get('to');
+    let profMap = {};
+
+    function setTheme(theme) {
+        const body = document.body;
+        body.classList.remove('night-mode', 'day-mode');
+        if (theme === 'day') {
+            body.classList.add('day-mode');
+            document.getElementById('themeToggle').innerHTML = '🌙';
+            localStorage.setItem('pm_theme', 'day');
+        } else {
+            body.classList.add('night-mode');
+            document.getElementById('themeToggle').innerHTML = '☀️';
+            localStorage.setItem('pm_theme', 'night');
+        }
+    }
+    
+    function toggleTheme() {
+        if (document.body.classList.contains('night-mode')) setTheme('day');
+        else setTheme('night');
+    }
+    
+    async function init() {
+        const savedTheme = localStorage.getItem('pm_theme') || 'night';
+        setTheme(savedTheme);
+        
+        const { data: profiles } = await _s.from('profiles').select('username, avatar_url');
+        if (profiles) {
+            profiles.forEach(p => {
+                profMap[p.username] = p.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png';
+            });
+        }
+
+        if (partner) {
+            document.getElementById('inbox-view').style.display = 'none';
+            document.getElementById('chat-view').style.display = 'flex';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('p-name').innerText = partner;
+            await markAsRead();
+            loadChat();
+            setInterval(loadChat, 3000);
+        } else {
+            loadInbox();
+        }
+    }
+
+    async function markAsRead() {
+        await _s.from('private_messages')
+            .update({ is_read: true })
+            .eq('sender', partner)
+            .eq('receiver', myNick);
+    }
+
+    async function loadInbox() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`sender.eq."${myNick}",receiver.eq."${myNick}"`).order('created_at', {ascending: false});
+        const partners = [...new Set(msgs?.map(m => m.sender === myNick ? m.receiver : m.sender))];
+        const unreadFrom = msgs?.filter(m => m.receiver === myNick && !m.is_read).map(m => m.sender);
+
+        if (!partners || partners.length === 0) {
+            document.getElementById('inbox-view').innerHTML = '<div class="empty-state">💬 მესიჯები არ არის</div>';
+            return;
+        }
+        
+        document.getElementById('inbox-view').innerHTML = partners.map(p => `
+            <div class="inbox-item" onclick="window.location.href='pm.html?to=${p}'">
+                <img src="${profMap[p]}" class="inbox-avatar" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+                <span class="inbox-nick">${p}</span>
+                ${unreadFrom?.includes(p) ? '<div class="unread-dot"></div>' : ''}
+            </div>
+        `).join('');
+    }
+
+    async function loadChat() {
+        const { data: msgs } = await _s.from('private_messages').select('*').or(`and(sender.eq."${myNick}",receiver.eq."${partner}"),and(sender.eq."${partner}",receiver.eq."${myNick}")`).order('created_at', { ascending: true });
+        if (msgs && msgs.length > 0) {
+            document.getElementById('chat-view').innerHTML = msgs.map(m => {
+                const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `<div class="msg-row">
+                    <img src="${profMap[m.sender]}" class="msg-avatar" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+                    <div class="bubble">
+                        <b class="msg-nick">${m.sender}</b>
+                        <div class="msg-text">${escapeHtml(m.text)}</div>
+                        <div class="msg-info">${time}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('chat-view').scrollTop = 99999;
+        } else {
+            document.getElementById('chat-view').innerHTML = '<div class="empty-state">💬 მესიჯები არ არის</div>';
+        }
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    async function sendMsg() {
+        const inp = document.getElementById('pm-input');
+        if (!inp.value.trim()) return;
+        await _s.from('private_messages').insert([{ sender: myNick, receiver: partner, text: inp.value, is_read: false }]);
+        inp.value = "";
+        loadChat();
+    }
+
+    function goBack() { 
+        window.location.href = partner ? 'pm.html' : 'chat.html';
+    }
+
+    document.getElementById('themeToggle').onclick = toggleTheme;
+    init();
+</script>
+</body>
+</html>
