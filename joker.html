@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🃏 JOKER · ჯოკერი</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a2a1a;
+            font-family: 'Segoe UI', 'Poppins', 'Georgia', serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+        /* მთავარი კონტეინერი */
+        .joker-premium {
+            max-width: 1300px;
+            width: 100%;
+            background: #1d572e;
+            border-radius: 80px;
+            padding: 28px 24px;
+            box-shadow: 0 35px 55px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,245,180,0.2);
+            border: 1px solid #e9c05a;
+        }
+        /* სათაური */
+        .title-gold {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .title-gold h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffe6a3, #e0b04a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 4px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .title-gold p {
+            color: #f3e0a3;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+        /* მწვანე მაგიდა */
+        .green-felt {
+            background: radial-gradient(ellipse at 35% 30%, #2ea855, #0f5c22);
+            border-radius: 180px;
+            padding: 55px 40px;
+            position: relative;
+            min-height: 660px;
+            border: 8px solid #ddae48;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.55), 0 20px 30px rgba(0,0,0,0.5);
+        }
+        /* სკამები */
+        .seats-ring {
+            position: relative;
+            height: 560px;
+        }
+        .seat {
+            position: absolute;
+            text-align: center;
+            width: 170px;
+            background: linear-gradient(135deg, #352d20, #221f15);
+            padding: 18px 12px;
+            border-radius: 90px;
+            border: 2px solid #f3c153;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .seat:hover {
+            transform: scale(1.02);
+            border-color: #ffdd99;
+            box-shadow: 0 0 20px rgba(255,200,80,0.5);
+        }
+        .seat img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid #f3c153;
+            object-fit: cover;
+            background: #4a3a1a;
+            box-shadow: 0 5px 12px black;
+        }
+        .seat .player-name {
+            font-weight: bold;
+            color: #fff5e0;
+            margin-top: 12px;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .seat .player-bid {
+            font-size: 13px;
+            color: #ffdf9c;
+            background: rgba(0,0,0,0.65);
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 40px;
+            margin-top: 8px;
+        }
+        .seat .player-total {
+            font-size: 12px;
+            color: #ffcc77;
+            margin-top: 5px;
+        }
+        /* პოზიციები */
+        .seat-bottom { bottom: -100px; left: 50%; transform: translateX(-50%); }
+        .seat-top { top: -100px; left: 50%; transform: translateX(-50%); }
+        .seat-left { left: -135px; top: 50%; transform: translateY(-50%); }
+        .seat-right { right: -135px; top: 50%; transform: translateY(-50%); }
+
+        /* ცენტრი */
+        .center-piece {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(14px);
+            padding: 25px 45px;
+            border-radius: 110px;
+            text-align: center;
+            border: 1px solid #f5cf7a;
+            min-width: 320px;
+        }
+        .center-piece .round-value {
+            font-size: 38px;
+            font-weight: bold;
+            color: #fff0b5;
+            letter-spacing: 2px;
+        }
+        .center-piece .round-text {
+            font-size: 18px;
+            color: #ffe0aa;
+            margin-top: 8px;
+        }
+
+        /* ქვედა პანელი */
+        .action-panel {
+            margin-top: 48px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .btn-gold, select {
+            background: #f5c85a;
+            border: none;
+            font-weight: bold;
+            padding: 14px 34px;
+            border-radius: 60px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.1s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn-gold:active, select:active {
+            transform: scale(0.97);
+        }
+        select {
+            background: #2d6a2d;
+            color: white;
+        }
+        .stats-card {
+            margin-top: 32px;
+            background: #142010cc;
+            backdrop-filter: blur(6px);
+            border-radius: 48px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #fef0cf;
+            font-size: 14px;
+        }
+        .stats-table th, .stats-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #dcb45a;
+        }
+        .stats-table th {
+            color: #ffe2a4;
+            font-weight: bold;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 28px;
+            color: #ffddb0;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        @media (max-width: 880px) {
+            .seat { width: 130px; }
+            .seat img { width: 70px; height: 70px; }
+            .seat-left { left: -105px; }
+            .seat-right { right: -105px; }
+            .center-piece { padding: 16px 28px; min-width: 240px; }
+            .center-piece .round-value { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+<div class="joker-premium">
+    <div class="title-gold">
+        <h1>🃏 JOKER · ჯოკერი 🃏</h1>
+        <p>მწვანე მაგიდა | 4 მოთამაშე | 26 რაუნდი</p>
+    </div>
+
+    <div class="green-felt">
+        <div class="seats-ring" id="seatsRing"></div>
+        <div class="center-piece">
+            <div class="round-value" id="roundValue">—</div>
+            <div class="round-text" id="roundText">ლივი</div>
+        </div>
+    </div>
+
+    <div class="action-panel">
+        <button class="btn-gold" id="sitBtn">🪑 დაჯდომა</button>
+        <select id="bidSelect">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
+            <option>10</option><option>11</option><option>12</option><option>13</option>
+        </select>
+        <button class="btn-gold" id="bidBtn">📢 განაცხადი</button>
+        <button class="btn-gold" id="startBtn">🎮 თამაშის დაწყება</button>
+    </div>
+
+    <div class="stats-card">
+        <div id="statsContent"></div>
+    </div>
+
+    <a href="chat.html" class="back-link">← ჩატში დაბრუნება</a>
+</div>
+
+<script>
+    let myNick = localStorage.getItem('nickname') || "მოთამაშე";
+    let myAvatar = localStorage.getItem('avatar') || "https://i.ibb.co/v3m6y6R/avatar.png";
+
+    let players = JSON.parse(localStorage.getItem('joker_final')) || [];
+    let myIndex = players.findIndex(p => p.name === myNick);
+    let gameActive = false;
+    let currentRound = 1;
+    let roundBids = [null, null, null, null];
+    let roundTricks = [null, null, null, null];
+    let totalScores = [0, 0, 0, 0];
+
+    const ROUNDS = [
+        1,2,3,4,5,6,7,8,9,
+        9,9,9,9,
+        9,8,7,6,5,4,3,2,1,
+        9,9,9,9
+    ];
+
+    function savePlayers() {
+        localStorage.setItem('joker_final', JSON.stringify(players));
+    }
+
+    function sitDown() {
+        if (players.find(p => p.name === myNick)) { alert("უკვე ზიხართ"); return; }
+        if (players.length >= 4) { alert("მაგიდა სავსეა"); return; }
+        players.push({ name: myNick, avatar: myAvatar, bid: null, trick: null, total: 0 });
+        myIndex = players.length - 1;
+        savePlayers();
+        renderUI();
+    }
+
+    function startGame() {
+        if (players.length !== 4) { alert("საჭიროა 4 მოთამაშე"); return; }
+        currentRound = 1;
+        totalScores = [0,0,0,0];
+        roundBids = [null,null,null,null];
+        roundTricks = [null,null,null,null];
+        gameActive = true;
+        for (let i=0; i<players.length; i++) {
+            players[i].bid = null;
+            players[i].trick = null;
+            players[i].total = 0;
+        }
+        savePlayers();
+        renderUI();
+        alert(`✨ თამაში დაიწყო! რაუნდი 1/26 | ლივები: ${ROUNDS[0]}`);
+    }
+
+    function makeBid() {
+        if (!gameActive) { alert("თამაში არ დაწყებულა"); return; }
+        if (roundBids[myIndex] !== null) { alert("უკვე გააკეთეთ განაცხადი"); return; }
+        let bid = parseInt(document.getElementById("bidSelect").value);
+        roundBids[myIndex] = bid;
+        players[myIndex].bid = bid;
+        savePlayers();
+        renderUI();
+
+        if (roundBids.every(b => b !== null)) {
+            alert("ყველამ გააკეთა განაცხადი! ახლა შეიყვანეთ აღებული ლივები");
+            askTricks();
+        }
+    }
+
+    function askTricks() {
+        let tricks = prompt(`🎯 რაუნდი ${currentRound}/26\nრამდენი ლივი აიღეთ? (0-${ROUNDS[currentRound-1]})`, "0");
+        tricks = parseInt(tricks);
+        if (isNaN(tricks)) tricks = 0;
+        roundTricks[myIndex] = tricks;
+        players[myIndex].trick = tricks;
+
+        let bid = roundBids[myIndex];
+        let score = (bid === tricks) ? (10 + bid) : -Math.abs(bid - tricks);
+        totalScores[myIndex] += score;
+        players[myIndex].total = totalScores[myIndex];
+        savePlayers();
+        renderUI();
+
+        if (roundTricks.every(t => t !== null)) {
+            let msg = `✅ რაუნდი ${currentRound} დასრულდა!\nქულები: ${totalScores.join(" | ")}\n`;
+            if (currentRound < 26) {
+                if (confirm(msg + "გადავიდეთ შემდეგ რაუნდზე?")) {
+                    currentRound++;
+                    roundBids = [null,null,null,null];
+                    roundTricks = [null,null,null,null];
+                    for (let i=0; i<players.length; i++) {
+                        players[i].bid = null;
+                        players[i].trick = null;
+                    }
+                    savePlayers();
+                    renderUI();
+                    alert(`🎲 რაუნდი ${currentRound}/26 | ლივები: ${ROUNDS[currentRound-1]}`);
+                }
+            } else {
+                let winner = totalScores.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0);
+                alert(msg + `🏆 თამაში დასრულდა! გამარჯვებული: ${players[winner].name} (${totalScores[winner]} ქულა)`);
+                gameActive = false;
+            }
+        } else {
+            alert("ლივები ჩაიწერა. ელოდეთ სხვა მოთამაშეებს");
+        }
+    }
+
+    function renderUI() {
+        let seatsDiv = document.getElementById("seatsRing");
+        seatsDiv.innerHTML = "";
+        let positions = ["seat-bottom", "seat-right", "seat-top", "seat-left"];
+        for (let i=0; i<4; i++) {
+            let p = players[i];
+            if (p) {
+                seatsDiv.innerHTML += `
+                    <div class="seat ${positions[i]}">
+                        <img src="${p.avatar}">
+                        <div class="player-name">${p.name} ${i===myIndex ? "✨" : ""}</div>
+                        <div class="player-bid">${p.bid !== null ? "🎯 "+p.bid : "—"}</div>
+                        <div class="player-total">🏆 ${p.total}</div>
+                    </div>
+                `;
+            } else {
+                seatsDiv.innerHTML += `
+                    <div class="seat ${positions[i]}">
+                        <img src="https://i.ibb.co/v3m6y6R/avatar.png">
+                        <div class="player-name">ცარიელი</div>
+                        <div class="player-bid">—</div>
+                    </div>
+                `;
+            }
+        }
+
+        let currentGoal = ROUNDS[currentRound-1];
+        document.getElementById("roundValue").innerHTML = `${currentGoal}`;
+        document.getElementById("roundText").innerHTML = `🎯 რაუნდი ${currentRound}/26`;
+
+        let html = `<table class="stats-table"><tr><th>მოთამაშე</th><th>განაცხადი</th><th>აღებული</th><th>ქულა</th><th>ჯამი</th></tr>`;
+        for (let i=0; i<players.length; i++) {
+            let p = players[i];
+            let bid = roundBids[i] !== null ? roundBids[i] : "—";
+            let trick = roundTricks[i] !== null ? roundTricks[i] : "—";
+            let score = (bid !== "—" && trick !== "—") ? ((bid===trick) ? (10+bid) : -Math.abs(bid-trick)) : "—";
+            html += `<tr><td style="text-align:left">${p?.name || "—"}</td><td>${bid}</td><td>${trick}</td><td>${score}</td><td><b>${totalScores[i]}</b></td></tr>`;
+        }
+        html += `</table>`;
+        document.getElementById("statsContent").innerHTML = html;
+    }
+
+    document.getElementById("sitBtn").onclick = sitDown;
+    document.getElementById("startBtn").onclick = startGame;
+    document.getElementById("bidBtn").onclick = makeBid;
+
+    renderUI();
+    if (players.length === 4 && !gameActive) alert("4 მოთამაშეა! დააჭირეთ 'თამაშის დაწყებას'");
+</script>
+</body>
+</html>
