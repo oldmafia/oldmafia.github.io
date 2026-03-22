@@ -12,107 +12,124 @@
             user-select: none;
         }
         body {
-            background: #2a3a1a;
+            background: linear-gradient(145deg, #2a2418, #1a160e);
             font-family: 'Segoe UI', system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
         }
         .game {
-            max-width: 850px;
+            max-width: 650px;
             width: 100%;
-            background: #5a3e2a;
-            border-radius: 55px;
-            padding: 20px;
-            box-shadow: 0 20px 30px rgba(0,0,0,0.5);
-            border: 3px solid #d4a017;
+            background: #c9a87b;
+            border-radius: 48px;
+            padding: 16px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            border: 1px solid #e8c28e;
         }
         h1 {
             text-align: center;
-            color: #ffdf8c;
+            color: #f7e5b5;
+            font-size: 1.6rem;
             margin-bottom: 12px;
+            text-shadow: 2px 2px 2px #5a3a1a;
+        }
+        .board-wrapper {
+            background: #8b5a2b;
+            border-radius: 28px;
+            padding: 10px;
+            box-shadow: inset 0 0 0 2px #e8c28e, 0 8px 20px rgba(0,0,0,0.4);
         }
         canvas {
             display: block;
             width: 100%;
             height: auto;
-            background: #f7e5c2;
-            border-radius: 28px;
+            background: #f3e5c0;
+            border-radius: 20px;
             cursor: pointer;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+            touch-action: manipulation;
         }
         .panel {
-            margin-top: 18px;
-            background: #2c2c1a;
-            border-radius: 50px;
-            padding: 12px 20px;
+            margin-top: 16px;
+            background: #4a3724;
+            border-radius: 60px;
+            padding: 10px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
         }
         .turn {
             background: #000000aa;
-            padding: 8px 20px;
+            padding: 6px 14px;
             border-radius: 40px;
-            color: #ffdd99;
+            color: #ffefb9;
             font-weight: bold;
+            font-size: 0.85rem;
         }
-        .dice-box {
+        .dice-area {
             display: flex;
-            gap: 20px;
+            gap: 12px;
             align-items: center;
         }
         .die {
-            background: #f8f2e0;
-            width: 55px;
-            height: 55px;
-            border-radius: 18px;
+            background: #faf2e0;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 32px;
             font-weight: bold;
-            color: #4a2e1a;
-            box-shadow: inset 0 0 0 2px #b97f3a, 0 4px 8px black;
+            color: #3a2a1a;
+            box-shadow: inset 0 0 0 3px #b97f3a, 0 5px 10px black;
         }
         button {
-            background: #f5bc4e;
+            background: #e4a842;
             border: none;
-            padding: 8px 22px;
+            padding: 8px 20px;
             border-radius: 40px;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
+            box-shadow: 0 3px 6px black;
+        }
+        button:active {
+            transform: scale(0.97);
         }
         .back-link {
             display: block;
             text-align: center;
-            margin-top: 18px;
-            color: #ffdd99;
+            margin-top: 14px;
+            color: #ffefb9;
             text-decoration: none;
+            font-size: 0.85rem;
         }
-        @media (max-width: 600px) {
-            .die { width: 45px; height: 45px; font-size: 26px; }
+        @media (max-width: 550px) {
+            .die { width: 45px; height: 45px; font-size: 28px; }
             button { padding: 6px 14px; font-size: 0.8rem; }
+            .turn { font-size: 0.75rem; }
         }
     </style>
 </head>
 <body>
 <div class="game">
     <h1>🎲 ნარდი · Backgammon</h1>
-    <canvas id="boardCanvas" width="800" height="550" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/550"></canvas>
+    <div class="board-wrapper">
+        <canvas id="boardCanvas" width="600" height="520" style="width:100%; height:auto; max-width:600px; aspect-ratio:600/520"></canvas>
+    </div>
     <div class="panel">
-        <div class="turn" id="turnLabel">თეთრის ჯერი</div>
-        <div class="dice-box">
+        <div class="turn" id="turnLabel">⚪ თეთრის ჯერი</div>
+        <div class="dice-area">
             <div class="die" id="die1">⚀</div>
             <div class="die" id="die2">⚀</div>
             <button id="rollBtn">🎲 ყარე</button>
         </div>
-        <button id="resetBtn">⟳ ახალი თამაში</button>
+        <button id="resetBtn">⟳ ახალი</button>
     </div>
     <a href="chat.html" class="back-link">← ჩატში დაბრუნება</a>
 </div>
@@ -129,22 +146,18 @@
         ];
         let whiteBar = 0;
         let blackBar = 0;
-        let whiteOff = 0;
-        let blackOff = 0;
         let turn = 'white';
         let dice = [0,0];
         let rolled = false;
         let possibleMoves = [];
         let selectedPoint = null;
 
-        // ----- ინიციალიზაცია -----
         function initGame(){
             board = [
                 2,0,0,0,0,-5,0,-3,0,0,0,0,
                 5,-2,0,0,0,0,3,0,0,0,0,-4
             ];
             whiteBar = 0; blackBar = 0;
-            whiteOff = 0; blackOff = 0;
             turn = 'white';
             dice = [0,0];
             rolled = false;
@@ -154,13 +167,11 @@
             updateUI();
         }
 
-        // ----- კამათლის სიმბოლო -----
         function getDiceSymbol(v){
             const map = {1:'⚀',2:'⚁',3:'⚂',4:'⚃',5:'⚄',6:'⚅'};
             return map[v];
         }
 
-        // ----- ყრა -----
         function rollDice(){
             if(rolled){
                 alert("უკვე დაყარე! გადაიტანე ქვები.");
@@ -180,13 +191,12 @@
             drawBoard();
         }
 
-        // ----- ყველა შესაძლო სვლის გენერაცია -----
         function generateMoves(){
             possibleMoves = [];
             let bar = (turn === 'white') ? whiteBar : blackBar;
             let fromPoints = [];
             if(bar > 0){
-                fromPoints.push(-1); // -1 = ზოლი
+                fromPoints.push(-1);
             } else {
                 for(let i=0;i<24;i++){
                     let val = board[i];
@@ -208,11 +218,9 @@
                     }
                 }
             }
-            // დუბლიკატების ამოღება
             possibleMoves = possibleMoves.filter((v,i,a)=>a.findIndex(t=>t.from===v.from && t.to===v.to)===i);
         }
 
-        // ----- სვლის ვალიდაცია (მოკვლაც შედის) -----
         function isValidMove(from, to){
             if(to < 0 || to > 23) return false;
             let bar = (turn === 'white') ? whiteBar : blackBar;
@@ -220,11 +228,10 @@
             let srcCount = (from === -1) ? bar : (turn === 'white' ? board[from] : -board[from]);
             if(srcCount <= 0) return false;
             let destCount = (turn === 'white') ? board[to] : -board[to];
-            if(destCount < -1) return false; // მტრის ორზე მეტი ქვა
+            if(destCount < -1) return false;
             return true;
         }
 
-        // ----- სვლის შესრულება (მოკვლის ჩათვლით) -----
         function applyMove(move){
             let {from, to} = move;
             if(from === -1){
@@ -246,9 +253,7 @@
                     }
                 }
             } else {
-                let val = board[from];
                 if(turn === 'white'){
-                    if(val <=0) return false;
                     board[from]--;
                     if(board[to] < 0){
                         blackBar++;
@@ -257,7 +262,6 @@
                         board[to] = (board[to] || 0) + 1;
                     }
                 } else {
-                    if(val >=0) return false;
                     board[from]++;
                     if(board[to] > 0){
                         whiteBar++;
@@ -267,10 +271,8 @@
                     }
                 }
             }
-            return true;
         }
 
-        // ----- ჯერის შეცვლა -----
         function nextTurn(){
             turn = (turn === 'white') ? 'black' : 'white';
             rolled = false;
@@ -279,11 +281,10 @@
             document.getElementById('die2').innerHTML = '⚀';
             possibleMoves = [];
             selectedPoint = null;
-            document.getElementById('turnLabel').innerHTML = (turn === 'white') ? 'თეთრის ჯერი' : 'შავის ჯერი';
+            updateUI();
             drawBoard();
         }
 
-        // ----- სვლის ცდა -----
         function tryMove(from, to){
             if(!rolled){
                 alert("ჯერ კამათელი უნდა ყარო!");
@@ -295,7 +296,6 @@
                 return false;
             }
             applyMove(valid);
-            // ამოვიღოთ გამოყენებული კამათელი
             let idx = dice.indexOf(valid.dieValue);
             if(idx !== -1) dice[idx] = 0;
             generateMoves();
@@ -306,57 +306,82 @@
             return true;
         }
 
-        // ----- დაფის დახატვა -----
         function drawBoard(){
             const w = canvas.width, h = canvas.height;
             ctx.clearRect(0,0,w,h);
-            // ფონი
-            ctx.fillStyle = '#e8dbbd';
+            // ხის ფონი
+            ctx.fillStyle = '#c49a6c';
             ctx.fillRect(0,0,w,h);
             // ხაზები
-            ctx.strokeStyle = '#aa8b5c';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#aa7a44';
+            ctx.lineWidth = 1.5;
             for(let i=0;i<24;i++){
                 let x = (i%12)* (w/12);
                 let y = (i<12) ? 0 : h/2;
                 ctx.strokeRect(x, y, w/12, h/2);
             }
+            // ცენტრალური ზოლი
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(w/2-12, 0, 24, h);
+            ctx.fillStyle = '#e8bc8c';
+            ctx.fillRect(w/2-6, 0, 12, h);
+            
             // ქვების დახატვა
             for(let i=0;i<24;i++){
                 let cnt = board[i];
                 if(cnt===0) continue;
                 let isWhite = cnt>0;
-                let absCnt = Math.abs(cnt);
-                let x = (i%12)* (w/12) + 8;
+                let absCnt = Math.min(Math.abs(cnt),5);
+                let x = (i%12)* (w/12) + 12;
                 let yBase = (i<12) ? h/2-28 : h-48;
-                let step = 10;
-                for(let j=0;j<absCnt && j<5;j++){
+                let step = 11;
+                for(let j=0;j<absCnt;j++){
                     ctx.fillStyle = isWhite ? '#f5f5f5' : '#4a3a2a';
                     ctx.beginPath();
-                    ctx.arc(x+10, yBase - j*step, 12, 0, Math.PI*2);
+                    ctx.arc(x+8, yBase - j*step, 11, 0, Math.PI*2);
                     ctx.fill();
                     ctx.strokeStyle = '#222';
                     ctx.lineWidth = 1;
                     ctx.stroke();
+                    // 3D ეფექტი
+                    ctx.fillStyle = isWhite ? '#ddd' : '#2a1a0a';
+                    ctx.beginPath();
+                    ctx.arc(x+6, yBase - j*step - 2, 4, 0, Math.PI*2);
+                    ctx.fill();
                 }
             }
-            // ზოლი
-            ctx.fillStyle = '#a56b2f';
-            ctx.fillRect(w/2-8, 0, 16, h);
-            // თუ არჩეული წერტილია
-            if(selectedPoint !== null){
-                ctx.fillStyle = '#ffcc44aa';
+            // ზოლის ქვები
+            if(whiteBar > 0){
+                for(let j=0;j<Math.min(whiteBar,5);j++){
+                    ctx.fillStyle = '#f5f5f5';
+                    ctx.beginPath();
+                    ctx.arc(w/2-25, h-50 - j*12, 11, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            if(blackBar > 0){
+                for(let j=0;j<Math.min(blackBar,5);j++){
+                    ctx.fillStyle = '#4a3a2a';
+                    ctx.beginPath();
+                    ctx.arc(w/2+25, 30 + j*12, 11, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            
+            // არჩეული წერტილის მონიშვნა
+            if(selectedPoint !== null && selectedPoint >=0 && selectedPoint <24){
                 let x = (selectedPoint%12)*(w/12);
                 let y = (selectedPoint<12) ? 0 : h/2;
+                ctx.fillStyle = '#ffcc44aa';
                 ctx.fillRect(x, y, w/12, h/2);
             }
         }
 
         function updateUI(){
-            document.getElementById('turnLabel').innerHTML = (turn === 'white') ? 'თეთრის ჯერი' : 'შავის ჯერი';
+            document.getElementById('turnLabel').innerHTML = (turn === 'white') ? '⚪ თეთრის ჯერი' : '⚫ შავის ჯერი';
         }
 
-        // ----- კლიკის დამუშავება (ქვის არჩევა/გადატანა) -----
+        // კლიკის დამუშავება
         canvas.addEventListener('click', (e)=>{
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -367,6 +392,7 @@
             if(point<0 || point>23) return;
             let isTopHalf = mouseY < canvas.height/2;
             let idx = isTopHalf ? point : point+12;
+            
             if(selectedPoint === null){
                 // არჩევა
                 let val = board[idx];
