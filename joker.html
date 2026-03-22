@@ -2,70 +2,118 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>🃏 ჯოკერი - კარტის თამაში</title>
+    <title>🃏 ჯოკერი</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             background: #0a3a1a;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
-        .container {
-            text-align: center;
+        .game {
             background: #1e5a2e;
-            padding: 40px;
+            padding: 30px;
             border-radius: 60px;
-            border: 8px solid #d4a017;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 8px solid #b87c2e;
+            width: 800px;
+            max-width: 100%;
         }
-        h1 { color: gold; font-size: 2.5rem; margin-bottom: 20px; }
         .table {
-            width: 400px;
-            height: 300px;
             background: radial-gradient(circle, #2c8a3e, #0e3a1a);
             border-radius: 100px;
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 60px;
+            text-align: center;
+            position: relative;
+            min-height: 400px;
             border: 4px solid #b87c2e;
+        }
+        .center-text {
             color: gold;
             font-size: 24px;
             font-weight: bold;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
         }
-        button {
-            background: gold;
-            border: none;
-            padding: 12px 30px;
-            font-size: 18px;
-            border-radius: 40px;
-            margin: 10px;
-            cursor: pointer;
-            font-weight: bold;
+        .chairs {
+            position: relative;
+            height: 300px;
         }
+        .chair {
+            position: absolute;
+            text-align: center;
+            width: 100px;
+        }
+        .chair img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #b87c2e;
+            background: #1e3a1a;
+        }
+        .chair .name {
+            font-size: 12px;
+            color: #ffd966;
+            margin-top: 5px;
+        }
+        .chair-bottom { bottom: -80px; left: 50%; transform: translateX(-50%); }
+        .chair-top { top: -80px; left: 50%; transform: translateX(-50%); }
+        .chair-left { left: -100px; top: 50%; transform: translateY(-50%); }
+        .chair-right { right: -100px; top: 50%; transform: translateY(-50%); }
+        
         .back-btn {
-            display: inline-block;
+            display: block;
+            margin-top: 20px;
             background: #8b3a2a;
             color: white;
+            text-align: center;
+            padding: 12px;
+            border-radius: 30px;
             text-decoration: none;
-            padding: 12px 30px;
-            border-radius: 40px;
-            margin-top: 20px;
         }
-        p { color: #ffd966; margin: 15px; }
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            color: gold;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🃏 ჯოკერი 🃏</h1>
-        <div class="table">🃏 მწვანე მაგიდა 🃏</div>
-        <p>🎯 4 მოთამაშე | 26 რაუნდი | განაცხადები | ქულები</p>
-        <button onclick="alert('სრული ვერსია მალე! 🔥')">განაცხადის გაკეთება</button>
-        <br>
-        <a href="chat.html" class="back-btn">← ჩატში დაბრუნება</a>
+<div class="game">
+    <div class="table">
+        <div class="chairs" id="chairs"></div>
+        <div class="center-text">🃏 მწვანე მაგიდა 🃏</div>
     </div>
+    <div class="info" id="info">მოთამაშეები: 0 / 4</div>
+    <a href="chat.html" class="back-btn">← ჩატში დაბრუნება</a>
+</div>
+
+<script>
+    // ეს მხოლოდ ვიზუალია. სკამები ცარიელია.
+    const chairs = ['bottom', 'right', 'top', 'left'];
+    const container = document.getElementById('chairs');
+    
+    let html = '';
+    for (let i = 0; i < 4; i++) {
+        html += `
+            <div class="chair chair-${chairs[i]}">
+                <img src="https://i.ibb.co/v3m6y6R/avatar.png">
+                <div class="name">ცარიელი</div>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+    document.getElementById('info').innerHTML = 'მოთამაშეები: 0 / 4 | 🃏 ცარიელი სკამები';
+</script>
 </body>
 </html>
