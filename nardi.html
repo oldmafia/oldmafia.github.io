@@ -186,6 +186,15 @@
             font-size: 13px;
             background: #ffaa66;
         }
+        .rule-hint {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+            color: #ffefb9;
+            background: #2c2418aa;
+            padding: 6px;
+            border-radius: 30px;
+        }
         .back-link {
             display: block;
             text-align: center;
@@ -217,8 +226,8 @@
         </div>
         <button id="resetBtn">⟳ ახალი</button>
     </div>
+    <div class="rule-hint" id="ruleHint">📖 აირჩიე ქვა → აირჩიე ადგილი → გადაადგილდი</div>
     
-    <!-- დაჯდომის ადგილები ნიკებით და ავატარებით -->
     <div class="seat-area">
         <div class="seat" id="seatWhite" onclick="sitDown('white')">
             <img class="avatar" id="whiteAvatar" src="https://i.ibb.co/v3m6y6R/avatar.png">
@@ -232,7 +241,6 @@
         </div>
     </div>
     
-    <!-- პატარა ჩატი -->
     <div class="mini-chat">
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input">
@@ -266,11 +274,12 @@
     let possibleMoves = [];
     let selectedPoint = null;
     
-    // ========== დაჯდომის სისტემა ==========
     let whitePlayer = null;
     let blackPlayer = null;
     let whiteAvatarUrl = null;
     let blackAvatarUrl = null;
+    
+    let currentView = 'white'; // white ან black - ვისი მხრიდან ჩანს დაფა
     
     async function loadProfiles() {
         const { data: profiles } = await supabase.from('profiles').select('username, avatar_url');
@@ -311,13 +320,11 @@
         }
     }
     
-    // ========== ჩატი ==========
     let chatMessages = [];
     
     function sendChatMsg() {
         const input = document.getElementById('chatInput');
         if (!input.value.trim()) return;
-        const currentPlayer = (turn === 'white') ? whitePlayer : blackPlayer;
         const msg = {
             user: myNick,
             text: input.value,
@@ -345,7 +352,6 @@
         container.scrollTop = container.scrollHeight;
     }
     
-    // ========== თამაშის ლოგიკა ==========
     function initGame() {
         board = [
             2,0,0,0,0,-5,0,-3,0,0,0,0,
@@ -357,9 +363,11 @@
         rolled = false;
         possibleMoves = [];
         selectedPoint = null;
+        currentView = 'white';
         drawBoard();
         updateUI();
         addChatMessage("system", "⚪ თეთრი იწყებს! ყარე კამათელი.");
+        document.getElementById('ruleHint').innerHTML = "📖 1. ყარე კამათელი | 2. აირჩიე ქვა | 3. აირჩიე ადგილი";
     }
     
     function getDiceSymbol(v){
@@ -500,6 +508,7 @@
         document.getElementById('die2').innerHTML = '⚀';
         possibleMoves = [];
         selectedPoint = null;
+        currentView = turn;
         updateUI();
         drawBoard();
         const nextPlayer = (turn === 'white') ? whitePlayer : blackPlayer;
@@ -530,13 +539,8 @@
     function drawBoard(){
         const w = canvas.width, h = canvas.height;
         ctx.clearRect(0,0,w,h);
-        // ლამაზი ხის ფონი
         ctx.fillStyle = '#c49a6c';
         ctx.fillRect(0,0,w,h);
-        for(let i=0;i<80;i++){
-            ctx.fillStyle = `rgba(100,60,20,${Math.random()*0.1})`;
-            ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
-        }
         ctx.strokeStyle = '#aa7a44';
         ctx.lineWidth = 2;
         for(let i=0;i<24;i++){
@@ -549,13 +553,15 @@
         ctx.fillStyle = '#e8bc8c';
         ctx.fillRect(w/2-6, 0, 12, h);
         
+        // ქვების დახატვა (მიმდინარე ხედის მიხედვით)
         for(let i=0;i<24;i++){
             let cnt = board[i];
             if(cnt===0) continue;
             let isWhite = cnt>0;
             let absCnt = Math.min(Math.abs(cnt),5);
-            let x = (i%12)* (w/12) + 12;
-            let yBase = (i<12) ? h/2-28 : h-48;
+            let displayIdx = (currentView === 'white') ? i : 23 - i;
+            let x = (displayIdx%12)* (w/12) + 12;
+            let yBase = (displayIdx<12) ? h/2-28 : h-48;
             let step = 11;
             for(let j=0;j<absCnt;j++){
                 ctx.fillStyle = isWhite ? '#f5f5f5' : '#4a3a2a';
@@ -570,10 +576,29 @@
         }
         
         if(selectedPoint !== null && selectedPoint >=0 && selectedPoint <24){
-            let x = (selectedPoint%12)*(w/12);
-            let y = (selectedPoint<12) ? 0 : h/2;
+            let displayIdx = (currentView === 'white') ? selectedPoint : 23 - selectedPoint;
+            let x = (displayIdx%12)*(w/12);
+            let y = (displayIdx<12) ? 0 : h/2;
             ctx.fillStyle = '#ffcc44aa';
             ctx.fillRect(x, y, w/12, h/2);
+        }
+        
+        // ზოლის ქვები (ზოლი ყოველთვის შუაში)
+        if(whiteBar > 0){
+            for(let j=0;j<Math.min(whiteBar,5);j++){
+                ctx.fillStyle = '#f5f5f5';
+                ctx.beginPath();
+                ctx.arc(w/2-25, h-50 - j*12, 11, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        if(blackBar > 0){
+            for(let j=0;j<Math.min(blackBar,5);j++){
+                ctx.fillStyle = '#4a3a2a';
+                ctx.beginPath();
+                ctx.arc(w/2+25, 30 + j*12, 11, 0, Math.PI*2);
+                ctx.fill();
+            }
         }
     }
     
@@ -582,6 +607,13 @@
         document.getElementById('turnLabel').innerHTML = (turn === 'white') ? 
             `⚪ ${currentPlayer || 'თეთრი'} - ჯერი` : 
             `⚫ ${currentPlayer || 'შავი'} - ჯერი`;
+        if (turn === 'white' && myNick === whitePlayer) {
+            document.getElementById('ruleHint').innerHTML = "📖 შენი ჯერია! ყარე კამათელი → აირჩიე ქვა → აირჩიე ადგილი";
+        } else if (turn === 'black' && myNick === blackPlayer) {
+            document.getElementById('ruleHint').innerHTML = "📖 შენი ჯერია! ყარე კამათელი → აირჩიე ქვა → აირჩიე ადგილი";
+        } else {
+            document.getElementById('ruleHint').innerHTML = "📖 ელოდე მოწინააღმდეგის სვლას...";
+        }
     }
     
     const canvas = document.getElementById('boardCanvas');
@@ -596,7 +628,8 @@
         let point = Math.floor(mouseX / (canvas.width/12));
         if(point<0 || point>23) return;
         let isTopHalf = mouseY < canvas.height/2;
-        let idx = isTopHalf ? point : point+12;
+        let rawIdx = isTopHalf ? point : point+12;
+        let idx = (currentView === 'white') ? rawIdx : 23 - rawIdx;
         
         if(selectedPoint === null){
             let val = board[idx];
