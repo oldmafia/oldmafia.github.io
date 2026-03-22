@@ -22,7 +22,7 @@
             --inbox-hover: #1a0000;
         }
         
-        /* დღის რეჟიმი — ნამდვილი ❤️ გულებით */
+        /* დღის რეჟიმი */
         body.day-mode {
             --bg-color: #fff8f0;
             --text-color: #2c2418;
@@ -38,7 +38,7 @@
             position: relative;
         }
         
-        /* ნამდვილი ❤️ გულები */
+        /* ნამდვილი ❤️ გულები — ფიქსირებული, ყველა გვერდზე */
         .heart-bg {
             position: fixed;
             pointer-events: none;
@@ -75,6 +75,7 @@
             justify-content: space-between;
             align-items: center;
             z-index: 100;
+            position: relative;
         }
         .header b:first-child {
             cursor: pointer;
@@ -121,6 +122,8 @@
             cursor: pointer;
             transition: background 0.2s;
             background: rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 2;
         }
         body.night-mode .inbox-item {
             background: rgba(0, 0, 0, 0.5);
@@ -157,6 +160,8 @@
             flex-direction: column;
             gap: 12px;
             padding-bottom: 80px;
+            position: relative;
+            z-index: 2;
         }
         .msg-row {
             display: flex;
@@ -267,14 +272,16 @@
     function addHearts() {
         removeHearts();
         if (document.body.classList.contains('day-mode')) {
-            const hearts = ['❤️', '❤️', '❤️', '❤️', '❤️', '❤️', '❤️', '❤️'];
+            // 10 გული, სხვადასხვა ადგილას
+            const hearts = ['❤️', '❤️', '❤️', '❤️', '❤️', '❤️', '❤️', '❤️', '❤️', '❤️'];
             const positions = [
-                { top: '5%', left: '4%' }, { top: '3%', left: '87%' },
-                { top: '70%', left: '92%' }, { top: '88%', left: '2%' },
-                { top: '42%', left: '42%' }, { top: '78%', left: '55%' },
-                { top: '25%', left: '70%' }, { top: '60%', left: '15%' }
+                { top: '8%', left: '3%' }, { top: '5%', left: '88%' },
+                { top: '18%', left: '45%' }, { top: '72%', left: '92%' },
+                { top: '85%', left: '2%' }, { top: '40%', left: '40%' },
+                { top: '60%', left: '15%' }, { top: '30%', left: '75%' },
+                { top: '92%', left: '50%' }, { top: '50%', left: '85%' }
             ];
-            const sizes = ['52px', '48px', '62px', '45px', '55px', '50px', '58px', '42px'];
+            const sizes = ['48px', '45px', '55px', '65px', '42px', '52px', '48px', '58px', '44px', '50px'];
             
             for (let i = 0; i < hearts.length; i++) {
                 const heart = document.createElement('div');
@@ -284,7 +291,7 @@
                 heart.style.top = positions[i].top;
                 heart.style.left = positions[i].left;
                 heart.style.fontSize = sizes[i];
-                heart.style.animationDelay = `${i * 0.3}s`;
+                heart.style.animationDelay = `${i * 0.25}s`;
                 heart.style.zIndex = '0';
                 document.body.appendChild(heart);
             }
