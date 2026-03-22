@@ -86,6 +86,16 @@
             text-align: center;
             color: gold;
         }
+        button {
+            margin-top: 15px;
+            background: gold;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -95,25 +105,77 @@
         <div class="center-text">🃏 მწვანე მაგიდა 🃏</div>
     </div>
     <div class="info" id="info">მოთამაშეები: 0 / 4</div>
+    <button id="sitBtn">🪑 დაჯდომა</button>
     <a href="chat.html" class="back-btn">← ჩატში დაბრუნება</a>
 </div>
 
 <script>
-    // ეს მხოლოდ ვიზუალია. სკამები ცარიელია.
-    const chairs = ['bottom', 'right', 'top', 'left'];
-    const container = document.getElementById('chairs');
+    // ჩემი ნიკი
+    let myNick = "გიო";
     
-    let html = '';
-    for (let i = 0; i < 4; i++) {
-        html += `
-            <div class="chair chair-${chairs[i]}">
-                <img src="https://i.ibb.co/v3m6y6R/avatar.png">
-                <div class="name">ცარიელი</div>
-            </div>
-        `;
+    // მოთამაშეების სია
+    let players = [];
+    
+    // სკამების ადგილები
+    const chairs = ['bottom', 'right', 'top', 'left'];
+    
+    // სკამების ჩვენება
+    function renderChairs() {
+        const container = document.getElementById('chairs');
+        let html = '';
+        
+        for (let i = 0; i < 4; i++) {
+            let name = 'ცარიელი';
+            let avatar = 'https://i.ibb.co/v3m6y6R/avatar.png';
+            
+            if (players[i]) {
+                name = players[i].name;
+                avatar = players[i].avatar;
+            }
+            
+            html += `
+                <div class="chair chair-${chairs[i]}">
+                    <img src="${avatar}">
+                    <div class="name">${name}</div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        document.getElementById('info').innerHTML = `მოთამაშეები: ${players.length} / 4`;
     }
-    container.innerHTML = html;
-    document.getElementById('info').innerHTML = 'მოთამაშეები: 0 / 4 | 🃏 ცარიელი სკამები';
+    
+    // დაჯდომის ფუნქცია
+    function sitDown() {
+        // ვამოწმებ უკვე ვზივარ თუ არა
+        for (let i = 0; i < players.length; i++) {
+            if (players[i].name === myNick) {
+                alert('უკვე ზიხარ!');
+                return;
+            }
+        }
+        
+        // ვამოწმებ თუ ყველა სკამი სავსეა
+        if (players.length >= 4) {
+            alert('ყველა სკამი სავსეა!');
+            return;
+        }
+        
+        // დაჯექი
+        players.push({
+            name: myNick,
+            avatar: 'https://i.ibb.co/v3m6y6R/avatar.png'
+        });
+        
+        // განაახლე ეკრანი
+        renderChairs();
+    }
+    
+    // ღილაკი
+    document.getElementById('sitBtn').onclick = sitDown;
+    
+    // თავიდან ჩვენება
+    renderChairs();
 </script>
 </body>
 </html>
