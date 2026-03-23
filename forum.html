@@ -49,7 +49,6 @@
             margin-bottom: 20px;
             width: 100%;
         }
-        .new-topic-btn.hidden { display: none; }
         .topic-card {
             background: rgba(0,0,0,0.6);
             border-radius: 25px;
@@ -163,7 +162,7 @@
     </div>
     
     <div id="topicsView">
-        <button id="newTopicBtn" class="new-topic-btn hidden" onclick="openModal()">➕ ახალი თემა</button>
+        <button id="newTopicBtn" class="new-topic-btn" onclick="checkAndOpenModal()">➕ ახალი თემა</button>
         <div id="topicsList"></div>
     </div>
     
@@ -198,32 +197,20 @@
     let myRole = null;
     let currentTopicId = null;
     
-    async function loadUserRole() {
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('username', myNick)
-                .single();
-            
-            if (error) {
-                console.error("შეცდომა:", error);
-                myRole = 'Member';
-            } else {
-                myRole = data?.role || 'Member';
-            }
-            
-            console.log("ჩემი როლი:", myRole);
-            
-            const btn = document.getElementById('newTopicBtn');
-            if (myRole === 'Owner' || myRole === 'Admin') {
-                btn.classList.remove('hidden');
-            } else {
-                btn.classList.add('hidden');
-            }
-        } catch(e) {
-            console.error("შეცდომა:", e);
-            myRole = 'Member';
+    async function checkAndOpenModal() {
+        // პირდაპივ როლის შემოწმება
+        const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('username', myNick)
+            .single();
+        
+        const role = data?.role || 'Member';
+        
+        if (role === 'Owner' || role === 'Admin') {
+            document.getElementById('topicModal').style.display = 'flex';
+        } else {
+            alert("თემის შექმნა მხოლოდ ადმინისტრატორებს შეუძლიათ!");
         }
     }
     
@@ -302,13 +289,6 @@
         loadComments(currentTopicId);
     }
     
-    function openModal() {
-        if (myRole !== 'Owner' && myRole !== 'Admin') {
-            alert("თემის შექმნა მხოლოდ ადმინისტრატორებს შეუძლიათ!");
-            return;
-        }
-        document.getElementById('topicModal').style.display = 'flex';
-    }
     function closeModal() {
         document.getElementById('topicModal').style.display = 'none';
         document.getElementById('topicTitle').value = '';
@@ -333,7 +313,6 @@
     document.getElementById('themeToggle').onclick = toggleTheme;
     const saved = localStorage.getItem('forum_theme') || 'night';
     setTheme(saved);
-    loadUserRole();
     loadTopics();
 </script>
 </body>
