@@ -202,8 +202,11 @@
         const { data } = await supabase.from('profiles').select('role').eq('username', myNick).single();
         myRole = data?.role || 'Member';
         const btn = document.getElementById('newTopicBtn');
-        if (myRole === 'Owner' || myRole === 'Admin') btn.classList.remove('hidden');
-        else btn.classList.add('hidden');
+        if (myRole === 'Owner' || myRole === 'Admin') {
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+        }
     }
     
     function setTheme(theme) {
@@ -259,7 +262,7 @@
         const { data: comments } = await supabase.from('forum_comments').select('*').eq('topic_id', topicId).order('created_at', { ascending: true });
         const list = document.getElementById('commentsList');
         if (!comments?.length) {
-            list.innerHTML = '<div class="empty-state">💬 კომენტარები არ არის</div>';
+            list.innerHTML = '<div class="empty-state">💬 კომენტარები არ არის<br>👆 იყავი პირველი!</div>';
             return;
         }
         list.innerHTML = comments.map(c => `
@@ -282,7 +285,10 @@
     }
     
     function openModal() {
-        if (myRole !== 'Owner' && myRole !== 'Admin') return alert("მხოლოდ ადმინს შეუძლია!");
+        if (myRole !== 'Owner' && myRole !== 'Admin') {
+            alert("თემის შექმნა მხოლოდ ადმინისტრატორებს შეუძლიათ!");
+            return;
+        }
         document.getElementById('topicModal').style.display = 'flex';
     }
     function closeModal() {
@@ -297,6 +303,7 @@
         await supabase.from('forum_topics').insert({ author: myNick, title, content, comment_count: 0 });
         closeModal();
         loadTopics();
+        alert("✅ თემა შეიქმნა!");
     }
     function backToList() {
         document.getElementById('topicsView').style.display = 'block';
