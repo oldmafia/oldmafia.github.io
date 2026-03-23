@@ -199,13 +199,31 @@
     let currentTopicId = null;
     
     async function loadUserRole() {
-        const { data } = await supabase.from('profiles').select('role').eq('username', myNick).single();
-        myRole = data?.role || 'Member';
-        const btn = document.getElementById('newTopicBtn');
-        if (myRole === 'Owner' || myRole === 'Admin') {
-            btn.classList.remove('hidden');
-        } else {
-            btn.classList.add('hidden');
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('username', myNick)
+                .single();
+            
+            if (error) {
+                console.error("შეცდომა:", error);
+                myRole = 'Member';
+            } else {
+                myRole = data?.role || 'Member';
+            }
+            
+            console.log("ჩემი როლი:", myRole);
+            
+            const btn = document.getElementById('newTopicBtn');
+            if (myRole === 'Owner' || myRole === 'Admin') {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        } catch(e) {
+            console.error("შეცდომა:", e);
+            myRole = 'Member';
         }
     }
     
