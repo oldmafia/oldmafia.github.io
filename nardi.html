@@ -3,82 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🔱კაიფმანია🔱</title>
+    <title>🔱 ნარდზე კაიფმანია + CHAT 🔱</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #080808; display: flex; flex-direction: column; align-items: center; color: white; font-family: sans-serif; margin: 0; padding: 5px; overflow: hidden; }
-        .brand { font-size: 18px; color: #d4af37; font-weight: bold; margin: 5px 0; text-shadow: 0 0 10px gold; }
-        .lobby { display: flex; gap: 8px; margin-bottom: 8px; }
-        .seat { padding: 6px 12px; border: 1px dashed #d4af37; border-radius: 10px; font-size: 11px; cursor: pointer; background: rgba(255,255,255,0.05); }
-        .seat.taken { border-style: solid; background: rgba(212,175,55,0.2); color: gold; font-weight: bold; }
-        .status-bar { padding: 6px 20px; border-radius: 20px; margin-bottom: 8px; font-size: 13px; border: 1px solid #333; min-width: 220px; text-align: center; }
-        .active { background: #d4af37; color: black; font-weight: bold; box-shadow: 0 0 15px gold; }
-
-        .board { width: 98vw; max-width: 500px; height: 360px; background: #3d230d; border: 8px solid #1a0f05; display: flex; position: relative; border-radius: 10px; box-shadow: 0 10px 40px black; }
-        .half { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-        .bar { width: 35px; background: #1a0f05; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; z-index: 20; border: 1px solid #333; }
+        body { background: #0a0a0a; display: flex; flex-direction: column; align-items: center; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; height: 100vh; overflow: hidden; }
+        .main-container { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
         
-        .points { display: flex; justify-content: space-around; width: 100%; height: 44%; }
-        .p { width: 35px; height: 100%; position: relative; display: flex; flex-direction: column; align-items: center; z-index: 5; }
+        /* დაფის სტილები */
+        .board { width: 90vw; max-width: 500px; height: 380px; background: #3d230d; border: 10px solid #1a0f05; display: flex; position: relative; border-radius: 8px; box-shadow: 0 10px 50px rgba(0,0,0,0.8); }
+        .half { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+        .bar { width: 35px; background: #1a0f05; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; z-index: 20; border: 1px solid #222; }
+        .points { display: flex; justify-content: space-around; width: 100%; height: 45%; }
+        .p { width: 38px; height: 100%; position: relative; display: flex; flex-direction: column; align-items: center; }
         .dn { justify-content: flex-start; } .up { justify-content: flex-start; flex-direction: column-reverse; }
-        .p::before { content: ""; position: absolute; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; }
-        .dn::before { border-top: 130px solid #5d3615; top: 0; }
-        .up::before { border-bottom: 140px solid #7a4a21; bottom: 0; }
+        .p::before { content: ""; position: absolute; width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent; }
+        .dn::before { border-top: 140px solid rgba(0,0,0,0.2); top: 0; }
+        .up::before { border-bottom: 140px solid rgba(255,255,255,0.05); bottom: 0; }
+        
+        /* ქვები */
+        .ch { width: 30px; height: 30px; border-radius: 50%; z-index: 10; cursor: grab; flex-shrink: 0; margin-top: -22px; border: 1px solid rgba(0,0,0,0.5); touch-action: none; }
+        .dn .ch:first-child, .up .ch:first-child, .bar .ch { margin-top: 2px; margin-bottom: 2px; }
+        .w { background: radial-gradient(circle at 30% 30%, #fff, #999); box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        .b { background: radial-gradient(circle at 30% 30%, #444, #000); box-shadow: 0 3px 6px rgba(0,0,0,0.6); }
 
-        .ch { width: 28px; height: 28px; border-radius: 50%; z-index: 10; cursor: grab; flex-shrink: 0; margin-top: -20px; border: 1px solid rgba(0,0,0,0.4); touch-action: none; position: relative; }
-        .dn .ch:first-child, .up .ch:first-child, .bar .ch { margin: 2px 0; }
-        .w { background: radial-gradient(circle at 35% 35%, #fff, #aaa); box-shadow: 0 2px 4px black; }
-        .b { background: radial-gradient(circle at 35% 35%, #444, #000); box-shadow: 0 2px 4px black; }
-        .ch.locked { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.5); }
-
-        .dice-box { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 8px; z-index: 100; pointer-events: none; }
-        .die { width: 32px; height: 32px; background: white; color: black; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; box-shadow: 0 4px 10px black; }
-
-        .controls { margin-top: 12px; display: flex; gap: 10px; }
-        .btn { padding: 10px 18px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
+        /* ჩატის სტილი */
+        .chat-container { width: 280px; height: 400px; background: #161616; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; }
+        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; font-size: 13px; display: flex; flex-direction: column; gap: 5px; }
+        .msg { background: #222; padding: 5px 10px; border-radius: 8px; border-left: 3px solid #d4af37; }
+        .chat-input { display: flex; padding: 10px; border-top: 1px solid #333; }
+        .chat-input input { flex-grow: 1; background: #000; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; outline: none; }
+        
+        /* სხვა ელემენტები */
+        .controls { margin-top: 15px; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
+        .status-bar { padding: 8px 25px; border-radius: 25px; background: #1a1a1a; margin-bottom: 10px; border: 1px solid #333; }
+        .active { background: #d4af37 !important; color: black; box-shadow: 0 0 15px gold; }
     </style>
 </head>
 <body>
 
-    <div class="brand">🔱 ნარდზე კაიფმანია 🔱</div>
+    <h2 style="color:#d4af37">🔱 ნარდზე კაიფმანია 🔱</h2>
 
-    <div class="lobby">
-        <div id="seat-w" class="seat" onclick="sit('w')">⚪ თეთრი: თავისუფალი</div>
-        <div id="seat-b" class="seat" onclick="sit('b')">⚫ შავი: თავისუფალი</div>
-    </div>
+    <div class="main-container">
+        <div style="display:flex; flex-direction:column; align-items:center">
+            <div id="status" class="status-bar">დაჯექი რომელიმე მხარეს!</div>
+            
+            <div class="board" id="game-board">
+                <div class="half"><div class="points" id="top-left"></div><div class="points" id="bot-left"></div></div>
+                <div class="bar" id="mid-bar"></div>
+                <div class="half"><div class="points" id="top-right"></div><div class="points" id="bot-right"></div></div>
+                <div id="dice-container" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; gap:10px; pointer-events:none"></div>
+            </div>
 
-    <div id="status" class="status-bar">დაჯექი მაგიდასთან!</div>
+            <div class="controls">
+                <button id="roll-btn" class="btn" style="background:#b00" onclick="roll()">გაგორება 🎲</button>
+                <button id="end-btn" class="btn" style="background:#0055aa; display:none" onclick="endTurn()">დასრულება ✅</button>
+                <button class="btn" style="background:#333" onclick="resetGame()">🔄 რესეტი</button>
+                <button class="btn" style="background:gray" onclick="sit('w')">⚪</button>
+                <button class="btn" style="background:black" onclick="sit('b')">⚫</button>
+            </div>
+        </div>
 
-    <div class="board" id="game-board" ondragover="event.preventDefault()" ondrop="handleBoardDrop(event)">
-        <div class="half"><div class="points" id="top-left"></div><div class="points" id="bot-left"></div></div>
-        <div class="bar" id="mid-bar"></div>
-        <div class="half"><div class="points" id="top-right"></div><div class="points" id="bot-right"></div></div>
-        <div class="dice-box" id="dice-container"></div>
-    </div>
-
-    <div class="controls">
-        <button id="roll-btn" class="btn" style="background:#b00" onclick="roll()">გაგორება 🎲</button>
-        <button id="end-btn" class="btn" style="background:#0055aa; display:none" onclick="endTurn()">სვლა დავასრულე ✅</button>
-        <button class="btn" style="background:#333" onclick="resetGame()">🔄 რესეტი</button>
+        <div class="chat-container">
+            <div style="padding:10px; border-bottom:1px solid #333; font-weight:bold; color:#d4af37; text-align:center">💬 ჩატი</div>
+            <div id="chat-messages"></div>
+            <div class="chat-input">
+                <input type="text" id="chat-in" placeholder="დაწერე რამე..." onkeypress="if(event.key==='Enter') sendChat()">
+            </div>
+        </div>
     </div>
 
     <audio id="diceSound"><source src="https://assets.mixkit.co/active_storage/sfx/2006/2006-preview.mp3" type="audio/mpeg"></audio>
 
     <script>
         const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-        let myNick = localStorage.getItem('nickname') || "მოთამაშე";
+        let myNick = "User_" + Math.floor(Math.random()*1000);
         let mySide = null, currentTurn = "w", diceResults = [], draggedElement = null;
 
         async function init() {
             createBoard();
-            syncSeats();
             _s.channel('nardi_final').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'room_name=eq.nardi_sync' }, payload => {
                 const msg = payload.new.text;
-                if (msg.startsWith("SIT:")) syncSeats();
+                const user = payload.new.user_name;
+                if (msg.startsWith("CHAT:")) addChatMessage(user, msg.replace("CHAT:",""));
                 else if (msg.startsWith("MOVE:")) executeMoveUI(...msg.split(":").slice(1));
-                else if (msg.startsWith("DICE:")) { diceResults = msg.split(":")[1].split(",").map(Number); renderDice(); updateDraggableState(); }
-                else if (msg.startsWith("TURN:")) { currentTurn = msg.split(":")[1]; updateStatusUI(); updateDraggableState(); }
-                else if (msg.startsWith("REMOVE:")) executeRemoveUI(...msg.split(":").slice(1));
+                else if (msg.startsWith("DICE:")) { diceResults = msg.split(":")[1].split(",").map(Number); renderDice(); }
+                else if (msg.startsWith("TURN:")) { currentTurn = msg.split(":")[1]; updateStatusUI(); }
                 else if (msg === "RESET") location.reload();
             }).subscribe();
             restoreState();
@@ -93,8 +103,8 @@
                     const p = document.createElement('div');
                     p.className = `p ${s.includes('top')?'dn':'up'}`;
                     p.dataset.index = idx;
-                    p.ondragover = e => e.preventDefault();
-                    p.ondrop = handleDrop;
+                    p.addEventListener('dragover', e => e.preventDefault());
+                    p.addEventListener('drop', handleDrop);
                     if (start[idx]) for (let j=0; j<start[idx].n; j++) addChecker(p, start[idx].c);
                     container.appendChild(p);
                 });
@@ -105,47 +115,25 @@
             const ch = document.createElement('div');
             ch.className = `ch ${color}`;
             ch.draggable = true;
-            ch.onmousedown = ch.ontouchstart = (e) => { 
-                if(mySide === currentTurn && ch.classList.contains(mySide) && !ch.classList.contains('locked')) {
-                    draggedElement = ch; 
-                }
-            };
+            ch.onmousedown = ch.ontouchstart = () => { if(mySide === currentTurn && ch.classList.contains(mySide)) draggedElement = ch; };
             parent.appendChild(ch);
         }
 
-        function updateDraggableState() {
-            const barCheckers = document.querySelectorAll(`#mid-bar .ch.${mySide}`);
-            const allMyCheckers = document.querySelectorAll(`.ch.${mySide}`);
-            
-            allMyCheckers.forEach(ch => {
-                if (barCheckers.length > 0) {
-                    // თუ ბარზე ვართ, მხოლოდ ბარის ქვებია აქტიური
-                    if (ch.parentElement.id === "mid-bar") ch.classList.remove('locked');
-                    else ch.classList.add('locked');
-                } else {
-                    ch.classList.remove('locked');
-                }
-            });
+        async function sendChat() {
+            const inp = document.getElementById('chat-in');
+            if(!inp.value) return;
+            await _s.from('messages').insert([{ user_name: myNick, text: `CHAT:${inp.value}`, room_name: 'nardi_sync' }]);
+            inp.value = "";
         }
 
-        async function sit(side) {
-            if (mySide) return;
-            await _s.from('messages').insert([{ user_name: myNick, text: `SIT:${side}`, room_name: 'nardi_sync' }]);
-            mySide = side; syncSeats();
-        }
-
-        async function syncSeats() {
-            const { data } = await _s.from('messages').select('*').eq('room_name', 'nardi_sync').order('created_at', { ascending: false });
-            let w = data?.find(m => m.text === "SIT:w"), b = data?.find(m => m.text === "SIT:b");
-            if (w) { document.getElementById('seat-w').innerText = `⚪ თეთრი: ${w.user_name}`; document.getElementById('seat-w').classList.add('taken'); if (w.user_name === myNick) mySide = 'w'; }
-            if (b) { document.getElementById('seat-b').innerText = `⚫ შავი: ${b.user_name}`; document.getElementById('seat-b').classList.add('taken'); if (b.user_name === myNick) mySide = 'b'; }
-            updateStatusUI();
-            updateDraggableState();
+        function addChatMessage(user, text) {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += `<div class="msg"><b>${user}:</b> ${text}</div>`;
+            box.scrollTop = box.scrollHeight;
         }
 
         async function roll() {
             if (mySide !== currentTurn) return;
-            document.getElementById('diceSound').play().catch(()=>{});
             const d1 = Math.floor(Math.random()*6)+1, d2 = Math.floor(Math.random()*6)+1;
             const res = (d1 === d2) ? [d1, d1, d1, d1] : [d1, d2];
             await _s.from('messages').insert([{ user_name: myNick, text: `DICE:${res.join(",")}`, room_name: 'nardi_sync' }]);
@@ -153,55 +141,20 @@
             document.getElementById('end-btn').style.display = "block";
         }
 
-        function renderDice() { document.getElementById('dice-container').innerHTML = diceResults.map(d => `<div class="die">${d}</div>`).join(''); }
-
-        async function handleDrop(e) {
-            e.preventDefault();
-            const target = e.target.closest('.p');
-            if (!draggedElement || !target || diceResults.length === 0) return;
-
-            const fromIdx = draggedElement.parentElement.id === "mid-bar" ? "BAR" : draggedElement.parentElement.dataset.index;
-            const toIdx = parseInt(target.dataset.index);
-            
-            let diff;
-            if (fromIdx === "BAR") {
-                // თეთრები შემოდიან 23-დან ქვევით, შავები 0-დან ზევით
-                diff = (mySide === 'w') ? (24 - toIdx) : (toIdx + 1);
-            } else {
-                diff = Math.abs(parseInt(fromIdx) - toIdx);
-            }
-
-            if (diceResults.includes(diff)) {
-                // ვალიდაცია: მეტოქის სახლში უნდა შევიდეს (თუ ბარიდანაა)
-                if (fromIdx === "BAR") {
-                    if (mySide === 'w' && toIdx < 18) return; 
-                    if (mySide === 'b' && toIdx > 5) return;
-                }
-
-                await _s.from('messages').insert([{ user_name: myNick, text: `MOVE:${fromIdx}:${toIdx}:${mySide}`, room_name: 'nardi_sync' }]);
-                diceResults.splice(diceResults.indexOf(diff), 1);
-                renderDice();
-                updateDraggableState();
-            }
-            draggedElement = null;
+        function renderDice() {
+            document.getElementById('dice-container').innerHTML = diceResults.map(d => `<div style="width:30px;height:30px;background:white;color:black;border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:bold">${d}</div>`).join('');
         }
 
-        async function handleBoardDrop(e) {
-            if (!draggedElement || e.target.closest('.p') || e.target.closest('.bar')) return;
-            if (!isAllInHome(mySide)) return;
-            
-            const fromIdx = parseInt(draggedElement.parentElement.dataset.index);
-            const diff = (mySide === 'w') ? (fromIdx + 1) : (24 - fromIdx);
-            
-            let dIdx = diceResults.indexOf(diff);
-            if (dIdx === -1) {
-                const maxD = Math.max(...diceResults);
-                if (maxD > diff) dIdx = diceResults.indexOf(maxD);
-            }
+        async function handleDrop(e) {
+            const target = e.target.closest('.p');
+            if (!draggedElement || !target || diceResults.length === 0) return;
+            const fromIdx = draggedElement.parentElement.id === "mid-bar" ? "BAR" : draggedElement.parentElement.dataset.index;
+            const toIdx = target.dataset.index;
+            const diff = (fromIdx === "BAR") ? (mySide === 'w' ? 24 - toIdx : parseInt(toIdx) + 1) : Math.abs(fromIdx - toIdx);
 
-            if (dIdx !== -1) {
-                await _s.from('messages').insert([{ user_name: myNick, text: `REMOVE:${fromIdx}:${mySide}`, room_name: 'nardi_sync' }]);
-                diceResults.splice(dIdx, 1);
+            if (diceResults.includes(diff)) {
+                await _s.from('messages').insert([{ user_name: myNick, text: `MOVE:${fromIdx}:${toIdx}:${mySide}`, room_name: 'nardi_sync' }]);
+                diceResults.splice(diceResults.indexOf(diff), 1);
                 renderDice();
             }
             draggedElement = null;
@@ -211,30 +164,20 @@
             const fP = from === "BAR" ? document.getElementById('mid-bar') : document.querySelector(`.p[data-index="${from}"]`);
             const tP = document.querySelector(`.p[data-index="${to}"]`);
             const ch = fP?.querySelector(`.ch.${color}`);
-            
             if (ch && tP) {
                 const oppColor = color === 'w' ? 'b' : 'w';
                 const opps = tP.querySelectorAll(`.ch.${oppColor}`);
                 if (opps.length === 1) document.getElementById('mid-bar').appendChild(opps[0]);
                 tP.appendChild(ch);
             }
-            updateDraggableState();
         }
 
-        function executeRemoveUI(from, color) {
-            const fP = document.querySelector(`.p[data-index="${from}"]`);
-            fP?.querySelector(`.ch.${color}`)?.remove();
-            if (document.querySelectorAll(`.ch.${color}`).length === 0) alert("გამარჯვება! 🎉");
-            updateDraggableState();
-        }
+        async function sit(side) { mySide = side; updateStatusUI(); }
 
-        function isAllInHome(color) {
-            const barCount = document.querySelectorAll(`#mid-bar .ch.${color}`).length;
-            if (barCount > 0) return false;
-            return [...document.querySelectorAll(`.ch.${color}`)].every(ch => {
-                const idx = parseInt(ch.parentElement.dataset.index);
-                return color === 'w' ? idx <= 5 : idx >= 18;
-            });
+        function updateStatusUI() {
+            const s = document.getElementById('status');
+            s.innerText = currentTurn === mySide ? "შენი სვლაა! 🎲" : "მოწინააღმდეგე ფიქრობს...";
+            s.className = currentTurn === mySide ? "status-bar active" : "status-bar";
         }
 
         async function endTurn() {
@@ -245,39 +188,17 @@
             diceResults = []; renderDice();
         }
 
-        function updateStatusUI() {
-            const s = document.getElementById('status');
-            const rBtn = document.getElementById('roll-btn');
-            if (!mySide) { s.innerText = "დაჯექი მაგიდასთან!"; rBtn.disabled = true; }
-            else if (currentTurn === mySide) { 
-                const hasBar = document.querySelectorAll(`#mid-bar .ch.${mySide}`).length > 0;
-                s.innerText = hasBar ? "ჯერ გაცოცხლდი! 🚑" : "შენი სვლაა! 🎲"; 
-                s.className="status-bar active"; rBtn.disabled = false; 
-            }
-            else { s.innerText = "მოწინააღმდეგე აგორებს... ⏳"; s.className="status-bar"; rBtn.disabled = true; }
-        }
-
         async function restoreState() {
             const { data } = await _s.from('messages').select('*').eq('room_name', 'nardi_sync').order('created_at', { ascending: true });
             data?.forEach(m => {
                 if (m.text.startsWith("MOVE:")) executeMoveUI(...m.text.split(":").slice(1));
-                if (m.text.startsWith("REMOVE:")) executeRemoveUI(...m.text.split(":").slice(1));
                 if (m.text.startsWith("TURN:")) currentTurn = m.text.split(":")[1];
+                if (m.text.startsWith("CHAT:")) addChatMessage(m.user_name, m.text.replace("CHAT:",""));
             });
             updateStatusUI();
-            updateDraggableState();
         }
 
-        async function resetGame() { if(confirm("რესეტი?")) { await _s.from('messages').delete().eq('room_name', 'nardi_sync'); await _s.from('messages').insert([{ user_name: 'SYS', text: "RESET", room_name: 'nardi_sync' }]); } }
-
-        document.addEventListener('touchend', e => {
-            if (!draggedElement) return;
-            const t = e.changedTouches[0];
-            const target = document.elementFromPoint(t.clientX, t.clientY)?.closest('.p') || document.elementFromPoint(t.clientX, t.clientY)?.closest('.board');
-            if (target?.classList.contains('p')) handleDrop({ preventDefault:()=>{}, target: target });
-            else handleBoardDrop({ target: target });
-            draggedElement = null;
-        });
+        async function resetGame() { if(confirm("რესეტი?")) { await _s.from('messages').delete().eq('room_name', 'nardi_sync'); location.reload(); } }
 
         init();
     </script>
