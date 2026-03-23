@@ -156,20 +156,6 @@
             z-index: 10;
         }
         
-        /* მესამე გული პროფილის მარჯვნივ */
-        body.day-mode .sidebar > div:first-child .my-avatar-wrapper {
-            position: relative;
-        }
-        
-        body.day-mode .sidebar > div:first-child .avatar-heart {
-            position: absolute;
-            right: -10px;
-            top: -5px;
-            font-size: 28px;
-            filter: drop-shadow(0 0 8px #ff6699);
-            animation: heartGlow 1.2s infinite;
-        }
-        
         /* გულები მენიუს ელემენტებზე — მთლიანად ჩანს */
         body.day-mode .room-item {
             padding: 14px 20px 14px 42px;
@@ -359,6 +345,7 @@
         <div class="room-item" onclick="changeRoom('😵 ჩამოხრჩობანა', this)">😵 ჩამოხრჩობანა</div>
         <div class="room-item" onclick="changeRoom('🃏 ჯოკერი', this)">🃏 ჯოკერი</div>
         <div class="room-item" onclick="changeRoom('🎲 ნარდი', this)">🎲 ნარდი</div>
+        <div class="room-item" onclick="changeRoom('📝 ფორუმი', this)">📝 ფორუმი</div>
         <div class="room-item" onclick="changeRoom('🎵 მუსიკა', this)">🎵 მუსიკა</div>
         <div class="room-item" onclick="changeRoom('😂 იუმორი', this)">😂 იუმორი</div>
         <div class="room-item" onclick="changeRoom('🏛️ ფორუმი', this)">🏛️ ფორუმი</div>
@@ -405,7 +392,7 @@
     const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
     let myNick = localStorage.getItem('nickname'), myRole = "Member", currentRoom = "☕ კაფე-ბარი", myAvatar = "";
     let currentQuizQ = null, currentCipher = null, currentJokerGame = null;
-    const QUIZ_ROOM_NAME = "❓ ვიქტორინა", CIPHER_ROOM_NAME = "🔐 შიფროგრამა", JOKER_ROOM_NAME = "🃏 ჯოკერი", NARDI_ROOM_NAME = "🎲 ნარდი";
+    const QUIZ_ROOM_NAME = "❓ ვიქტორინა", CIPHER_ROOM_NAME = "🔐 შიფროგრამა", JOKER_ROOM_NAME = "🃏 ჯოკერი", NARDI_ROOM_NAME = "🎲 ნარდი", FORUM_ROOM_NAME = "📝 ფორუმი";
 
     function translateRole(r) { 
         const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი', 'Banned': '🚫 დაბლოკილი'}; 
@@ -525,6 +512,7 @@
     function changeRoom(n, el) {
         if (n === "🃏 ჯოკერი") { window.location.href = 'joker.html'; return; }
         if (n === "🎲 ნარდი") { window.location.href = 'nardi.html'; return; }
+        if (n === "📝 ფორუმი") { window.location.href = 'forum.html'; return; }
         currentRoom = n; 
         document.getElementById('room-name').innerText = n;
         document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
