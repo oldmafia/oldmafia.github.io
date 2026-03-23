@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - NARDI PRO</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #050505; display: flex; flex-direction: column; align-items: center; color: white; font-family: sans-serif; margin: 0; padding: 10px; overflow-x: hidden; }
+        
+        /* დაჯდომის ადგილები */
+        .seats { display: flex; gap: 15px; margin-bottom: 10px; }
+        .seat { padding: 10px 18px; border: 1px dashed #d4af37; border-radius: 12px; font-size: 13px; color: #888; cursor: pointer; background: rgba(0,0,0,0.4); transition: 0.3s; }
+        .seat.occupied { border-style: solid; color: gold; background: rgba(212,175,55,0.15); border-color: gold; }
+
+        /* დაფა */
+        .board {
+            width: 95vw; max-width: 600px; height: 400px;
+            background: #4b2c11; border: 12px solid #2a1808;
+            display: flex; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+            border-radius: 5px; touch-action: none;
+        }
+        .half { width: 50%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+        .bar { width: 26px; background: #2a1808; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 15px black; }
+
+        /* კამათლები */
+        .dice-container { position: absolute; display: flex; gap: 8px; z-index: 100; pointer-events: none; }
+        .die { width: 36px; height: 36px; background: white; color: black; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; box-shadow: 2px 2px 10px black; border: 1px solid #ccc; }
+
+        /* სამკუთხედები */
+        .points { display: flex; justify-content: space-around; width: 100%; height: 45%; }
+        .p { width: 40px; height: 100%; position: relative; display: flex; flex-direction: column; align-items: center; }
+        .p::before { content: ""; position: absolute; width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; z-index: 1; }
+        .dn::before { border-top: 160px solid #7a4a21; top: 0; }
+        .up::before { border-bottom: 160px solid #c49a6c; bottom: 0; }
+        .p:nth-child(even).dn::before { border-top-color: #c49a6c; }
+        .p:nth-child(even).up::before { border-bottom-color: #7a4a21; }
+
+        /* ქვები */
+        .ch { width: 30px; height: 30px; border-radius: 50%; position: relative; z-index: 5; border: 1px solid rgba(0,0,0,0.5); cursor: grab; touch-action: none; margin-top: -6px; margin-bottom: -6px; }
+        .w { background: radial-gradient(circle, #ffffff, #bbbbbb); box-shadow: 0 3px 6px rgba(0,0,0,0.6); }
+        .b { background: radial-gradient(circle, #444444, #111111); box-shadow: 0 3px 6px rgba(0,0,0,0.8); }
+
+        /* ღილაკები */
+        .controls { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .btn { padding: 12px 25px; border: none; color: white; border-radius: 25px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px; }
+        .btn-roll { background: linear-gradient(#cc0000, #800000); box-shadow: 0 4px 15px rgba(255,0,0,0.3); }
+        .btn-win { background: linear-gradient(#d4af37, #aa8a2e); color: black; }
+        .btn-loss { background: #333; border: 1px solid #555; }
+        .btn:active { transform: scale(0.95); }
+        .back { margin-top: 15px; color: #555; text-decoration: none; font-size: 13px; border-bottom: 1px solid #333; }
+    </style>
+</head>
+<body>
+
+    <audio id="diceSound" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2006/2006-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="seats">
+        <div id="seat-w" class="seat" onclick="sit('w')">⚪ თეთრი: თავისუფალი</div>
+        <div id="seat-b" class="seat" onclick="sit('b')">⚫ შავი: თავისუფალი</div>
+    </div>
+
+    <div class="board">
+        <div class="half">
+            <div class="points" id="top-left"></div>
+            <div class="points" id="bot-left" style="flex-direction: row-reverse;"></div>
+        </div>
+        <div class="bar">
+            <div class="dice-container" id="dice-box"></div>
+        </div>
+        <div class="half">
+            <div class="points" id="top-right"></div>
+            <div class="points" id="bot-right" style="flex-direction: row-reverse;"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-roll" onclick="roll()">გაგორება 🎲</button>
+        <button class="btn btn-win" onclick="declareWin()">მოვიგე! 🏆</button>
+        <button class="btn btn-loss" onclick="declareLoss()">წავაგე 💀</button>
+    </div>
+
+    <a href="chat.html" class="back">დაბრუნება ჩატში</a>
+
+    <script>
+        const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        let myNick = localStorage.getItem('nickname') || "მოთამაშე";
+        let draggedElement = null;
+        let currentSeat = null;
+
+        async function init() {
+            createBoard();
+            await checkSeats();
+            
+            _s.channel('nardi_realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'room_name=eq.nardi_status' }, payload => {
+                const side = payload.new.text.includes("თეთრი:") ? 'w' : 'b';
+                updateSeatUI(side, payload.new.user_name);
+            }).subscribe();
+        }
+
+        function createBoard() {
+            const layout = {
+                'top-left':  [ {n:5, c:'w'}, {}, {}, {}, {n:3, c:'b'}, {} ],
+                'top-right': [ {}, {}, {}, {}, {}, {n:2, c:'b'} ],
+                'bot-left':  [ {n:5, c:'b'}, {}, {}, {}, {n:3, c:'w'}, {} ],
+                'bot-right': [ {}, {}, {}, {}, {}, {n:2, c:'w'} ]
+            };
+
+            for (let side in layout) {
+                const container = document.getElementById(side);
+                const isTop = side.includes('top');
+                layout[side].forEach(pos => {
+                    const p = document.createElement('div');
+                    p.className = `p ${isTop ? 'dn' : 'up'}`;
+                    p.addEventListener('dragover', e => e.preventDefault());
+                    p.addEventListener('drop', handleDrop);
+                    if (pos.n) { for (let j = 0; j < pos.n; j++) addChecker(p, pos.c); }
+                    container.appendChild(p);
+                });
+            }
+        }
+
+        function addChecker(parent, color) {
+            const ch = document.createElement('div');
+            ch.className = `ch ${color}`;
+            ch.draggable = true;
+            ch.addEventListener('dragstart', () => draggedElement = ch);
+            ch.addEventListener('touchstart', () => draggedElement = ch, {passive: true});
+            parent.appendChild(ch);
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const targetPoint = e.target.closest('.p');
+            if (draggedElement && targetPoint) targetPoint.appendChild(draggedElement);
+        }
+
+        function roll() {
+            document.getElementById('diceSound').play().catch(() => {});
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dice-box').innerHTML = `<div class="die">${d1}</div><div class="die">${d2}</div>`;
+        }
+
+        async function sit(side) {
+            if (currentSeat) return;
+            const { error } = await _s.from('messages').insert([{ user_name: myNick, text: (side==='w'?"თეთრი:":"შავი:"), room_name: 'nardi_status' }]);
+            if (!error) { updateSeatUI(side, myNick); currentSeat = side; }
+        }
+
+        async function checkSeats() {
+            const { data } = await _s.from('messages').select('*').eq('room_name', 'nardi_status').order('created_at', { ascending: false }).limit(5);
+            if (data) data.forEach(msg => updateSeatUI(msg.text.includes("თეთრი:") ? 'w' : 'b', msg.user_name));
+        }
+
+        function updateSeatUI(side, name) {
+            const s = document.getElementById('seat-' + side);
+            if(s) { s.innerText = (side === 'w' ? "⚪ თეთრი: " : "⚫ შავი: ") + name; s.classList.add('occupied'); }
+        }
+
+        async function declareWin() {
+            if (!currentSeat) return alert("დაჯექი მაგიდასთან!");
+            if (!confirm("მოიგე?")) return;
+            const { data } = await _s.from('profiles').select('wins').eq('nickname', myNick).single();
+            await _s.from('profiles').update({ wins: (data?.wins || 0) + 1 }).eq('nickname', myNick);
+            await _s.from('messages').insert([{ user_name: '🔱', text: `🎉 ${myNick}-მა მოიგო!`, room_name: '🔱 ნარდი' }]);
+            location.reload();
+        }
+
+        async function declareLoss() {
+            if (!currentSeat) return alert("დაჯექი მაგიდასთან!");
+            if (!confirm("წააგე?")) return;
+            const { data } = await _s.from('profiles').select('losses').eq('nickname', myNick).single();
+            await _s.from('profiles').update({ losses: (data?.losses || 0) + 1 }).eq('nickname', myNick);
+            location.reload();
+        }
+
+        document.addEventListener('touchend', e => {
+            if (draggedElement) {
+                const touch = e.changedTouches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                const p = target ? target.closest('.p') : null;
+                if (p) p.appendChild(draggedElement);
+                draggedElement = null;
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
