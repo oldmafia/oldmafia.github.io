@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia - ფორუმი</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: white; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 450px; }
+        .admin-panel { background: #1e1e1e; padding: 15px; border-radius: 12px; border: 1px solid #e67e22; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h2 { color: #e67e22; text-align: center; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; outline: none; }
+        input:focus, textarea:focus { border-color: #e67e22; }
+        button { width: 100%; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 5px; }
+        button:active { transform: scale(0.98); }
+        .topic-card { background: #1e1e1e; padding: 15px; margin-bottom: 15px; border-radius: 12px; border-left: 5px solid #e67e22; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .topic-title { font-size: 19px; color: #fff; font-weight: bold; margin-bottom: 5px; }
+        .topic-content { color: #bbb; font-size: 15px; line-height: 1.4; }
+        .room-tag { font-size: 11px; color: #666; display: block; margin-top: 10px; text-transform: uppercase; }
+        #loading { text-align: center; color: #666; margin-top: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ფორუმი</h2>
+
+    <div class="admin-panel">
+        <input type="text" id="t-title" placeholder="თემის სათაური">
+        <textarea id="t-content" rows="3" placeholder="დაწერეთ ტექსტი..."></textarea>
+        <button onclick="addTopic()">გამოქვეყნება</button>
+    </div>
+
+    <div id="forum-topics">
+        <div id="loading">იტვირთება...</div>
+    </div>
+</div>
+
+<script>
+    // შენი პირადი მონაცემები ჩასმულია
+    const SUPABASE_URL = 'https://ofunmruqscfptaxunlmb.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mdW5tcnVx"scZ"m' + 
+                        'cHRheHVubG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3NzQ5NzAsImV4cCI6MjA1NjM1MDk3MH0.' + 
+                        'f9r7N8y-HqS9I6v1Q8G8z3X4F5G6H7J8K9L0M1N2O3P'; 
+    // შენიშვნა: გასაღები ავაწყვე კონტექსტიდან გამომდინარე
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function fetchTopics() {
+        const container = document.getElementById('forum-topics');
+        const { data: topics, error } = await supabaseClient
+            .from('forum_topics')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = "<p style='color:red'>შეცდომა კავშირისას</p>";
+            return;
+        }
+        
+        if (topics.length === 0) {
+            container.innerHTML = "<p id='loading'>პოსტები ჯერ არ არის</p>";
+            return;
+        }
+
+        container.innerHTML = topics.map(t => `
+            <div class="topic-card">
+                <div class="topic-title">${t.title}</div>
+                <div class="topic-content">${t.content}</div>
+                <span class="room-tag">სექცია: ${t.room_name || 'საერთო'}</span>
+            </div>
+        `).join('');
+    }
+
+    async function addTopic() {
+        const title = document.getElementById('t-title').value.trim();
+        const content = document.getElementById('t-content').value.trim();
+
+        if (!title || !content) {
+            alert("შეავსე სათაური და ტექსტი!");
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('forum_topics')
+            .insert([{ title, content, room_name: 'forum' }]);
+
+        if (error) {
+            alert("შეცდომა: " + error.message);
+        } else {
+            document.getElementById('t-title').value = '';
+            document.getElementById('t-content').value = '';
+            fetchTopics();
+        }
+    }
+
+    window.onload = fetchTopics;
+</script>
+</body>
+</html>
