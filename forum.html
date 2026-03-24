@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia Forum</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s; }
+        .container { width: 100%; max-width: 450px; }
+        h2 { color: #800000; text-align: center; text-transform: uppercase; margin-bottom: 25px; }
+        
+        /* მუქი რეჟიმი (ნაგულისხმევი) */
+        body.dark-mode { background-color: #000000; color: #ffffff; }
+        .dark-mode .panel { background: #111; border: 1px solid #800000; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .dark-mode input, .dark-mode textarea { width: 100%; padding: 10px; margin: 5px 0; background: #000; border: 1px solid #333; color: #fff; border-radius: 5px; box-sizing: border-box; }
+        .dark-mode button { width: 100%; padding: 12px; background: #800000; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .dark-mode .card { background: #111; border-left: 4px solid #800000; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-top: 1px solid #222; border-right: 1px solid #222; border-bottom: 1px solid #222; }
+
+        /* ღია რეჟიმი (კრემისფერი) */
+        body.light-mode { background-color: #fff9f0; color: #000; }
+        .light-mode .panel { background: #fff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .light-mode input, .light-mode textarea { width: 100%; padding: 10px; margin: 5px 0; background: #fff; border: 1px solid #ccc; color: #000; border-radius: 5px; box-sizing: border-box; }
+        .light-mode button { width: 100%; padding: 12px; background: #ff4d4d; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .light-mode .card { background: #fff; border-left: 4px solid #ff4d4d; padding: 15px; margin-bottom: 15px; border-radius: 5px; border-top: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee; box-shadow: 0 2px 5px rgba(255, 77, 77, 0.1); }
+        
+        .theme-btn { position: fixed; top: 10px; right: 10px; padding: 5px 10px; background: #800000; color: #fff; border: none; border-radius: 4px; font-size: 10px; }
+    </style>
+</head>
+<body class="dark-mode" id="mainBody">
+
+<button class="theme-btn" onclick="toggleTheme()">ფერი</button>
+
+<div class="container">
+    <h2>ფორუმი</h2>
+
+    <div class="panel">
+        <input type="text" id="t-title" placeholder="სათაური">
+        <textarea id="t-content" rows="3" placeholder="ტექსტი..."></textarea>
+        <button onclick="addTopic()">დამატება</button>
+    </div>
+
+    <div id="forum-topics">იტვირთება...</div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://ofunmruqscfptaxunlmb.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mdW5tcnVxscZmcHRheHVubG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3NzQ5NzAsImV4cCI6MjA1NjM1MDk3MH0.f9r7N8y-HqS9I6v1Q8G8z3X4F5G6H7J8K9L0M1N2O3P';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function fetchTopics() {
+        const { data: topics, error } = await supabaseClient
+            .from('forum_topics')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        const container = document.getElementById('forum-topics');
+        if (error) { container.innerHTML = "შეცდომაა!"; return; }
+        
+        container.innerHTML = topics.map(t => `
+            <div class="card">
+                <div style="font-weight:bold; color:#800000">${t.title}</div>
+                <div style="margin-top:5px; font-size:14px">${t.content}</div>
+                <div style="font-size:10px; color:#666; margin-top:10px">${t.room_name || 'საერთო'}</div>
+            </div>
+        `).join('');
+    }
+
+    async function addTopic() {
+        const title = document.getElementById('t-title').value.trim();
+        const content = document.getElementById('t-content').value.trim();
+
+        if (!title || !content) return alert("შეავსე!");
+
+        const { error } = await supabaseClient
+            .from('forum_topics')
+            .insert([{ title, content, room_name: 'forum' }]);
+
+        if (error) {
+            alert("შეცდომა: " + error.message);
+        } else {
+            document.getElementById('t-title').value = '';
+            document.getElementById('t-content').value = '';
+            fetchTopics();
+        }
+    }
+
+    function toggleTheme() {
+        const b = document.getElementById('mainBody');
+        if (b.classList.contains('dark-mode')) {
+            b.classList.replace('dark-mode', 'light-mode');
+        } else {
+            b.classList.replace('light-mode', 'dark-mode');
+        }
+    }
+
+    window.onload = fetchTopics;
+</script>
+</body>
+</html>
