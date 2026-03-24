@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <title>ფორუმი</title>
+    <style>
+        .admin-only { display: none; } /* საწყის ეტაპზე დამალულია */
+        .topic-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        .comment-box { margin-left: 20px; font-size: 0.9em; color: #555; }
+    </style>
+</head>
+<body>
+
+    <h1>ფორუმი</h1>
+
+    <div id="admin-panel" class="admin-only">
+        <h3>ახალი თემის დამატება (მხოლოდ ადმინებისთვის)</h3>
+        <input type="text" id="topic-title" placeholder="თემის სათაური"><br>
+        <textarea id="topic-content" placeholder="ტექსტი..."></textarea><br>
+        <button onclick="createTopic()">გამოქვეყნება</button>
+    </div>
+
+    <hr>
+
+    <div id="forum-topics">
+        <p>თემები იტვირთება...</p>
+    </div>
+
+    <script>
+        // იმიტაცია: აქ უნდა იყოს თქვენი ავტორიზაციის ლოგიკა
+        const user = { role: 'admin' }; // შეცვალეთ 'user'-ზე ტესტირებისთვის
+
+        // წვდომის შემოწმება
+        if (user.role === 'admin') {
+            document.getElementById('admin-panel').style.display = 'block';
+        }
+
+        function createTopic() {
+            // აქ დაწერთ Supabase-ში მონაცემების გაგზავნის კოდს (insert)
+            alert("თემა წარმატებით დაემატა!");
+        }
+
+        // ფუნქცია, რომელიც წამოიღებს თემებს ბაზიდან და ჩასვამს 'forum-topics'-ში
+        function loadTopics() {
+            // fetch topics from supabase...
+        }
+    </script>
+</body>
+</html>
