@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>👤 პროფილი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.2s ease, color 0.2s ease; }
+        
+        body.night-mode {
+            --bg: #030000;
+            --sidebar: #0a0202;
+            --card: #1a0a0a;
+            --text: #eee;
+            --border: #882222;
+            --accent: #ff8888;
+            --hover: #2a0a0a;
+        }
+        body.day-mode {
+            --bg: #fff8f0;
+            --sidebar: #fff8ed;
+            --card: #ffffff;
+            --text: #2c2418;
+            --border: #e8d4b0;
+            --accent: #c55a3a;
+            --hover: #fff0e6;
+            background-image: radial-gradient(circle at 15% 25%, rgba(255, 77, 77, 0.2) 3px, transparent 3px);
+            background-size: 55px 55px;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .logo {
+            padding: 16px 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+        }
+        .menu-items {
+            flex: 1;
+            padding: 12px 0;
+        }
+        .menu-item {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text);
+            border-radius: 8px;
+            margin: 2px 8px;
+        }
+        .menu-item:hover { background: var(--hover); }
+        .menu-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+        
+        .bottom-menu {
+            border-top: 1px solid var(--border);
+            padding: 12px 0;
+        }
+        
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .cover {
+            height: 160px;
+            background: linear-gradient(135deg, #882222, #442222);
+            border-radius: 16px;
+        }
+        .avatar-wrapper {
+            margin-top: -60px;
+            padding: 0 20px;
+        }
+        .avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 4px solid var(--card);
+            object-fit: cover;
+        }
+        .profile-info { padding: 16px 20px; }
+        .profile-name { font-size: 1.6rem; font-weight: bold; }
+        .profile-role { color: #888; margin-top: 4px; }
+        .profile-status {
+            background: var(--card);
+            padding: 8px 16px;
+            border-radius: 30px;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            display: inline-block;
+        }
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: var(--card);
+            flex: 1;
+            padding: 12px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-number { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .friends-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .friend-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+        }
+        .friend-card img {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .friend-card .friend-name { flex: 1; font-weight: 500; }
+        .friend-card button {
+            background: var(--accent);
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        .empty { text-align: center; padding: 30px; color: #888; }
+        .add-friend-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 30px;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        @media (max-width: 700px) {
+            .sidebar { width: 70px; }
+            .menu-item span { display: none; }
+            .logo { text-align: center; padding: 16px 0; }
+            .menu-icon { font-size: 1.5rem; width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">🃏 MF</div>
+    <div class="menu-items">
+        <div class="menu-item" onclick="location.href='chat.html'"><div class="menu-icon">💬</div><span>ჩატი</span></div>
+        <div class="menu-item active"><div class="menu-icon">👤</div><span>ჩემი პროფილი</span></div>
+    </div>
+    <div class="bottom-menu">
+        <div class="menu-item" id="themeToggle"><div class="menu-icon" id="themeIcon">🌙</div><span>რეჟიმი</span></div>
+        <div class="menu-item" onclick="logout()"><div class="menu-icon">🚪</div><span>გასვლა</span></div>
+    </div>
+</div>
+
+<div class="main" id="mainContent"></div>
+
+<script>
+    const supabase = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname') || 'მოთამაშე';
+    let myAvatar = localStorage.getItem('avatar') || 'https://i.ibb.co/v3m6y6R/avatar.png';
+    let currentUser = myNick;
+    
+    function setTheme(theme) {
+        document.body.classList.remove('night-mode', 'day-mode');
+        if (theme === 'day') {
+            document.body.classList.add('day-mode');
+            document.getElementById('themeIcon').innerHTML = '☀️';
+            localStorage.setItem('theme', 'day');
+        } else {
+            document.body.classList.add('night-mode');
+            document.getElementById('themeIcon').innerHTML = '🌙';
+            localStorage.setItem('theme', 'night');
+        }
+    }
+    function toggleTheme() { setTheme(document.body.classList.contains('night-mode') ? 'day' : 'night'); }
+    
+    async function loadProfile() {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('username', currentUser).single();
+        if (!profile) { document.getElementById('mainContent').innerHTML = '<div class="empty">❌ მომხმარებელი არ მოიძებნა</div>'; return; }
+        
+        const { data: friends } = await supabase.from('friends').select('friend_name').eq('user_name', currentUser);
+        let friendsHtml = '';
+        if (friends?.length) {
+            const friendNames = friends.map(f => f.friend_name);
+            const { data: friendProfiles } = await supabase.from('profiles').select('username, avatar_url').in('username', friendNames);
+            const avatarMap = {};
+            friendProfiles?.forEach(fp => { avatarMap[fp.username] = fp.avatar_url; });
+            friendsHtml = '<div class="friends-grid">' + friends.map(f => `
+                <div class="friend-card">
+                    <img src="${avatarMap[f.friend_name] || 'https://i.ibb.co/v3m6y6R/avatar.png'}" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+                    <div class="friend-name">${escapeHtml(f.friend_name)}</div>
+                    <button onclick="location.href='pm.html?to=${f.friend_name}'">💬</button>
+                </div>
+            `).join('') + '</div>';
+        } else {
+            friendsHtml = '<div class="empty">📭 ჯერ არ გყავს მეგობრები</div>';
+        }
+        
+        let addBtn = '';
+        if (currentUser !== myNick) {
+            const { data: isFriend } = await supabase.from('friends').select('id').eq('user_name', myNick).eq('friend_name', currentUser).maybeSingle();
+            addBtn = !isFriend ? `<button class="add-friend-btn" onclick="addFriend()">➕ მეგობრად დამატება</button>` : `<button class="add-friend-btn" style="background:#882222;" onclick="removeFriend()">💔 მეგობრიდან წაშლა</button>`;
+        }
+        
+        document.getElementById('mainContent').innerHTML = `
+            <div class="cover"></div>
+            <div class="avatar-wrapper"><img class="avatar" src="${profile.avatar_url || myAvatar}" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'"></div>
+            <div class="profile-info">
+                <div class="profile-name">${escapeHtml(profile.username)}</div>
+                <div class="profile-role">${translateRole(profile.role)}</div>
+                <div class="profile-status" onclick="changeStatus()">💬 ${escapeHtml(profile.status || 'სტატუსი არ არის')}</div>
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-number">${profile.points || 0}</div><div>🏆</div></div>
+                    <div class="stat-card"><div class="stat-number">${profile.cipher_points || 0}</div><div>🔐</div></div>
+                    <div class="stat-card"><div class="stat-number">${friends?.length || 0}</div><div>👥</div></div>
+                </div>
+                <h3 style="margin: 20px 0 10px;">👥 მეგობრები</h3>
+                ${friendsHtml}
+                ${addBtn}
+            </div>
+        `;
+    }
+    
+    async function changeStatus() {
+        if (currentUser !== myNick) return;
+        const newStatus = prompt("ახალი სტატუსი:", "");
+        if (newStatus !== null) {
+            await supabase.from('profiles').update({ status: newStatus }).eq('username', myNick);
+            loadProfile();
+        }
+    }
+    async function addFriend() {
+        const { error } = await supabase.from('friends').insert({ user_name: myNick, friend_name: currentUser });
+        if (error) alert("ვერ დაემატა");
+        else loadProfile();
+    }
+    async function removeFriend() {
+        const { error } = await supabase.from('friends').delete().eq('user_name', myNick).eq('friend_name', currentUser);
+        if (error) alert("ვერ წაიშალა");
+        else loadProfile();
+    }
+    function translateRole(r) { const roles = {'Owner':'👑 დამფუძნებელი','Admin':'🛡️ ადმინისტრატორი','Member':'👤 მომხმარებელი'}; return roles[r] || '👤 მომხმარებელი'; }
+    function escapeHtml(t) { return t?.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]) || ''; }
+    function logout() { localStorage.clear(); location.href = 'index.html'; }
+    
+    const savedTheme = localStorage.getItem('theme') || 'night';
+    setTheme(savedTheme);
+    document.getElementById('themeToggle').onclick = toggleTheme;
+    loadProfile();
+</script>
+</body>
+</html>
