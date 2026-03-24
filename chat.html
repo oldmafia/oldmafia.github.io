@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>👤 პროფილი - OLD MAFIA</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body.night-mode {
+            --bg: #030000;
+            --text: #eee;
+            --card: #1a0a0a;
+            --border: #882222;
+            --nick: #ff8888;
+        }
+        body.day-mode {
+            --bg: #fff8f0;
+            --text: #2c2418;
+            --card: #ffffff;
+            --border: #e8d4b0;
+            --nick: #c55a3a;
+            background-image: radial-gradient(circle at 15% 25%, rgba(255,77,77,0.2) 3px, transparent 3px);
+            background-size: 55px 55px;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+        h1 { color: var(--nick); font-size: 1.5rem; }
+        .back-btn {
+            background: var(--nick);
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+        }
+        .avatar {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .avatar img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid var(--nick);
+            object-fit: cover;
+        }
+        .nick {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--nick);
+            margin: 10px 0;
+        }
+        .role {
+            text-align: center;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .status {
+            text-align: center;
+            background: var(--card);
+            padding: 10px;
+            border-radius: 30px;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 20px;
+            text-align: center;
+            width: 45%;
+            border: 1px solid var(--border);
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--nick);
+        }
+        .friends-list {
+            margin-top: 20px;
+        }
+        .friend-item {
+            background: var(--card);
+            padding: 12px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+        .friend-name {
+            font-weight: bold;
+        }
+        .msg-btn {
+            background: var(--nick);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .add-friend {
+            background: var(--nick);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 30px;
+            width: 100%;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        .empty {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>👤 პროფილი</h1>
+        <a href="chat.html" class="back-btn">← ჩატში</a>
+    </div>
+    
+    <div id="profileContent"></div>
+</div>
+
+<script>
+    const supabase = supabase.createClient(
+        "https://ftfciebnywbondaiarnc.supabase.co",
+        "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+    );
+    
+    let myNick = localStorage.getItem('nickname') || 'მოთამაშე';
+    let targetUser = new URLSearchParams(window.location.search).get('user') || myNick;
+    let currentUser = targetUser;
+    
+    function setTheme() {
+        const theme = localStorage.getItem('theme') || 'night';
+        document.body.classList.remove('night-mode', 'day-mode');
+        document.body.classList.add(theme === 'day' ? 'day-mode' : 'night-mode');
+    }
+    
+    async function loadProfile() {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', currentUser)
+            .single();
+        
+        if (!profile) {
+            document.getElementById('profileContent').innerHTML = '<div class="empty">❌ მომხმარებელი არ მოიძებნა</div>';
+            return;
+        }
+        
+        // მეგობრების სია
+        const { data: friends } = await supabase
+            .from('friends')
+            .select('friend_name')
+            .eq('user_name', currentUser);
+        
+        const isOwnProfile = (currentUser === myNick);
+        
+        let html = `
+            <div class="avatar">
+                <img src="${profile.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" onerror="this.src='https://i.ibb.co/v3m6y6R/avatar.png'">
+            </div>
+            <div class="nick">${escapeHtml(profile.username)}</div>
+            <div class="role">${translateRole(profile.role)}</div>
+            <div class="status" onclick="changeStatus()">💬 ${escapeHtml(profile.status || 'სტატუსი არ არის')}</div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div>🏆 ვიქტორინა</div>
+                    <div class="stat-value">${profile.points || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <div>🔐 შიფრო</div>
+                    <div class="stat-value">${profile.cipher_points || 0}</div>
+                </div>
+            </div>
+            
+            <div class="friends-list">
+                <h3>👥 მეგობრები (${friends?.length || 0})</h3>
+        `;
+        
+        if (!friends || friends.length === 0) {
+            html += `<div class="empty">📭 ჯერ არ გყავს მეგობრები</div>`;
+        } else {
+            for (let f of friends) {
+                const { data: friendProfile } = await supabase
+                    .from('profiles')
+                    .select('avatar_url')
+                    .eq('username', f.friend_name)
+                    .single();
+                
+                html += `
+                    <div class="friend-item">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${friendProfile?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                            <span class="friend-name">${escapeHtml(f.friend_name)}</span>
+                        </div>
+                        <button class="msg-btn" onclick="location.href='pm.html?to=${f.friend_name}'">💬</button>
+                    </div>
+                `;
+            }
+        }
+        
+        if (!isOwnProfile) {
+            // შევამოწმოთ უკვე მეგობარია თუ არა
+            const { data: isFriend } = await supabase
+                .from('friends')
+                .select('id')
+                .eq('user_name', myNick)
+                .eq('friend_name', currentUser)
+                .single();
+            
+            if (!isFriend) {
+                html += `<button class="add-friend" onclick="addFriend()">➕ მეგობრად დამატება</button>`;
+            } else {
+                html += `<button class="add-friend" style="background:#882222;" onclick="removeFriend()">💔 მეგობრიდან წაშლა</button>`;
+            }
+        }
+        
+        html += `</div>`;
+        document.getElementById('profileContent').innerHTML = html;
+    }
+    
+    async function changeStatus() {
+        if (currentUser !== myNick) return;
+        const newStatus = prompt("ახალი სტატუსი:", "");
+        if (newStatus !== null) {
+            await supabase.from('profiles').update({ status: newStatus }).eq('username', myNick);
+            loadProfile();
+        }
+    }
+    
+    async function addFriend() {
+        const { error } = await supabase.from('friends').insert({
+            user_name: myNick,
+            friend_name: currentUser
+        });
+        if (error) alert("ვერ დაემატა");
+        else loadProfile();
+    }
+    
+    async function removeFriend() {
+        const { error } = await supabase.from('friends')
+            .delete()
+            .eq('user_name', myNick)
+            .eq('friend_name', currentUser);
+        if (error) alert("ვერ წაიშალა");
+        else loadProfile();
+    }
+    
+    function translateRole(role) {
+        const roles = {'Owner': '👑 დამფუძნებელი', 'Admin': '🛡️ ადმინისტრატორი', 'Member': '👤 მომხმარებელი'};
+        return roles[role] || '👤 მომხმარებელი';
+    }
+    
+    function escapeHtml(t) { return t?.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]) || ''; }
+    
+    setTheme();
+    loadProfile();
+    
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'theme') setTheme();
+    });
+</script>
+</body>
+</html>
