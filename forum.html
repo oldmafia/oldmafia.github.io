@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 ფორუმი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0a2f1a; font-family: sans-serif; padding: 20px; color: white; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { background: gold; border: none; padding: 10px 20px; border-radius: 30px; margin: 10px 0; cursor: pointer; }
+        .topic { background: #1e5a2e; padding: 15px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; }
+        .back-btn { background: #8b3a2a; color: white; text-decoration: none; padding: 8px 20px; border-radius: 30px; display: inline-block; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 20px; border: none; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        .modal-content { background: #2a4a2a; padding: 20px; border-radius: 30px; width: 90%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📝 ფორუმი</h1>
+    <a href="chat.html" class="back-btn">← ჩატში</a>
+    
+    <div id="topicsList"></div>
+    
+    <button id="newTopicBtn">➕ ახალი თემა</button>
+</div>
+
+<div id="topicModal" class="modal">
+    <div class="modal-content">
+        <h3>ახალი თემა</h3>
+        <input type="text" id="topicTitle" placeholder="სათაური">
+        <textarea id="topicContent" rows="4" placeholder="შინაარსი..."></textarea>
+        <button id="createTopicBtn">✅ შექმნა</button>
+        <button id="closeModalBtn">❌ გაუქმება</button>
+    </div>
+</div>
+
+<script>
+    const supabase = supabase.createClient(
+        "https://ftfciebnywbondaiarnc.supabase.co",
+        "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+    );
+    
+    let myNick = localStorage.getItem('nickname') || 'მოთამაშე';
+    
+    async function loadTopics() {
+        const { data } = await supabase.from('forum_topics').select('*').order('created_at', { ascending: false });
+        const list = document.getElementById('topicsList');
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p>📭 თემები არ არის</p>';
+            return;
+        }
+        list.innerHTML = data.map(t => `
+            <div class="topic" onclick="alert('${t.title}\n\n${t.content}')">
+                <b>${t.title}</b><br>
+                👤 ${t.author} | 💬 ${t.comment_count || 0}
+            </div>
+        `).join('');
+    }
+    
+    async function createTopic() {
+        const title = document.getElementById('topicTitle').value.trim();
+        const content = document.getElementById('topicContent').value.trim();
+        if (!title || !content) return alert("შეავსე ყველა ველი!");
+        
+        const { error } = await supabase.from('forum_topics').insert({ 
+            author: myNick, 
+            title: title, 
+            content: content, 
+            comment_count: 0 
+        });
+        
+        if (error) {
+            alert("შეცდომა: " + error.message);
+            return;
+        }
+        
+        document.getElementById('topicModal').style.display = 'none';
+        document.getElementById('topicTitle').value = '';
+        document.getElementById('topicContent').value = '';
+        loadTopics();
+        alert("✅ თემა შეიქმნა!");
+    }
+    
+    document.getElementById('newTopicBtn').onclick = () => {
+        document.getElementById('topicModal').style.display = 'flex';
+    };
+    document.getElementById('createTopicBtn').onclick = createTopic;
+    document.getElementById('closeModalBtn').onclick = () => {
+        document.getElementById('topicModal').style.display = 'none';
+    };
+    
+    loadTopics();
+</script>
+</body>
+</html>
