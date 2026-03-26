@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Old Mafia - All Rooms</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body.night-mode { --bg: #000; --txt: #e0c8a8; --card: #0a0a0a; --accent: #ff0000; --nav: #050505; --border: #333; }
+        body.day-mode { --bg: #fff8f0; --txt: #2c2418; --card: #fff; --accent: #c55a3a; --nav: #fff4e6; --border: #e8d4b0; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; transition: 0.3s; }
+
+        /* 📱 Layout */
+        .page { display: none; height: calc(100vh - 65px); overflow-y: auto; position: relative; z-index: 5; }
+        .page.active { display: block; }
+
+        /* ❤️🔥 ღაჟღაჟა წითელი გულები */
+        .fire-heart {
+            position: fixed; color: #ff0000; font-size: 40px; pointer-events: none; z-index: 2;
+            animation: fireHeartFloat 6s linear infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.9)) drop-shadow(0 0 25px rgba(255, 0, 0, 0.7));
+        }
+        @keyframes fireHeartFloat { 0% { bottom: -70px; opacity: 0; } 15% { opacity: 0.9; } 100% { bottom: 105%; opacity: 0; } }
+
+        /* 🏠 Rooms Menu */
+        .rooms-grid { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .room-btn { 
+            background: var(--card); padding: 20px 10px; border-radius: 12px; border: 1px solid var(--border);
+            text-align: center; cursor: pointer; border-bottom: 4px solid var(--accent); font-weight: bold;
+        }
+        .room-btn:active { transform: scale(0.95); }
+        .logout-btn { grid-column: span 2; background: #330000; color: white; border-color: red; }
+
+        /* 💬 Dynamic Chat Room */
+        #roomChatPage { flex-direction: column; display: none; height: calc(100vh - 65px); }
+        #roomChatPage.active { display: flex; }
+        .chat-header { background: var(--nav); padding: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--accent); }
+        .chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-input { padding: 10px; display: flex; gap: 10px; background: var(--nav); border-top: 1px solid var(--border); }
+        .chat-input input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--accent); background: var(--bg); color: var(--txt); }
+
+        /* 🧭 Nav */
+        .navigation { position: fixed; bottom: 0; width: 100%; height: 65px; background: var(--nav); border-top: 1px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 5000; }
+        .nav-item { cursor: pointer; font-size: 24px; opacity: 0.5; color: var(--txt); }
+        .nav-item.active { opacity: 1; color: var(--accent); }
+    </style>
+</head>
+<body class="night-mode">
+
+    <div id="heartsContainer"></div>
+
+    <div id="homePage" class="page active">
+        <h2 style="padding:15px; color:var(--accent);">🏰 აირჩიე ოთახი</h2>
+        <div class="rooms-grid">
+            <div class="room-btn" onclick="openRoom('კაფე-ბარი')">☕ კაფე-ბარი</div>
+            <div class="room-btn" onclick="openRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
+            <div class="room-btn" onclick="openRoom('გამოძიება')">🔍 გამოძიება</div>
+            <div class="room-btn" onclick="openRoom('ჯოკერი')">🃏 ჯოკერი</div>
+            <div class="room-btn" onclick="openRoom('ნარდი')">🎲 ნარდი</div>
+            <div class="room-btn" onclick="openRoom('შიფროგრამა')">📟 შიფროგრამა</div>
+            <div class="room-btn" onclick="openRoom('ფორუმი')">📝 ფორუმი</div>
+            <div class="room-btn" onclick="openRoom('იუმორი')">😂 იუმორი</div>
+            <div class="room-btn" onclick="openRoom('ადმინისტრაცია')">🛠️ ადმინისტრაცია</div>
+            <div class="room-btn" onclick="openRoom('დახმარება')">❓ დახმარება</div>
+            <div class="room-btn logout-btn" onclick="logout()">🚪 გასვლა</div>
+        </div>
+    </div>
+
+    <div id="roomChatPage" class="page">
+        <div class="chat-header">
+            <button onclick="showPage('homePage')" style="background:none; border:none; color:var(--accent); font-size:20px; cursor:pointer;">⬅</button>
+            <h3 id="currentRoomTitle">ოთახი</h3>
+        </div>
+        <div class="chat-msgs" id="roomMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="msgInput" placeholder="დაწერე მესიჯი...">
+            <button onclick="sendRoomMsg()" style="background:var(--accent); color:white; border:none; border-radius:50%; width:45px; height:45px;">✈</button>
+        </div>
+    </div>
+
+    <div id="messengerPage" class="page"><h2 style="padding:20px;">მესენჯერი</h2><div id="users-list"></div></div>
+    <div id="profilePage" class="page">
+        <div class="fb-header"><div style="position:absolute; bottom:-50px; left:50%; transform:translateX(-50%);"><img id="myPic" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--accent); object-fit:cover;"></div></div>
+        <div style="margin-top:60px; text-align:center;"><h2 id="myNick">ნიკი</h2><div id="myGallery" class="rooms-grid" style="margin-top:20px;"></div></div>
+    </div>
+
+    <div class="navigation">
+        <div class="nav-item active" onclick="showPage('homePage', this)">🏠</div>
+        <div class="nav-item" onclick="showPage('messengerPage', this)">💬</div>
+        <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
+        <div class="nav-item" onclick="toggleTheme()">🌙</div>
+    </div>
+
+    <script>
+        const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        let myNick = localStorage.getItem('nickname');
+        let currentRoom = "";
+
+        async function init() {
+            if (!myNick) { location.href='index.html'; return; }
+            const { data: user } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
+            if (user) { document.getElementById('myNick').innerText = user.username; document.getElementById('myPic').src = user.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png"; }
+            startHearts();
+        }
+
+        function openRoom(name) {
+            currentRoom = name;
+            document.getElementById('currentRoomTitle').innerText = name;
+            showPage('roomChatPage');
+            loadRoomMessages();
+            // რეალურ დროში განახლება
+            _s.channel('room-updates').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, loadRoomMessages).subscribe();
+        }
+
+        async function loadRoomMessages() {
+            const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(30);
+            const box = document.getElementById('roomMessages');
+            box.innerHTML = msgs?.reverse().map(m => `<div style="padding:8px; background:var(--card); border-radius:10px; border:1px solid var(--border)"><b>${m.username}:</b> ${m.text}</div>`).join('') || "";
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendRoomMsg() {
+            const txt = document.getElementById('msgInput').value;
+            if(!txt) return;
+            await _s.from('messages').insert({ username: myNick, text: txt, room_name: currentRoom });
+            document.getElementById('msgInput').value = "";
+        }
+
+        function showPage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(el) { document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
+        }
+
+        function toggleTheme() { document.body.classList.toggle('night-mode'); document.body.classList.toggle('day-mode'); }
+        function logout() { localStorage.clear(); location.href='index.html'; }
+        
+        function startHearts() {
+            setInterval(() => {
+                const h = document.createElement('div'); h.className = 'fire-heart'; h.innerText = '❤️';
+                h.style.left = Math.random() * 90 + '%';
+                document.getElementById('heartsContainer').appendChild(h);
+                setTimeout(() => h.remove(), 6000);
+            }, 2000);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
