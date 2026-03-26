@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Old Mafia Social</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: 0.3s ease; }
+        
+        body.night-mode {
+            --bg-color: #000; --text-color: #e0c8a8; --card-bg: #0a0a0a;
+            --border: #ff0000; --accent: #ff0000; --nav-bg: #050505;
+        }
+        body.day-mode {
+            --bg-color: #fff8f0; --text-color: #2c2418; --card-bg: #ffffff;
+            --border: #e8d4b0; --accent: #c55a3a; --nav-bg: #fff4e6;
+        }
+
+        body { font-family: sans-serif; background: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; }
+
+        /* 📱 Layout */
+        .page { display: none; height: calc(100vh - 65px); overflow-y: auto; }
+        .page.active { display: block; }
+
+        /* 🧭 Navigation */
+        .navigation {
+            position: fixed; width: 100%; height: 65px; background: var(--nav-bg);
+            border-top: 2px solid var(--border); display: flex; justify-content: space-around;
+            align-items: center; z-index: 5000; bottom: 0;
+        }
+        @media (min-width: 768px) {
+            .navigation { bottom: auto; top: 0; border-top: none; border-bottom: 2px solid var(--border); }
+            .page { margin-top: 65px; }
+        }
+
+        .nav-item { cursor: pointer; font-size: 24px; opacity: 0.5; }
+        .nav-item.active { opacity: 1; color: var(--accent); }
+
+        /* 👤 Profile Section */
+        .fb-header { position: relative; width: 100%; height: 180px; background: linear-gradient(to bottom, var(--accent), #000); }
+        .fb-avatar {
+            width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--card-bg);
+            position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%); object-fit: cover;
+        }
+        .fb-info { margin-top: 70px; text-align: center; padding: 15px; }
+        
+        /* 💬 Messenger List Style */
+        .chat-list-item {
+            display: flex; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer;
+        }
+        .chat-list-item img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; }
+
+        /* ❤️ Floating Hearts for Day Mode */
+        body.day-mode::after {
+            content: "❤️"; position: fixed; bottom: 80px; right: 20px; font-size: 55px;
+            opacity: 0.6; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 5px var(--accent));
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        .btn-main { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body class="night-mode">
+
+    <div id="messengerPage" class="page active">
+        <h2 style="padding:15px; color:var(--accent);">მესენჯერი</h2>
+        <div id="users-list">
+            </div>
+    </div>
+
+    <div id="profilePage" class="page">
+        <div class="fb-header">
+            <img id="myPic" class="fb-avatar" src="https://i.ibb.co/v3m6y6R/avatar.png">
+        </div>
+        <div class="fb-info">
+            <h1 id="myNickDisplay">ნიკი</h1>
+            <p id="myStatus">🕵️ მაფიის წევრი</p>
+            <div style="margin:15px;"><button class="btn-main">პროფილის ჩასწორება</button></div>
+        </div>
+        <div style="padding:15px;">
+            <div style="background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                <h3>👥 მეგობრები</h3>
+                <div id="friends-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <div class="nav-item active" onclick="showPage('messengerPage', this)">💬</div>
+        <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
+        <div class="nav-item" onclick="toggleTheme()" id="themeIcon">🌙</div>
+    </div>
+
+    <script>
+        const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        let myNick = localStorage.getItem('nickname');
+
+        async function init() {
+            if (!myNick) { location.href = 'index.html'; return; }
+            
+            // 1. ნიკის და პროფილის წამოღება
+            const { data: user } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
+            if (user) {
+                document.getElementById('myNickDisplay').innerText = user.username;
+                document.getElementById('myPic').src = user.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
+                if(user.status) document.getElementById('myStatus').innerText = user.status;
+            }
+
+            // 2. მომხმარებლების სიის წამოღება მესენჯერისთვის
+            loadUsers();
+            
+            // 3. თემის აღდგენა
+            if(localStorage.getItem('theme') === 'day') toggleTheme();
+        }
+
+        async function loadUsers() {
+            const { data: users } = await _s.from('profiles').select('*').neq('username', myNick).limit(20);
+            const list = document.getElementById('users-list');
+            list.innerHTML = "";
+            users.forEach(u => {
+                list.innerHTML += `
+                    <div class="chat-list-item" onclick="openChat('${u.username}')">
+                        <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                        <div>
+                            <b>${u.username}</b><br>
+                            <small style="opacity:0.5;">დააჭირე მესიჯის მოსაწერად...</small>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function openChat(target) {
+            alert(target + "-თან ჩატი მალე ჩაირთვება!");
+            // აქ შეგიძლია გადაამისამართო ჩატის გვერდზე
+        }
+
+        function showPage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function toggleTheme() {
+            const b = document.body;
+            const icon = document.getElementById('themeIcon');
+            if (b.classList.contains('night-mode')) {
+                b.classList.replace('night-mode', 'day-mode');
+                icon.innerText = "☀️";
+                localStorage.setItem('theme', 'day');
+            } else {
+                b.classList.replace('day-mode', 'night-mode');
+                icon.innerText = "🌙";
+                localStorage.setItem('theme', 'night');
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
