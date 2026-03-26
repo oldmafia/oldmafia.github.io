@@ -39,7 +39,6 @@
             --input: #fffaf5;
         }
 
-        /* მენიუ - ერთ ხაზზე */
         .nav-bar {
             display: flex;
             justify-content: space-around;
@@ -49,7 +48,6 @@
             border-bottom: 2px solid var(--accent);
             flex-shrink: 0;
             overflow-x: auto;
-            gap: 5px;
         }
 
         .nav-btn {
@@ -97,7 +95,7 @@
             padding-left: 10px;
         }
 
-        .room-card {
+        .room-card, .user-card {
             background: var(--card);
             padding: 14px;
             margin-bottom: 10px;
@@ -110,7 +108,7 @@
             gap: 12px;
         }
 
-        .room-card:active { transform: scale(0.98); background: var(--accent-dark); }
+        .room-card:active, .user-card:active { transform: scale(0.98); background: var(--accent-dark); }
         .room-icon { font-size: 28px; }
         .room-name { font-size: 16px; font-weight: 600; }
 
@@ -153,7 +151,8 @@
             position: relative;
         }
 
-        .message.owner-message { border-left: 4px solid #ff00ff; background: linear-gradient(90deg, var(--card), rgba(255,0,255,0.05)); }
+        .message.admin-message { border-left: 4px solid gold; }
+        .message.owner-message { border-left: 4px solid #ff00ff; }
 
         .message-header {
             display: flex;
@@ -265,8 +264,83 @@
 
         .user-name { font-weight: bold; font-size: 16px; }
         .user-status { font-size: 11px; opacity: 0.6; }
+        .user-role { font-size: 10px; color: gold; margin-left: 5px; }
 
-        /* PM ჩატი - ტელეფონზე პატარა */
+        /* პროფილის მოდალი */
+        .profile-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+        }
+        .profile-modal-content {
+            background: var(--card);
+            border-radius: 20px;
+            max-width: 350px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid var(--accent);
+        }
+        .profile-modal-header {
+            background: var(--accent);
+            padding: 15px;
+            text-align: center;
+            position: relative;
+        }
+        .profile-modal-close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .profile-modal-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto;
+            object-fit: cover;
+        }
+        .profile-modal-info {
+            padding: 20px;
+            text-align: center;
+        }
+        .profile-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .action-btn {
+            background: var(--accent-dark);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .action-btn.danger { background: #8b0000; }
+        .action-btn.success { background: #2d6a4f; }
+
         .pm-chat-container {
             position: fixed;
             bottom: 20px;
@@ -284,36 +358,9 @@
             box-shadow: 0 5px 25px rgba(0,0,0,0.3);
         }
 
-        /* მობილური ტელეფონებისთვის - პატარა ფანჯარა */
         @media (max-width: 768px) {
-            .pm-chat-container {
-                width: 85%;
-                right: 7.5%;
-                left: 7.5%;
-                bottom: 10px;
-                height: 45vh;
-                max-height: 350px;
-            }
-            
-            .icon-btn, .send-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-            
-            .chat-input {
-                font-size: 13px;
-                padding: 8px 12px;
-            }
-            
-            .message {
-                max-width: 90%;
-            }
-            
-            .nav-btn {
-                font-size: 20px;
-                padding: 4px 8px;
-            }
+            .pm-chat-container { width: 85%; right: 7.5%; left: 7.5%; bottom: 10px; height: 45vh; max-height: 350px; }
+            .icon-btn, .send-btn { width: 40px; height: 40px; font-size: 18px; }
         }
 
         .pm-header {
@@ -324,133 +371,25 @@
             align-items: center;
             border-radius: 14px 14px 0 0;
             cursor: pointer;
-            flex-shrink: 0;
         }
+        .pm-messages { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .pm-message { background: var(--input); padding: 6px 10px; border-radius: 12px; max-width: 85%; align-self: flex-start; }
+        .pm-message.own { align-self: flex-end; background: var(--accent); }
+        .pm-input-area { display: flex; padding: 8px; gap: 8px; border-top: 1px solid var(--border); }
+        .pm-input { flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--accent); background: var(--input); color: var(--text); }
 
-        .pm-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .pm-message {
-            background: var(--input);
-            padding: 6px 10px;
-            border-radius: 12px;
-            max-width: 85%;
-            align-self: flex-start;
-        }
-
-        .pm-message.own {
-            align-self: flex-end;
-            background: var(--accent);
-        }
-
-        .pm-input-area {
-            display: flex;
-            padding: 8px;
-            gap: 8px;
-            border-top: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .pm-input {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--accent);
-            background: var(--input);
-            color: var(--text);
-            font-size: 13px;
-        }
-
-        .profile-card {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            margin: 0 auto;
-            cursor: pointer;
-            object-fit: cover;
-        }
-
-        .profile-status-input {
-            width: 80%;
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 25px;
-            border: 1px solid var(--accent);
-            background: var(--input);
-            color: var(--text);
-            text-align: center;
-        }
-
-        .album-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            padding: 10px;
-        }
-
-        .album-photo {
-            aspect-ratio: 1;
-            object-fit: cover;
-            border-radius: 12px;
-            cursor: pointer;
-            border: 2px solid var(--accent);
-        }
-
-        .upload-btn {
-            background: var(--accent);
-            border: none;
-            color: white;
-            padding: 10px;
-            border-radius: 25px;
-            margin: 10px 0;
-            cursor: pointer;
-            width: 100%;
-            font-size: 14px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            opacity: 0.5;
-        }
-
-        .heart {
-            position: fixed;
-            bottom: 0;
-            font-size: 20px;
-            pointer-events: none;
-            animation: floatUp 4s forwards;
-            z-index: 9999;
-        }
-
-        @keyframes floatUp {
-            0% { bottom: 0; opacity: 1; }
-            100% { bottom: 100%; opacity: 0; transform: translateX(40px); }
-        }
-
+        .profile-card { text-align: center; padding: 20px; }
+        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 48px; margin: 0 auto; cursor: pointer; object-fit: cover; }
+        .profile-status-input { width: 80%; margin-top: 15px; padding: 10px; border-radius: 25px; border: 1px solid var(--accent); background: var(--input); color: var(--text); text-align: center; }
+        .album-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
+        .album-photo { aspect-ratio: 1; object-fit: cover; border-radius: 12px; cursor: pointer; border: 2px solid var(--accent); }
+        .upload-btn { background: var(--accent); border: none; color: white; padding: 10px; border-radius: 25px; margin: 10px 0; cursor: pointer; width: 100%; }
+        .empty-state { text-align: center; padding: 40px; opacity: 0.5; }
+        .heart { position: fixed; bottom: 0; font-size: 20px; pointer-events: none; animation: floatUp 4s forwards; z-index: 9999; }
+        @keyframes floatUp { 0% { bottom: 0; opacity: 1; } 100% { bottom: 100%; opacity: 0; transform: translateX(40px); } }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--border); }
         ::-webkit-scrollbar-thumb { background: var(--accent); }
-        
-        button {
-            touch-action: manipulation;
-        }
     </style>
 </head>
 <body>
@@ -458,7 +397,8 @@
     <div class="nav-bar">
         <button class="nav-btn active" data-page="home">🏠</button>
         <button class="nav-btn" data-page="messages">💬</button>
-        <button class="nav-btn" data-page="online">👥</button>
+        <button class="nav-btn" data-page="friends">👥</button>
+        <button class="nav-btn" data-page="online">🌐</button>
         <button class="nav-btn" data-page="profile">👤</button>
         <button class="nav-btn" id="themeToggle">🌙</button>
     </div>
@@ -468,35 +408,33 @@
             <div class="section-title">🏰 12 სათამაშო ოთახი</div>
             <div id="roomsList"></div>
         </div>
-
         <div id="messagesPage" class="page">
             <div class="section-title">💬 პირადი მიმოწერა</div>
             <div id="pmList"></div>
         </div>
-
+        <div id="friendsPage" class="page">
+            <div class="section-title">👥 მეგობრები</div>
+            <div id="friendsList"></div>
+        </div>
         <div id="onlinePage" class="page">
-            <div class="section-title">👥 ონლაინ მომხმარებლები</div>
+            <div class="section-title">🌐 ყველა მომხმარებელი</div>
             <div id="onlineList"></div>
         </div>
-
         <div id="profilePage" class="page">
             <div class="profile-card">
-                <div class="profile-avatar" id="profileAvatar" onclick="document.getElementById('avatarInput').click()">
-                    👤
-                </div>
-                <input type="text" id="nicknameInput" class="profile-status-input" placeholder="შენი ნიკი" style="text-align:center; font-weight:bold;">
+                <div class="profile-avatar" id="profileAvatar" onclick="document.getElementById('avatarInput').click()">👤</div>
+                <input type="text" id="nicknameInput" class="profile-status-input" placeholder="ნიკი">
                 <input type="text" id="statusInput" class="profile-status-input" placeholder="სტატუსი...">
                 <button class="upload-btn" onclick="saveProfile()">💾 შენახვა</button>
-                <div class="empty-state" style="margin-top: 20px;">ID: #<span id="userId">007</span></div>
-                
+                <div>ID: #<span id="userId">007</span></div>
                 <div class="section-title" style="margin-top: 20px;">📸 ჩემი ალბომი</div>
                 <button class="upload-btn" onclick="document.getElementById('albumInput').click()">➕ ფოტოს დამატება</button>
                 <div id="albumGrid" class="album-grid"></div>
                 <input type="file" id="albumInput" hidden accept="image/*" onchange="addToAlbum(this)">
             </div>
             <input type="file" id="avatarInput" hidden accept="image/*" onchange="uploadAvatar(this)">
+            <input type="file" id="emojiUploadInput" hidden accept="image/*" onchange="uploadEmojiImage(this)">
         </div>
-
         <div id="chatPage" class="page">
             <div class="chat-container">
                 <div class="chat-header">
@@ -507,14 +445,13 @@
                 <div class="chat-input-area">
                     <button class="icon-btn" onclick="openEmojiPicker()">😊</button>
                     <button class="icon-btn" onclick="document.getElementById('chatPhotoInput').click()">📷</button>
-                    <input type="text" id="messageInput" class="chat-input" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <input type="text" id="messageInput" class="chat-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendMessage()">
                     <button class="send-btn" onclick="sendMessage()">➤</button>
                 </div>
             </div>
             <input type="file" id="chatPhotoInput" hidden accept="image/*" onchange="addPhotoToMessage(this)">
         </div>
     </div>
-
     <div id="hearts"></div>
     <div id="pmContainer"></div>
 
@@ -525,29 +462,29 @@
         let currentPMUser = null;
         
         const OWNER = "Abu007";
-        const ADMINS = ["Abu007", "Lukinio", "AdminMafia"];
-        
-        const ROOMS = [
-            { icon: "☕", name: "კაფე-ბარი" }, { icon: "🎲", name: "ნარდი" },
-            { icon: "🃏", name: "ჯოკერი" }, { icon: "💎", name: "VIP საუბრები" },
-            { icon: "📝", name: "ფორუმი" }, { icon: "🛠️", name: "ადმინისტრაცია" },
-            { icon: "😂", name: "იუმორი" }, { icon: "🏆", name: "შიფროგრამა" },
-            { icon: "🎭", name: "გამოძიება" }, { icon: "🎵", name: "მუსიკალური" },
-            { icon: "⁉️", name: "ვიქტორინა" }, { icon: "🆘", name: "დახმარება" }
-        ];
         
         let users = [];
         let messages = [];
         let privateMessages = [];
-        let globalEmojis = ['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺', '💀', '👑', '💪', '🤡', '👻', '⭐', '🌈', '🍕', '🍺', '🎸', '⚡', '💎', '🎲', '🃏'];
+        let friends = [];
+        let blockedUsers = [];
+        let customEmojis = []; // გალერეიდან ატვირთული ემოჯები
+        
+        const ROOMS = [
+            { icon: "☕", name: "კაფე-ბარი" }, { icon: "🎲", name: "ნარდი" }, { icon: "🃏", name: "ჯოკერი" },
+            { icon: "💎", name: "VIP" }, { icon: "📝", name: "ფორუმი" }, { icon: "🛠️", name: "ადმინები" },
+            { icon: "😂", name: "იუმორი" }, { icon: "🏆", name: "შიფროგრამა" }, { icon: "🎭", name: "გამოძიება" },
+            { icon: "🎵", name: "მუსიკა" }, { icon: "⁉️", name: "ვიქტორინა" }, { icon: "🆘", name: "დახმარება" }
+        ];
         
         function loadData() {
             const savedUsers = localStorage.getItem('mafia_users');
             if (savedUsers) users = JSON.parse(savedUsers);
             else users = [
-                { username: "Abu007", status: "👑 დამფუძნებელი", avatar: null, online: true },
-                { username: "Lukinio", status: "🔧 ადმინი", avatar: null, online: true },
-                { username: "AdminMafia", status: "⚙️ ადმინი", avatar: null, online: true }
+                { username: "Abu007", status: "👑 დამფუძნებელი", avatar: null, role: "owner", online: true, joined: Date.now() },
+                { username: "Lukinio", status: "🔧 ადმინი", avatar: null, role: "admin", online: true, joined: Date.now() },
+                { username: "Giorgi", status: "ონლაინ", avatar: null, role: "user", online: true, joined: Date.now() },
+                { username: "Nika", status: "ონლაინ", avatar: null, role: "user", online: true, joined: Date.now() }
             ];
             
             const savedMessages = localStorage.getItem('mafia_messages');
@@ -556,14 +493,17 @@
             const savedPM = localStorage.getItem('mafia_pm');
             privateMessages = savedPM ? JSON.parse(savedPM) : [];
             
+            const savedFriends = localStorage.getItem('mafia_friends_' + currentUser);
+            friends = savedFriends ? JSON.parse(savedFriends) : [];
+            
+            const savedBlocked = localStorage.getItem('mafia_blocked');
+            blockedUsers = savedBlocked ? JSON.parse(savedBlocked) : [];
+            
             const savedEmojis = localStorage.getItem('mafia_emojis');
-            if (savedEmojis) {
-                const customEmojis = JSON.parse(savedEmojis);
-                globalEmojis = [...globalEmojis, ...customEmojis];
-            }
+            customEmojis = savedEmojis ? JSON.parse(savedEmojis) : [];
             
             if (!users.find(u => u.username === currentUser)) {
-                users.push({ username: currentUser, status: "ახალი მოთამაშე", avatar: null, online: true });
+                users.push({ username: currentUser, status: "ახალი მოთამაშე", avatar: null, role: "user", online: true, joined: Date.now() });
                 saveUsers();
             }
         }
@@ -571,93 +511,135 @@
         function saveUsers() { localStorage.setItem('mafia_users', JSON.stringify(users)); }
         function saveMessages() { localStorage.setItem('mafia_messages', JSON.stringify(messages)); }
         function savePM() { localStorage.setItem('mafia_pm', JSON.stringify(privateMessages)); }
+        function saveFriends() { localStorage.setItem('mafia_friends_' + currentUser, JSON.stringify(friends)); }
+        function saveBlocked() { localStorage.setItem('mafia_blocked', JSON.stringify(blockedUsers)); }
+        function saveEmojis() { localStorage.setItem('mafia_emojis', JSON.stringify(customEmojis)); }
         
-        // ============ ემოჯები - მხოლოდ ადმინებს შეუძლიათ დამატება ============
-        function addCustomEmoji() {
-            if (!ADMINS.includes(currentUser) && currentUser !== OWNER) {
-                alert('❌ ემოჯის დამატება მხოლოდ ადმინებს შეუძლიათ!');
-                return;
+        // ============ ემოჯები - გალერეიდან ატვირთვა ============
+        function uploadEmojiImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    customEmojis.push(e.target.result);
+                    saveEmojis();
+                    alert('✅ ემოჯი დაემატა!');
+                };
+                reader.readAsDataURL(file);
             }
-            const emoji = prompt('ჩაწერეთ ახალი ემოჯი (Emoji ან ტექსტი):');
-            if (emoji && emoji.trim()) {
-                globalEmojis.push(emoji.trim());
-                const customEmojis = globalEmojis.filter(e => !['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺', '💀', '👑', '💪', '🤡', '👻', '⭐', '🌈', '🍕', '🍺', '🎸', '⚡', '💎', '🎲', '🃏'].includes(e));
-                localStorage.setItem('mafia_emojis', JSON.stringify(customEmojis));
-                alert('✅ ემოჯი დაემატა ყველასთვის!');
-            }
+            input.value = '';
         }
         
         function openEmojiPicker() {
             const picker = document.createElement('div');
-            picker.style.cssText = 'position:fixed; bottom:80px; left:10px; right:10px; background:var(--card); border:2px solid var(--accent); border-radius:16px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:12px; z-index:2000; max-height:250px; overflow-y:auto;';
+            picker.style.cssText = 'position:fixed; bottom:80px; left:10px; right:10px; background:var(--card); border:2px solid var(--accent); border-radius:16px; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:12px; z-index:2000; max-height:250px; overflow-y:auto;';
             
-            globalEmojis.forEach(emoji => {
+            const defaultEmojis = ['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺', '💀', '👑', '💪', '🤡', '👻', '⭐'];
+            defaultEmojis.forEach(emoji => {
                 const btn = document.createElement('div');
                 btn.textContent = emoji;
                 btn.style.cssText = 'font-size:32px; text-align:center; cursor:pointer; padding:8px; border-radius:8px;';
-                btn.onmouseover = () => btn.style.background = 'var(--accent)';
-                btn.onmouseout = () => btn.style.background = 'transparent';
-                btn.onclick = () => {
-                    document.getElementById('messageInput').value += emoji;
-                    picker.remove();
-                };
+                btn.onclick = () => { document.getElementById('messageInput').value += emoji; picker.remove(); };
                 picker.appendChild(btn);
             });
             
-            // ემოჯის დამატების ღილაკი - მხოლოდ ადმინებისთვის
-            if (ADMINS.includes(currentUser) || currentUser === OWNER) {
-                const addBtn = document.createElement('div');
-                addBtn.textContent = '➕';
-                addBtn.style.cssText = 'font-size:32px; text-align:center; cursor:pointer; padding:8px; border-radius:8px; background:var(--accent); color:white;';
-                addBtn.onclick = () => {
-                    picker.remove();
-                    addCustomEmoji();
-                };
-                picker.appendChild(addBtn);
-            }
+            customEmojis.forEach(emojiUrl => {
+                const btn = document.createElement('img');
+                btn.src = emojiUrl;
+                btn.style.cssText = 'width:48px; height:48px; object-fit:cover; cursor:pointer; border-radius:8px;';
+                btn.onclick = () => { document.getElementById('messageInput').value += ` :img:${emojiUrl}: `; picker.remove(); };
+                picker.appendChild(btn);
+            });
+            
+            const addBtn = document.createElement('div');
+            addBtn.textContent = '📷';
+            addBtn.style.cssText = 'font-size:32px; text-align:center; cursor:pointer; padding:8px; border-radius:8px; background:var(--accent); color:white;';
+            addBtn.onclick = () => { picker.remove(); document.getElementById('emojiUploadInput').click(); };
+            picker.appendChild(addBtn);
             
             document.body.appendChild(picker);
             setTimeout(() => {
-                const closePicker = (e) => { if (!picker.contains(e.target)) picker.remove(); document.removeEventListener('click', closePicker); };
-                setTimeout(() => document.addEventListener('click', closePicker), 100);
+                const close = (e) => { if (!picker.contains(e.target)) picker.remove(); document.removeEventListener('click', close); };
+                setTimeout(() => document.addEventListener('click', close), 100);
             }, 100);
         }
         
-        // ============ პროფილი ============
+        // ============ პროფილის მართვა ============
+        function showUserProfile(username) {
+            const user = users.find(u => u.username === username);
+            if (!user) return;
+            
+            const isBlocked = blockedUsers.includes(username);
+            const isFriend = friends.includes(username);
+            const isOwner = currentUser === OWNER;
+            const isAdmin = user.role === 'admin';
+            
+            const modal = document.createElement('div');
+            modal.className = 'profile-modal';
+            modal.innerHTML = `
+                <div class="profile-modal-content">
+                    <div class="profile-modal-header">
+                        <button class="profile-modal-close" onclick="this.closest('.profile-modal').remove()">✕</button>
+                        <div class="profile-modal-avatar" style="${user.avatar ? `background-image:url(${user.avatar}); background-size:cover;` : ''}">${user.avatar ? '' : user.username.charAt(0).toUpperCase()}</div>
+                        <h3>${escapeHtml(user.username)}</h3>
+                        <div class="user-status">${escapeHtml(user.status)}</div>
+                        <div>${user.role === 'owner' ? '👑 დამფუძნებელი' : (user.role === 'admin' ? '🔧 ადმინი' : '👤 მომხმარებელი')}</div>
+                    </div>
+                    <div class="profile-modal-info">
+                        <div>📅 შემოუერთდა: ${new Date(user.joined).toLocaleDateString()}</div>
+                    </div>
+                    <div class="profile-actions">
+                        ${!isFriend && username !== currentUser ? `<button class="action-btn success" onclick="addFriend('${username}'); document.querySelector('.profile-modal').remove()">➕ მეგობრებში დამატება</button>` : ''}
+                        ${isFriend && username !== currentUser ? `<button class="action-btn" onclick="removeFriend('${username}'); document.querySelector('.profile-modal').remove()">➖ მეგობრებიდან წაშლა</button>` : ''}
+                        ${!isBlocked && username !== currentUser ? `<button class="action-btn danger" onclick="blockUser('${username}'); document.querySelector('.profile-modal').remove()">🚫 დაბლოკვა</button>` : ''}
+                        ${isBlocked && username !== currentUser ? `<button class="action-btn success" onclick="unblockUser('${username}'); document.querySelector('.profile-modal').remove()">🔓 განბლოკვა</button>` : ''}
+                        ${username !== currentUser ? `<button class="action-btn" onclick="openPrivateChat('${username}'); document.querySelector('.profile-modal').remove()">💬 მიწერა</button>` : ''}
+                    </div>
+                    ${isOwner && username !== currentUser ? `
+                        <div class="profile-actions">
+                            ${!isAdmin ? `<button class="action-btn success" onclick="makeAdmin('${username}'); document.querySelector('.profile-modal').remove()">👑 ადმინად დანიშვნა</button>` : ''}
+                            ${isAdmin ? `<button class="action-btn danger" onclick="removeAdmin('${username}'); document.querySelector('.profile-modal').remove()">🔻 ადმინის ჩამორთმევა</button>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function addFriend(username) { if (!friends.includes(username)) { friends.push(username); saveFriends(); alert(`✅ ${username} დაემატა მეგობრებში!`); renderFriendsList(); } }
+        function removeFriend(username) { friends = friends.filter(f => f !== username); saveFriends(); renderFriendsList(); renderPrivateChatsList(); }
+        function blockUser(username) { if (!blockedUsers.includes(username)) { blockedUsers.push(username); saveBlocked(); alert(`🚫 ${username} დაბლოკილია`); renderOnlineUsers(); } }
+        function unblockUser(username) { blockedUsers = blockedUsers.filter(b => b !== username); saveBlocked(); alert(`🔓 ${username} განბლოკილია`); renderOnlineUsers(); }
+        
+        function makeAdmin(username) {
+            const user = users.find(u => u.username === username);
+            if (user) { user.role = 'admin'; user.status = '🔧 ადმინი'; saveUsers(); alert(`✅ ${username} ადმინად დაინიშნა!`); renderOnlineUsers(); if(currentRoom) renderMessages(); }
+        }
+        function removeAdmin(username) {
+            const user = users.find(u => u.username === username);
+            if (user) { user.role = 'user'; user.status = 'ონლაინ'; saveUsers(); alert(`🔻 ${username} ადმინის უფლებები ჩამოერთვა!`); renderOnlineUsers(); if(currentRoom) renderMessages(); }
+        }
+        
+        // ============ პროფილის შენახვა ============
         function saveProfile() {
             const newNick = document.getElementById('nicknameInput').value.trim();
             const newStatus = document.getElementById('statusInput').value;
-            
             if (newNick && newNick !== currentUser) {
                 const oldUser = currentUser;
                 currentUser = newNick;
                 localStorage.setItem('mafia_user', currentUser);
-                
                 const userIndex = users.findIndex(u => u.username === oldUser);
-                if (userIndex !== -1) {
-                    users[userIndex].username = newNick;
-                    users[userIndex].status = newStatus || users[userIndex].status;
-                }
-                
+                if (userIndex !== -1) { users[userIndex].username = newNick; users[userIndex].status = newStatus || users[userIndex].status; }
                 messages.forEach(m => { if (m.username === oldUser) m.username = newNick; });
-                privateMessages.forEach(m => {
-                    if (m.from === oldUser) m.from = newNick;
-                    if (m.to === oldUser) m.to = newNick;
-                });
-                
-                saveUsers();
-                saveMessages();
-                savePM();
+                privateMessages.forEach(m => { if (m.from === oldUser) m.from = newNick; if (m.to === oldUser) m.to = newNick; });
+                saveUsers(); saveMessages(); savePM();
             } else {
                 const user = users.find(u => u.username === currentUser);
                 if (user) user.status = newStatus;
                 saveUsers();
             }
-            
-            document.getElementById('profileName').innerHTML = currentUser;
             alert('✅ პროფილი განახლდა!');
-            renderOnlineUsers();
-            renderPrivateChatsList();
+            renderOnlineUsers(); renderFriendsList(); renderPrivateChatsList();
             if (currentRoom) renderMessages();
         }
         
@@ -672,8 +654,7 @@
                     document.getElementById('profileAvatar').style.backgroundImage = `url(${e.target.result})`;
                     document.getElementById('profileAvatar').style.backgroundSize = 'cover';
                     document.getElementById('profileAvatar').innerHTML = '';
-                    renderOnlineUsers();
-                    if (currentRoom) renderMessages();
+                    renderOnlineUsers(); if (currentRoom) renderMessages();
                     alert('✅ ავატარი განახლდა!');
                 };
                 reader.readAsDataURL(file);
@@ -682,24 +663,14 @@
         
         // ============ ალბომი ============
         let userAlbums = {};
-        
-        function loadAlbums() {
-            const saved = localStorage.getItem('mafia_albums');
-            if (saved) userAlbums = JSON.parse(saved);
-        }
-        
+        function loadAlbums() { const saved = localStorage.getItem('mafia_albums'); if (saved) userAlbums = JSON.parse(saved); }
         function saveAlbums() { localStorage.setItem('mafia_albums', JSON.stringify(userAlbums)); }
-        
         function renderAlbum() {
             const container = document.getElementById('albumGrid');
             const userAlbum = userAlbums[currentUser] || [];
-            if (userAlbum.length === 0) {
-                container.innerHTML = '<div class="empty-state">ალბომი ცარიელია</div>';
-                return;
-            }
-            container.innerHTML = userAlbum.map((photo, i) => `<img src="${photo}" class="album-photo" onclick="viewImage('${photo}')">`).join('');
+            if (userAlbum.length === 0) { container.innerHTML = '<div class="empty-state">ალბომი ცარიელია</div>'; return; }
+            container.innerHTML = userAlbum.map(photo => `<img src="${photo}" class="album-photo" onclick="viewImage('${photo}')">`).join('');
         }
-        
         function addToAlbum(input) {
             const file = input.files[0];
             if (file) {
@@ -707,9 +678,8 @@
                 reader.onload = (e) => {
                     if (!userAlbums[currentUser]) userAlbums[currentUser] = [];
                     userAlbums[currentUser].push(e.target.result);
-                    saveAlbums();
-                    renderAlbum();
-                    alert('📸 ფოტო დაემატა ალბომში!');
+                    saveAlbums(); renderAlbum();
+                    alert('📸 ფოტო დაემატა!');
                 };
                 reader.readAsDataURL(file);
             }
@@ -725,45 +695,32 @@
                 </div>
             `).join('');
         }
-        
-        function openRoom(roomName) {
-            currentRoom = roomName;
-            document.getElementById('chatRoomName').innerHTML = `📡 ${roomName}`;
-            showPage('chat');
-            renderMessages();
-        }
-        
+        function openRoom(roomName) { currentRoom = roomName; document.getElementById('chatRoomName').innerHTML = `📡 ${roomName}`; showPage('chat'); renderMessages(); }
         function closeChat() { currentRoom = null; showPage('home'); }
         
         // ============ შეტყობინებები ============
         function renderMessages() {
             const container = document.getElementById('chatMessages');
             if (!container) return;
-            
             const roomMessages = messages.filter(m => m.room === currentRoom).sort((a,b) => new Date(a.time) - new Date(b.time));
-            
-            if (roomMessages.length === 0) {
-                container.innerHTML = '<div class="empty-state">💬 შეტყობინებები არ არის</div>';
-                return;
-            }
-            
+            if (roomMessages.length === 0) { container.innerHTML = '<div class="empty-state">💬 შეტყობინებები არ არის</div>'; return; }
             container.innerHTML = roomMessages.map(msg => {
                 const user = users.find(u => u.username === msg.username) || { avatar: null };
                 const isOwner = msg.username === OWNER;
+                const isAdmin = users.find(u => u.username === msg.username)?.role === 'admin';
                 const timeStr = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const avatarHtml = user?.avatar ? `<img src="${user.avatar}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">` : `<div class="message-avatar">${msg.username.charAt(0).toUpperCase()}</div>`;
-                
+                let extraClass = '';
+                if (isOwner) extraClass = 'owner-message';
+                else if (isAdmin) extraClass = 'admin-message';
                 return `
-                    <div class="message ${isOwner ? 'owner-message' : ''}">
+                    <div class="message ${extraClass}">
                         <div class="message-header">
                             ${avatarHtml}
-                            <span class="message-name" onclick="openPrivateChat('${msg.username}')">${escapeHtml(msg.username)}</span>
+                            <span class="message-name" onclick="showUserProfile('${msg.username}')">${escapeHtml(msg.username)}</span>
                             <span class="message-time">${timeStr}</span>
                         </div>
-                        <div class="message-text">
-                            ${escapeHtml(msg.text)}
-                            ${msg.image ? `<img src="${msg.image}" onclick="viewImage('${msg.image}')">` : ''}
-                        </div>
+                        <div class="message-text">${formatMessage(msg.text)}${msg.image ? `<img src="${msg.image}" onclick="viewImage('${msg.image}')">` : ''}</div>
                         ${(currentUser === OWNER || msg.username === currentUser) ? `<button class="delete-msg" onclick="deleteMessage(${msg.id})">🗑️</button>` : ''}
                     </div>
                 `;
@@ -771,56 +728,56 @@
             container.scrollTop = container.scrollHeight;
         }
         
+        function formatMessage(text) {
+            let formatted = escapeHtml(text);
+            formatted = formatted.replace(/:img:(.*?):/g, '<img src="$1" style="width:32px; height:32px; object-fit:cover; border-radius:8px; vertical-align:middle;">');
+            return formatted;
+        }
+        
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             const pendingImage = window.pendingImage;
-            
             if (!text && !pendingImage) return;
-            
-            messages.push({
-                id: Date.now(),
-                username: currentUser,
-                text: text || "",
-                time: new Date().toISOString(),
-                room: currentRoom,
-                image: pendingImage || null
-            });
+            messages.push({ id: Date.now(), username: currentUser, text: text || "", time: new Date().toISOString(), room: currentRoom, image: pendingImage || null });
             saveMessages();
-            
-            input.value = '';
-            window.pendingImage = null;
+            input.value = ''; window.pendingImage = null;
             renderMessages();
         }
-        
         function deleteMessage(msgId) {
             const msg = messages.find(m => m.id === msgId);
             if (!msg) return;
             if (currentUser === OWNER || msg.username === currentUser) {
                 messages = messages.filter(m => m.id !== msgId);
-                saveMessages();
-                renderMessages();
-            } else alert('❌ ამ შეტყობინების წაშლა არ შეგიძლია!');
+                saveMessages(); renderMessages();
+            } else alert('❌ წაშლა არ შეგიძლია!');
         }
-        
         function addPhotoToMessage(input) {
             const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => { window.pendingImage = e.target.result; alert('📷 ფოტო დაემატა!'); };
-                reader.readAsDataURL(file);
-            }
+            if (file) { const reader = new FileReader(); reader.onload = (e) => { window.pendingImage = e.target.result; alert('📷 ფოტო დაემატა!'); }; reader.readAsDataURL(file); }
             input.value = '';
         }
         
-        // ============ ონლაინ მომხმარებლები ============
+        // ============ მომხმარებლები ============
         function renderOnlineUsers() {
             const container = document.getElementById('onlineList');
-            if (users.length === 0) { container.innerHTML = '<div class="empty-state">მომხმარებლები არ არიან</div>'; return; }
-            container.innerHTML = users.map(user => `
-                <div class="user-item" onclick="openPrivateChat('${user.username}')">
+            const visibleUsers = users.filter(u => !blockedUsers.includes(u.username) || u.username === currentUser);
+            container.innerHTML = visibleUsers.map(user => `
+                <div class="user-item" onclick="showUserProfile('${user.username}')">
                     <div class="user-avatar" style="${user.avatar ? `background-image:url(${user.avatar}); background-size:cover;` : ''}">${user.avatar ? '' : user.username.charAt(0).toUpperCase()}</div>
-                    <div><div class="user-name">${escapeHtml(user.username)} ${user.username === OWNER ? '👑' : ''}</div><div class="user-status">${escapeHtml(user.status)}</div></div>
+                    <div><div class="user-name">${escapeHtml(user.username)} ${user.role === 'owner' ? '👑' : (user.role === 'admin' ? '🔧' : '')}</div><div class="user-status">${escapeHtml(user.status)}</div></div>
+                </div>
+            `).join('');
+        }
+        
+        function renderFriendsList() {
+            const container = document.getElementById('friendsList');
+            const friendUsers = users.filter(u => friends.includes(u.username));
+            if (friendUsers.length === 0) { container.innerHTML = '<div class="empty-state">მეგობრები არ არიან</div>'; return; }
+            container.innerHTML = friendUsers.map(user => `
+                <div class="user-item" onclick="showUserProfile('${user.username}')">
+                    <div class="user-avatar" style="${user.avatar ? `background-image:url(${user.avatar}); background-size:cover;` : ''}">${user.avatar ? '' : user.username.charAt(0).toUpperCase()}</div>
+                    <div><div class="user-name">${escapeHtml(user.username)}</div><div class="user-status">${escapeHtml(user.status)}</div></div>
                 </div>
             `).join('');
         }
@@ -828,71 +785,38 @@
         // ============ პირადი მიმოწერა ============
         function openPrivateChat(username) {
             if (username === currentUser) { alert('საკუთარ თავთან მიმოწერა არ შეიძლება'); return; }
+            if (blockedUsers.includes(username)) { alert('🚫 ეს მომხმარებელი დაბლოკილია'); return; }
             if (currentPMUser === username && document.getElementById('pmContainer').innerHTML) { closePM(); return; }
-            currentPMUser = username;
-            renderPrivateChat();
+            currentPMUser = username; renderPrivateChat();
         }
-        
         function renderPrivateChat() {
             if (!currentPMUser) return;
             const pmMsgs = privateMessages.filter(m => (m.from === currentUser && m.to === currentPMUser) || (m.from === currentPMUser && m.to === currentUser)).sort((a,b) => new Date(a.time) - new Date(b.time));
             const pmHtml = `
                 <div class="pm-chat-container" id="pmChatWindow">
                     <div class="pm-header" onclick="closePM()"><span>💬 ${escapeHtml(currentPMUser)}</span><span>✕</span></div>
-                    <div class="pm-messages" id="pmMessages">${pmMsgs.map(msg => `<div class="pm-message ${msg.from === currentUser ? 'own' : ''}"><div style="font-size:9px; opacity:0.6;">${new Date(msg.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div><div>${escapeHtml(msg.text)}</div></div>`).join('') || '<div class="empty-state" style="padding:20px;">მიმოწერა ცარიელია</div>'}</div>
-                    <div class="pm-input-area">
-                        <button class="icon-btn" style="width:36px; height:36px; font-size:18px;" onclick="openPMEmojiPicker()">😊</button>
-                        <input type="text" id="pmInput" class="pm-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendPM()">
-                        <button class="icon-btn" style="width:36px; height:36px; font-size:16px;" onclick="sendPM()">➤</button>
-                    </div>
+                    <div class="pm-messages" id="pmMessages">${pmMsgs.map(msg => `<div class="pm-message ${msg.from === currentUser ? 'own' : ''}"><div style="font-size:9px;">${new Date(msg.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div><div>${escapeHtml(msg.text)}</div></div>`).join('') || '<div class="empty-state" style="padding:20px;">მიმოწერა ცარიელია</div>'}</div>
+                    <div class="pm-input-area"><input type="text" id="pmInput" class="pm-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendPM()"><button class="icon-btn" style="width:36px; height:36px;" onclick="sendPM()">➤</button></div>
                 </div>
             `;
             document.getElementById('pmContainer').innerHTML = pmHtml;
-            const pmMessagesDiv = document.getElementById('pmMessages');
-            if (pmMessagesDiv) pmMessagesDiv.scrollTop = pmMessagesDiv.scrollHeight;
+            const pmDiv = document.getElementById('pmMessages'); if (pmDiv) pmDiv.scrollTop = pmDiv.scrollHeight;
             document.getElementById('pmInput')?.focus();
         }
-        
-        function openPMEmojiPicker() {
-            const picker = document.createElement('div');
-            picker.style.cssText = 'position:fixed; bottom:80px; left:10px; right:10px; background:var(--card); border:2px solid var(--accent); border-radius:16px; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:12px; z-index:2001; max-height:250px; overflow-y:auto;';
-            globalEmojis.forEach(emoji => {
-                const btn = document.createElement('div');
-                btn.textContent = emoji;
-                btn.style.cssText = 'font-size:32px; text-align:center; cursor:pointer; padding:8px; border-radius:8px;';
-                btn.onclick = () => { const pmInput = document.getElementById('pmInput'); if(pmInput) pmInput.value += emoji; picker.remove(); };
-                picker.appendChild(btn);
-            });
-            if (ADMINS.includes(currentUser) || currentUser === OWNER) {
-                const addBtn = document.createElement('div');
-                addBtn.textContent = '➕';
-                addBtn.style.cssText = 'font-size:32px; text-align:center; cursor:pointer; padding:8px; border-radius:8px; background:var(--accent); color:white;';
-                addBtn.onclick = () => { picker.remove(); addCustomEmoji(); };
-                picker.appendChild(addBtn);
-            }
-            document.body.appendChild(picker);
-            setTimeout(() => { const close = (e) => { if (!picker.contains(e.target)) picker.remove(); document.removeEventListener('click', close); }; setTimeout(() => document.addEventListener('click', close), 100); }, 100);
-        }
-        
         function closePM() { document.getElementById('pmContainer').innerHTML = ''; currentPMUser = null; }
-        
         function sendPM() {
             const input = document.getElementById('pmInput');
             const text = input.value.trim();
             if (!text || !currentPMUser) return;
-            privateMessages.push({ id: Date.now(), from: currentUser, to: currentPMUser, text: text, time: new Date().toISOString(), image: null });
-            savePM();
-            input.value = '';
-            renderPrivateChat();
-            renderPrivateChatsList();
+            privateMessages.push({ id: Date.now(), from: currentUser, to: currentPMUser, text: text, time: new Date().toISOString() });
+            savePM(); input.value = ''; renderPrivateChat(); renderPrivateChatsList();
         }
-        
         function renderPrivateChatsList() {
             const myPMs = privateMessages.filter(m => m.from === currentUser || m.to === currentUser);
             const uniqueUsers = new Set();
             myPMs.forEach(m => { const other = m.from === currentUser ? m.to : m.from; uniqueUsers.add(other); });
             const container = document.getElementById('pmList');
-            if (uniqueUsers.size === 0) { container.innerHTML = '<div class="empty-state">ჯერ არ გქონია პირადი მიმოწერა</div>'; return; }
+            if (uniqueUsers.size === 0) { container.innerHTML = '<div class="empty-state">ჯერ არ გქონია მიმოწერა</div>'; return; }
             container.innerHTML = Array.from(uniqueUsers).map(username => {
                 const lastMsg = myPMs.filter(m => (m.from === username || m.to === username)).pop();
                 const user = users.find(u => u.username === username);
@@ -906,31 +830,17 @@
             document.getElementById(pageName + 'Page').classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('active'); if (btn.getAttribute('data-page') === pageName) btn.classList.add('active'); });
             if (pageName === 'online') renderOnlineUsers();
+            if (pageName === 'friends') renderFriendsList();
             if (pageName === 'messages') renderPrivateChatsList();
-            if (pageName === 'profile') {
-                const user = users.find(u => u.username === currentUser);
-                document.getElementById('nicknameInput').value = currentUser;
-                document.getElementById('statusInput').value = user?.status || '';
-                if (user?.avatar) { document.getElementById('profileAvatar').style.backgroundImage = `url(${user.avatar})`; document.getElementById('profileAvatar').style.backgroundSize = 'cover'; document.getElementById('profileAvatar').innerHTML = ''; }
-                renderAlbum();
-            }
+            if (pageName === 'profile') { const user = users.find(u => u.username === currentUser); document.getElementById('nicknameInput').value = currentUser; document.getElementById('statusInput').value = user?.status || ''; if (user?.avatar) { document.getElementById('profileAvatar').style.backgroundImage = `url(${user.avatar})`; document.getElementById('profileAvatar').style.backgroundSize = 'cover'; document.getElementById('profileAvatar').innerHTML = ''; } renderAlbum(); }
         }
-        
-        function viewImage(src) { const win = window.open(); win.document.write(`<img src="${src}" style="max-width:100%; margin:0 auto; display:block;">`); }
+        function viewImage(src) { const win = window.open(); win.document.write(`<img src="${src}" style="max-width:100%;">`); }
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-        
         function startHearts() { setInterval(() => { const heart = document.createElement('div'); heart.className = 'heart'; heart.innerHTML = ['❤️', '💖', '💗', '💕', '💘'][Math.floor(Math.random()*5)]; heart.style.left = Math.random()*100+'%'; heart.style.fontSize = (18+Math.random()*22)+'px'; document.getElementById('hearts').appendChild(heart); setTimeout(() => heart.remove(), 4000); }, 2000); }
-        
         function toggleTheme() { document.body.classList.toggle('day-mode'); document.getElementById('themeToggle').innerHTML = document.body.classList.contains('day-mode') ? '☀️' : '🌙'; }
         
-        // ============ ინიციალიზაცია ============
         function init() {
-            loadData();
-            loadAlbums();
-            renderRooms();
-            renderOnlineUsers();
-            renderPrivateChatsList();
-            startHearts();
+            loadData(); loadAlbums(); renderRooms(); renderOnlineUsers(); renderFriendsList(); renderPrivateChatsList(); startHearts();
             document.getElementById('userId').innerHTML = Math.floor(Math.random() * 10000) + 1000;
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
             document.querySelectorAll('.nav-btn[data-page]').forEach(btn => { btn.addEventListener('click', () => showPage(btn.getAttribute('data-page'))); });
