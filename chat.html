@@ -2,32 +2,40 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Old Mafia - ქართული ჩატი</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-        }
-
-        :root {
-            --accent: #ff3b3b;
-            --bg: #0a0c10;
-            --text: #e6e9f0;
-            --card: #151e2a;
-            --border: #2a3440;
         }
 
         body {
-            background: var(--bg);
-            color: var(--text);
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: #0a0c10;
+            color: #e6e9f0;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+
+        /* თემები */
+        body.light {
+            background: #fef8ef;
+            color: #2c2418;
+        }
+
+        body.light .nav-bar {
+            background: #fff5e6;
+        }
+
+        body.light .room-card,
+        body.light .user-item,
+        body.light .message {
+            background: #ffffff;
+            border-color: #ffe0b5;
         }
 
         /* ნავიგაცია */
@@ -37,7 +45,7 @@
             align-items: center;
             background: #11151c;
             padding: 12px 0;
-            border-bottom: 2px solid var(--accent);
+            border-bottom: 2px solid #ff3b3b;
             flex-shrink: 0;
         }
 
@@ -47,17 +55,17 @@
             border: none;
             color: #888;
             cursor: pointer;
-            padding: 8px;
+            padding: 8px 16px;
             transition: 0.2s;
         }
 
         .nav-btn.active {
-            color: var(--accent);
+            color: #ff3b3b;
             transform: scale(1.1);
         }
 
-        /* გვერდების კონტეინერი */
-        .pages-container {
+        /* გვერდები */
+        .pages {
             flex: 1;
             position: relative;
             overflow: hidden;
@@ -71,27 +79,26 @@
             height: 100%;
             overflow-y: auto;
             display: none;
-            padding: 16px;
+            padding: 20px;
         }
 
         .page.active {
             display: block;
         }
 
-        /* ოთახების სტილი */
+        /* ოთახები */
         .room-card {
-            background: var(--card);
-            padding: 16px;
+            background: #151e2a;
+            padding: 18px;
             margin-bottom: 12px;
             border-radius: 12px;
-            border-left: 4px solid var(--accent);
+            border-left: 4px solid #ff3b3b;
             cursor: pointer;
-            transition: 0.2s;
         }
 
         .room-card:active {
             transform: scale(0.98);
-            background: var(--accent);
+            background: #ff3b3b;
         }
 
         .room-card span {
@@ -103,7 +110,7 @@
             font-size: 18px;
         }
 
-        /* ჩატის გვერდი */
+        /* ჩატი */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -111,26 +118,35 @@
         }
 
         .chat-header {
-            background: var(--card);
+            background: #151e2a;
             padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 12px;
             flex-shrink: 0;
         }
 
-        .messages-area {
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ff3b3b;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
         .message {
-            background: var(--card);
+            background: #151e2a;
             padding: 10px 14px;
             border-radius: 12px;
             max-width: 80%;
@@ -139,20 +155,22 @@
 
         .message.own {
             align-self: flex-end;
-            background: var(--accent);
+            background: #ff3b3b;
         }
 
-        .message .name {
+        .message-name {
             font-size: 11px;
             opacity: 0.7;
             margin-bottom: 4px;
         }
 
         .chat-input-area {
-            background: var(--card);
+            background: #151e2a;
             padding: 12px;
             display: flex;
             gap: 10px;
+            border-radius: 12px;
+            margin-top: 12px;
             flex-shrink: 0;
         }
 
@@ -160,14 +178,14 @@
             flex: 1;
             padding: 12px;
             border-radius: 24px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
+            border: 1px solid #2a3440;
+            background: #0a0c10;
+            color: #e6e9f0;
             font-size: 14px;
         }
 
         .send-btn {
-            background: var(--accent);
+            background: #ff3b3b;
             border: none;
             color: white;
             width: 44px;
@@ -177,13 +195,13 @@
             cursor: pointer;
         }
 
-        /* მომხმარებლების სია */
+        /* მომხმარებლები */
         .user-item {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 12px;
-            background: var(--card);
+            background: #151e2a;
             margin-bottom: 8px;
             border-radius: 12px;
             cursor: pointer;
@@ -193,34 +211,24 @@
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            background: var(--accent);
+            background: #ff3b3b;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
         }
 
-        .user-info b {
-            display: block;
-            font-size: 16px;
-        }
-
-        .user-info span {
-            font-size: 12px;
-            opacity: 0.6;
-        }
-
         /* პროფილი */
-        .profile-section {
+        .profile-card {
             text-align: center;
-            padding: 20px;
+            padding: 30px 20px;
         }
 
-        .avatar-large {
+        .avatar {
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            background: var(--accent);
+            background: #ff3b3b;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -232,29 +240,43 @@
         .status-input {
             width: 80%;
             margin-top: 20px;
-            padding: 10px;
-            border-radius: 20px;
-            border: 1px solid var(--accent);
-            background: var(--card);
-            color: var(--text);
+            padding: 12px;
+            border-radius: 30px;
+            border: 1px solid #ff3b3b;
+            background: #151e2a;
+            color: #e6e9f0;
             text-align: center;
         }
 
-        .close-btn {
-            color: var(--accent);
-            font-size: 24px;
-            cursor: pointer;
-            background: none;
-            border: none;
+        body.light .status-input {
+            background: #ffffff;
+            color: #2c2418;
         }
 
+        body.light .chat-input {
+            background: #ffffff;
+            color: #2c2418;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.5;
+        }
+
+        h3 {
+            margin-bottom: 16px;
+            color: #ff3b3b;
+        }
+
+        /* ემოჯიები */
         .emoji-board {
             position: fixed;
-            bottom: 80px;
+            bottom: 100px;
             left: 10px;
             right: 10px;
-            background: var(--card);
-            border: 2px solid var(--accent);
+            background: #151e2a;
+            border: 2px solid #ff3b3b;
             border-radius: 16px;
             display: none;
             grid-template-columns: repeat(5, 1fr);
@@ -267,87 +289,81 @@
             display: grid;
         }
 
-        .emoji-item {
+        .emoji {
             font-size: 32px;
             text-align: center;
             cursor: pointer;
             padding: 8px;
         }
 
+        /* ანიმაცია */
         .heart {
             position: fixed;
             bottom: 0;
-            font-size: 24px;
+            font-size: 20px;
             pointer-events: none;
-            animation: floatUp 4s linear forwards;
+            animation: floatUp 4s forwards;
             z-index: 9999;
         }
 
         @keyframes floatUp {
-            0% {
-                bottom: 0;
-                opacity: 1;
-            }
-            100% {
-                bottom: 100%;
-                opacity: 0;
-            }
+            0% { bottom: 0; opacity: 1; transform: translateX(0); }
+            100% { bottom: 100%; opacity: 0; transform: translateX(30px); }
         }
     </style>
 </head>
 <body>
 
     <div class="nav-bar">
-        <button class="nav-btn" data-page="home">🏠</button>
+        <button class="nav-btn active" data-page="home">🏠</button>
         <button class="nav-btn" data-page="messages">💬</button>
         <button class="nav-btn" data-page="online">👥</button>
         <button class="nav-btn" data-page="profile">👤</button>
-        <button class="nav-btn" id="themeBtn">🌙</button>
+        <button class="nav-btn" id="themeToggle">🌙</button>
     </div>
 
-    <div class="pages-container">
-        <!-- მთავარი გვერდი - ოთახები -->
+    <div class="pages">
+        <!-- მთავარი გვერდი -->
         <div id="homePage" class="page active">
-            <h3 style="margin-bottom: 16px; color: var(--accent);">🏰 12 ოთახი</h3>
+            <h3>🏰 12 სათამაშო ოთახი</h3>
             <div id="roomsList"></div>
         </div>
 
         <!-- მიმოწერა -->
         <div id="messagesPage" class="page">
-            <h3 style="margin-bottom: 16px;">💬 მიმოწერა</h3>
-            <div id="pmList">მიმოწერა ცარიელია</div>
+            <h3>💬 მიმოწერა</h3>
+            <div id="pmList" class="empty-state">მიმოწერა ცარიელია</div>
         </div>
 
-        <!-- ონლაინ მომხმარებლები -->
+        <!-- ონლაინი -->
         <div id="onlinePage" class="page">
-            <h3 style="margin-bottom: 16px;">👥 ონლაინში</h3>
+            <h3>👥 ონლაინ მომხმარებლები</h3>
             <div id="onlineList"></div>
         </div>
 
         <!-- პროფილი -->
         <div id="profilePage" class="page">
-            <div class="profile-section">
-                <div class="avatar-large" onclick="document.getElementById('avatarInput').click()">
-                    👤
-                </div>
-                <h2 id="profileName" style="margin-top: 16px;">Abu007</h2>
-                <input type="text" id="statusText" class="status-input" placeholder="სტატუსი...">
+            <div class="profile-card">
+                <div class="avatar" onclick="alert('ავატარის შეცვლა მალე')">👤</div>
+                <h2 id="userName" style="margin-top: 16px;">Abu007</h2>
+                <input type="text" id="userStatus" class="status-input" placeholder="შენი სტატუსი...">
                 <p style="margin-top: 16px; opacity: 0.5;">ID: #<span id="userId">007</span></p>
             </div>
-            <input type="file" id="avatarInput" hidden accept="image/*">
         </div>
 
-        <!-- ჩატის გვერდი -->
+        <!-- ჩატი -->
         <div id="chatPage" class="page">
             <div class="chat-container">
                 <div class="chat-header">
                     <b id="chatRoomName">ოთახი</b>
-                    <button class="close-btn" onclick="backToHome()">✕</button>
+                    <button class="close-btn" onclick="closeChat()">✕</button>
                 </div>
-                <div id="chatMessages" class="messages-area"></div>
+                <div id="chatMessages" class="messages">
+                    <div class="empty-state">შეტყობინებები არ არის</div>
+                </div>
                 <div class="chat-input-area">
-                    <button onclick="toggleEmoji()" style="font-size: 28px; background: none; border: none; color: var(--text); cursor: pointer;">😊</button>
-                    <input type="text" id="messageInput" class="chat-input" placeholder="დაწერე...">
+                    <button onclick="toggleEmoji()" style="font-size: 28px; background: none; border: none; color: #e6e9f0; cursor: pointer;">😊</button>
+                    <input type="text" id="messageInput" class="chat-input" placeholder="დაწერე შეტყობინება...">
                     <button class="send-btn" onclick="sendMessage()">➤</button>
                 </div>
             </div>
@@ -358,37 +374,43 @@
     <div id="hearts"></div>
 
     <script>
-        // Supabase კონფიგი
-        const supabase = supabase.createClient(
-            "https://ftfciebnywbondaiarnc.supabase.co",
-            "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-        );
-
-        // მონაცემები
-        let currentUser = localStorage.getItem('nickname') || "Abu007";
+        // მომხმარებელი
+        let currentUser = localStorage.getItem('mafia_user') || "Abu007";
         let currentRoom = null;
-        let currentPage = 'home';
-
+        
         // ოთახები
-        const rooms = [
+        const ROOMS = [
             { icon: "☕", name: "კაფე-ბარი" },
             { icon: "🎲", name: "ნარდი" },
             { icon: "🃏", name: "ჯოკერი" },
-            { icon: "💎", name: "VIP" },
+            { icon: "💎", name: "VIP საუბრები" },
             { icon: "📝", name: "ფორუმი" },
-            { icon: "🛠️", name: "ადმინები" },
+            { icon: "🛠️", name: "ადმინისტრაცია" },
             { icon: "😂", name: "იუმორი" },
             { icon: "🏆", name: "შიფროგრამა" },
             { icon: "🎭", name: "გამოძიება" },
-            { icon: "🎵", name: "მუსიკა" },
+            { icon: "🎵", name: "მუსიკალური" },
             { icon: "⁉️", name: "ვიქტორინა" },
             { icon: "🆘", name: "დახმარება" }
         ];
 
-        // გვერდების ჩვენება
+        // დემო შეტყობინებები
+        let demoMessages = [
+            { username: "Admin", text: "მოგესალმებით!", time: new Date() },
+            { username: "Abu007", text: "გამარჯობა ყველას!", time: new Date() }
+        ];
+
+        // დემო მომხმარებლები
+        let demoUsers = [
+            { username: "Abu007", status: "ადმინი" },
+            { username: "Lukinio", status: "ონლაინ" },
+            { username: "MafiaKing", status: "ონლაინ" },
+            { username: "Giorgi", status: "წავიდა" }
+        ];
+
+        // გვერდის ჩვენება
         function showPage(pageName) {
-            console.log("Show page:", pageName);
-            currentPage = pageName;
+            console.log("📱 გადასვლა გვერდზე:", pageName);
             
             // ყველა გვერდის დამალვა
             document.querySelectorAll('.page').forEach(page => {
@@ -396,30 +418,14 @@
             });
             
             // არჩეული გვერდის ჩვენება
-            let targetPage = null;
-            switch(pageName) {
-                case 'home':
-                    targetPage = document.getElementById('homePage');
-                    break;
-                case 'messages':
-                    targetPage = document.getElementById('messagesPage');
-                    break;
-                case 'online':
-                    targetPage = document.getElementById('onlinePage');
-                    break;
-                case 'profile':
-                    targetPage = document.getElementById('profilePage');
-                    break;
-                case 'chat':
-                    targetPage = document.getElementById('chatPage');
-                    break;
-            }
-            
+            const targetPage = document.getElementById(pageName + 'Page');
             if (targetPage) {
                 targetPage.classList.add('active');
+            } else if (pageName === 'chat') {
+                document.getElementById('chatPage').classList.add('active');
             }
             
-            // ნავიგაციის ღილაკების განახლება
+            // ნავიგაციის განახლება
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('data-page') === pageName) {
@@ -428,43 +434,38 @@
             });
         }
 
-        // მთავარ გვერდზე დაბრუნება
-        function backToHome() {
+        // ოთახის გახსნა
+        function openRoom(roomName) {
+            console.log("🚪 გაიხსნა ოთახი:", roomName);
+            currentRoom = roomName;
+            document.getElementById('chatRoomName').innerHTML = `📡 ${roomName}`;
+            showPage('chat');
+            loadChatMessages();
+        }
+
+        // ჩატის დახურვა
+        function closeChat() {
             currentRoom = null;
             showPage('home');
         }
 
-        // ოთახის გახსნა
-        function openRoom(roomName) {
-            currentRoom = roomName;
-            document.getElementById('chatRoomName').innerHTML = `📡 ${roomName}`;
-            showPage('chat');
-            loadMessages();
-        }
-
         // შეტყობინებების ჩატვირთვა
-        async function loadMessages() {
-            if (!currentRoom) return;
-            
-            const { data } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('room_name', currentRoom)
-                .order('created_at', { ascending: true })
-                .limit(50);
-                
+        function loadChatMessages() {
             const container = document.getElementById('chatMessages');
             if (!container) return;
             
-            if (!data || data.length === 0) {
-                container.innerHTML = '<div style="text-align:center; opacity:0.5;">შეტყობინებები ჯერ არ არის</div>';
+            // დემო შეტყობინებები
+            const messages = demoMessages;
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state">შეტყობინებები არ არის</div>';
                 return;
             }
             
-            container.innerHTML = data.map(msg => `
+            container.innerHTML = messages.map(msg => `
                 <div class="message ${msg.username === currentUser ? 'own' : ''}">
-                    <div class="name">${escapeHtml(msg.username)}</div>
-                    <div>${formatMessage(msg.text)}</div>
+                    <div class="message-name">${escapeHtml(msg.username)}</div>
+                    <div>${escapeHtml(msg.text)}</div>
                 </div>
             `).join('');
             
@@ -472,28 +473,29 @@
         }
 
         // შეტყობინების გაგზავნა
-        async function sendMessage() {
+        function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             
-            if (!text || !currentRoom) return;
+            if (!text) return;
             
-            await supabase.from('messages').insert({
+            // ახალი შეტყობინების დამატება
+            demoMessages.push({
                 username: currentUser,
                 text: text,
-                room_name: currentRoom
+                time: new Date()
             });
             
             input.value = '';
-            loadMessages();
+            loadChatMessages();
         }
 
-        // ოთახების რენდერი
+        // ოთახების ჩვენება
         function renderRooms() {
             const container = document.getElementById('roomsList');
             if (!container) return;
             
-            container.innerHTML = rooms.map(room => `
+            container.innerHTML = ROOMS.map(room => `
                 <div class="room-card" onclick="openRoom('${room.name}')">
                     <span>${room.icon}</span>
                     <b>${room.name}</b>
@@ -501,69 +503,30 @@
             `).join('');
         }
 
-        // ონლაინ მომხმარებლები
-        async function loadOnlineUsers() {
-            const { data } = await supabase
-                .from('profiles')
-                .select('*')
-                .limit(30);
-                
+        // ონლაინ მომხმარებლების ჩვენება
+        function renderOnlineUsers() {
             const container = document.getElementById('onlineList');
             if (!container) return;
             
-            if (!data || data.length === 0) {
-                container.innerHTML = '<div style="text-align:center; opacity:0.5;">მომხმარებლები არ არიან</div>';
-                return;
-            }
-            
-            container.innerHTML = data.map(user => `
-                <div class="user-item" onclick="alert('${user.username}')">
+            container.innerHTML = demoUsers.map(user => `
+                <div class="user-item" onclick="alert('💬 ${user.username}')">
                     <div class="user-avatar">👤</div>
-                    <div class="user-info">
-                        <b>${escapeHtml(user.username)}</b>
-                        <span>${escapeHtml(user.status || 'ონლაინ')}</span>
+                    <div>
+                        <b>${escapeHtml(user.username)}</b><br>
+                        <span style="font-size: 12px; opacity: 0.6;">${escapeHtml(user.status)}</span>
                     </div>
                 </div>
             `).join('');
         }
 
-        // პროფილის ჩატვირთვა
-        async function loadProfile() {
-            document.getElementById('profileName').innerHTML = currentUser;
-            
-            const { data } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('username', currentUser)
-                .maybeSingle();
-                
-            if (data) {
-                if (data.status) {
-                    document.getElementById('statusText').value = data.status;
-                }
-                if (data.id) {
-                    document.getElementById('userId').innerHTML = data.id.substring(0, 8);
-                }
-            }
-        }
-
-        // სტატუსის განახლება
-        async function updateStatus() {
-            const status = document.getElementById('statusText').value;
-            await supabase
-                .from('profiles')
-                .update({ status: status })
-                .eq('username', currentUser);
-        }
-
         // ემოჯიების ჩატვირთვა
-        async function loadEmojis() {
+        function renderEmojis() {
             const board = document.getElementById('emojiBoard');
             if (!board) return;
             
-            const defaultEmojis = ['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺'];
-            board.innerHTML = defaultEmojis.map(emoji => `
-                <div class="emoji-item" onclick="addEmoji('${emoji}')">${emoji}</div>
+            const emojis = ['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺', '😭', '💀', '👑', '💪', '🤡'];
+            board.innerHTML = emojis.map(emoji => `
+                <div class="emoji" onclick="addEmoji('${emoji}')">${emoji}</div>
             `).join('');
         }
 
@@ -571,6 +534,7 @@
             const input = document.getElementById('messageInput');
             if (input) {
                 input.value += emoji;
+                input.focus();
             }
             toggleEmoji();
         }
@@ -580,84 +544,70 @@
             board.classList.toggle('active');
         }
 
-        function formatMessage(text) {
-            return escapeHtml(text);
+        // გულების ანიმაცია
+        function startHearts() {
+            setInterval(() => {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = ['❤️', '💖', '💗', '💕', '💘'][Math.floor(Math.random() * 5)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.fontSize = (16 + Math.random() * 24) + 'px';
+                document.getElementById('hearts').appendChild(heart);
+                setTimeout(() => heart.remove(), 4000);
+            }, 2500);
         }
 
+        // თემის შეცვლა
+        function toggleTheme() {
+            document.body.classList.toggle('light');
+            const btn = document.getElementById('themeToggle');
+            if (document.body.classList.contains('light')) {
+                btn.innerHTML = '☀️';
+            } else {
+                btn.innerHTML = '🌙';
+            }
+        }
+
+        // სტატუსის შენახვა
+        function saveStatus() {
+            const status = document.getElementById('userStatus').value;
+            localStorage.setItem('mafia_status', status);
+        }
+
+        // HTML ესკეიპი
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // გულების ანიმაცია
-        function startHearts() {
-            setInterval(() => {
-                const heart = document.createElement('div');
-                heart.className = 'heart';
-                heart.innerHTML = ['❤️', '💖', '💗', '💕'][Math.floor(Math.random() * 4)];
-                heart.style.left = Math.random() * 100 + '%';
-                heart.style.fontSize = (18 + Math.random() * 20) + 'px';
-                document.getElementById('hearts').appendChild(heart);
-                setTimeout(() => heart.remove(), 4000);
-            }, 2000);
-        }
-
-        // თემის შეცვლა
-        let isDark = true;
-        function toggleTheme() {
-            isDark = !isDark;
-            const root = document.documentElement;
-            if (isDark) {
-                root.style.setProperty('--bg', '#0a0c10');
-                root.style.setProperty('--text', '#e6e9f0');
-                root.style.setProperty('--card', '#151e2a');
-                root.style.setProperty('--border', '#2a3440');
-                document.getElementById('themeBtn').innerHTML = '🌙';
-            } else {
-                root.style.setProperty('--bg', '#fef8ef');
-                root.style.setProperty('--text', '#2c2418');
-                root.style.setProperty('--card', '#ffffff');
-                root.style.setProperty('--border', '#ffe0b5');
-                document.getElementById('themeBtn').innerHTML = '☀️';
+        // Enter ღილაკი
+        document.addEventListener('DOMContentLoaded', () => {
+            const msgInput = document.getElementById('messageInput');
+            if (msgInput) {
+                msgInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') sendMessage();
+                });
             }
-        }
-
-        // ავატარის ატვირთვა
-        document.getElementById('avatarInput')?.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            alert('ავატარის ატვირთვა დემო ვერსიაში');
         });
-
-        // სტატუსის ავტომატური შენახვა
-        let statusTimeout;
-        document.getElementById('statusText')?.addEventListener('input', () => {
-            clearTimeout(statusTimeout);
-            statusTimeout = setTimeout(() => updateStatus(), 1000);
-        });
-
-        // Enter ღილაკით გაგზავნა
-        document.getElementById('messageInput')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        // რეალთაიმ აპდეითი
-        supabase.channel('messages-channel')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-                if (currentRoom) loadMessages();
-            })
-            .subscribe();
 
         // ინიციალიზაცია
-        async function init() {
-            console.log("🚀 აპლიკაცია იწყება...");
+        function init() {
+            console.log("🚀 აპლიკაცია ჩაიტვირთა!");
             
+            // მომხმარებლის სახელი
+            document.getElementById('userName').innerHTML = currentUser;
+            
+            // შენახული სტატუსი
+            const savedStatus = localStorage.getItem('mafia_status');
+            if (savedStatus) {
+                document.getElementById('userStatus').value = savedStatus;
+            }
+            
+            // კომპონენტების რენდერი
             renderRooms();
-            await loadProfile();
-            await loadOnlineUsers();
-            await loadEmojis();
+            renderOnlineUsers();
+            renderEmojis();
             startHearts();
             
             // ნავიგაციის ღილაკები
@@ -669,11 +619,15 @@
             });
             
             // თემის ღილაკი
-            document.getElementById('themeBtn')?.addEventListener('click', toggleTheme);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
             
-            console.log("✅ აპლიკაცია გაშვებულია");
+            // სტატუსის შენახვა
+            document.getElementById('userStatus').addEventListener('change', saveStatus);
+            
+            console.log("✅ მზადაა!");
         }
         
+        // გაშვება
         init();
     </script>
 </body>
