@@ -3,269 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OldMafia Chat - Special Edition</title>
+    <title>OldMafia Premium Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #800020; /* შინდისფერი */
-            --bg-light: #fff5f5; --bg-dark: #1a0005;
-            --card-light: #ffffff; --card-dark: #2d000a;
-            --text-light: #333; --text-dark: #ffe0e0;
+            --bg: #fff5f5; /* კრემისფერი */
+            --card: #ffffff;
+            --text: #333;
+            --shadow: rgba(128, 0, 32, 0.2);
         }
 
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-light); color: var(--text-light); transition: 0.3s; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
-        body.dark-mode { background: var(--bg-dark); color: var(--text-dark); }
+        body.dark-mode {
+            --bg: #1a0005; /* შავი შინდისფერში */
+            --card: #2d000a;
+            --text: #ffe0e0;
+            --shadow: rgba(0, 0, 0, 0.7);
+        }
 
-        /* ანიმაციური გულები */
-        .hearts-bg { position: fixed; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        .heart { position: absolute; bottom: -50px; font-size: 45px; color: var(--primary); opacity: 0.4; animation: floatUp 10s linear infinite; }
-        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 20% { opacity: 0.6; } 100% { transform: translateY(-110vh) scale(1.2); opacity: 0; } }
+        body {
+            margin: 0; font-family: 'Helvetica', sans-serif;
+            background-color: var(--bg); color: var(--text);
+            transition: 0.3s; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+        }
 
-        /* Layout */
-        header { background: var(--primary); color: white; padding: 12px; display: flex; justify-content: space-between; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-        .main-wrap { display: flex; flex: 1; position: relative; z-index: 1; }
-        
-        .sidebar { position: absolute; top: 0; bottom: 0; width: 260px; background: var(--card-light); transition: 0.4s; z-index: 101; padding: 15px; border: 1px solid var(--primary); overflow-y: auto; }
-        body.dark-mode .sidebar { background: var(--card-dark); }
-        #rooms-side { left: -300px; } #users-side { right: -300px; }
-        .sidebar.active { left: 0; } #users-side.active { right: 0; }
+        /* --- ანიმაციური გულები --- */
+        .hearts-container { position: fixed; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .heart { position: absolute; bottom: -50px; font-size: 50px; color: var(--primary); opacity: 0.5; animation: float 8s linear infinite; }
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            20% { opacity: 0.6; }
+            100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+        }
 
-        /* ჩატის ბუშტები */
-        .chat-box { flex: 1; display: flex; flex-direction: column; padding: 10px; z-index: 2; }
-        #msg-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
-        
-        .bubble { max-width: 80%; padding: 10px; border-radius: 15px; background: var(--card-light); align-self: flex-start; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); display: flex; gap: 10px; }
-        body.dark-mode .bubble { background: var(--card-dark); border-left: 3px solid var(--primary); }
-        .avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--primary); object-fit: cover; }
+        /* --- ზედა მთავარი ბარი --- */
+        .top-navbar {
+            background: var(--primary);
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
 
-        /* ინტერფეისის ღილაკები */
-        .input-row { background: var(--card-light); padding: 10px; border-radius: 30px; display: flex; gap: 10px; align-items: center; border: 1px solid var(--primary); }
-        body.dark-mode .input-row { background: var(--card-dark); }
-        input { flex: 1; background: transparent; border: none; color: inherit; outline: none; }
-        
-        .u-item { display: flex; align-items: center; gap: 8px; padding: 8px; cursor: pointer; border-bottom: 1px solid rgba(128,0,32,0.1); }
-        .badge { font-size: 10px; padding: 2px 5px; border-radius: 4px; color: white; margin-left: 5px; }
-        .b-owner { background: gold; color: black; } .b-admin { background: #e63946; }
+        .nav-item {
+            color: white; cursor: pointer; font-weight: bold; font-size: 14px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
 
-        /* Popup მენიუ */
-        #userPopup { position: fixed; background: var(--card-light); border: 2px solid var(--primary); border-radius: 15px; padding: 15px; z-index: 1000; display: none; width: 200px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        body.dark-mode #userPopup { background: var(--card-dark); }
-        .p-btn { width: 100%; padding: 8px; margin: 4px 0; border: none; border-radius: 8px; cursor: pointer; background: rgba(128,0,32,0.1); color: inherit; }
-        .p-btn:hover { background: var(--primary); color: white; }
+        /* --- ჩამოსაშლელი პანელები --- */
+        .dropdown-panel {
+            position: absolute; top: 60px; left: 5%; width: 90%; 
+            background: var(--card); border: 2px solid var(--primary);
+            border-radius: 15px; padding: 15px; display: none;
+            box-shadow: 0 10px 30px var(--shadow); z-index: 99;
+            max-height: 70vh; overflow-y: auto;
+        }
 
-        /* სმაილები */
-        #emoji-panel { position: absolute; bottom: 70px; left: 20px; background: var(--card-light); border: 2px solid var(--primary); display: none; padding: 10px; border-radius: 10px; grid-template-columns: repeat(4, 1fr); gap: 10px; z-index: 105; max-height: 200px; overflow-y: auto; }
-        body.dark-mode #emoji-panel { background: var(--card-dark); }
+        /* --- ჩატის სივრცე --- */
+        .main-chat { flex: 1; display: flex; flex-direction: column; padding: 15px; z-index: 1; }
+        #messages-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
+
+        .msg {
+            max-width: 70%; padding: 12px; border-radius: 15px; 
+            background: var(--card); box-shadow: 5px 5px 15px var(--shadow);
+            display: flex; gap: 10px; border-left: 4px solid var(--primary);
+        }
+
+        .my-msg { align-self: flex-end; border-left: none; border-right: 4px solid var(--primary); }
+
+        /* --- საწერი ზოლი --- */
+        .input-area {
+            display: flex; gap: 10px; background: var(--card);
+            padding: 12px; border-radius: 30px; border: 2px solid var(--primary);
+            box-shadow: 0 -5px 15px var(--shadow);
+        }
+
+        input { flex: 1; border: none; background: transparent; color: inherit; outline: none; }
+
+        .avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--primary); }
+
+        /* პატარა წითელი წერტილი მესენჯერზე */
+        .badge { background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; }
     </style>
 </head>
-<body class="dark-mode">
+<body>
 
-<div class="hearts-bg" id="hearts"></div>
+<div class="hearts-container" id="hearts-bg"></div>
 
-<header>
-    <div onclick="toggleSide('rooms-side')" style="cursor:pointer;">☰ ოთახები</div>
-    <div id="room-name">ოთახი #1</div>
-    <div onclick="toggleSide('users-side')" style="position:relative; cursor:pointer;">
-        ხალხი 👥 <span id="msg-dot" style="display:none; width:12px; height:12px; background:red; border-radius:50%; position:absolute; top:-2px; right:-8px; font-size:9px; text-align:center;">0</span>
-    </div>
-</header>
-
-<div class="main-wrap">
-    <div id="rooms-side" class="sidebar">
-        <h3>12 ოთახი</h3>
-        <div id="room-list"></div>
-        <hr>
-        <button onclick="toggleTheme()" style="width:100%; padding:10px; cursor:pointer; background:var(--primary); color:white; border:none; border-radius:10px;">🌓 რეჟიმის შეცვლა</button>
-    </div>
-
-    <div class="chat-box">
-        <div id="msg-container"></div>
-        
-        <div id="emoji-panel">
-            </div>
-
-        <div class="input-row">
-            <button onclick="toggleEmojis()" style="background:none; border:none; font-size:20px; cursor:pointer;">😊</button>
-            <input type="text" id="mInput" placeholder="დაწერე მესიჯი...">
-            <button onclick="send()" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer;">გაგზავნა</button>
-        </div>
-    </div>
-
-    <div id="users-side" class="sidebar">
-        <div style="text-align:center; padding-bottom:15px; border-bottom:2px solid var(--primary);">
-            <img id="my-avatar" class="avatar" style="width:60px; height:60px;">
-            <p id="my-nick" style="font-weight:bold; margin:5px 0;"></p>
-            <input type="text" id="my-status-input" placeholder="შეცვალე სტატუსი..." onchange="updateMyStatus(this.value)" style="font-size:11px; width:80%; text-align:center; border:1px solid #ccc; border-radius:5px;">
-        </div>
-        <div id="user-tree">
-            <h5 style="color:gold; margin-top:15px;">👑 დამფუძნებლები</h5> <div id="l-owners"></div>
-            <h5 style="color:#e63946; margin-top:15px;">🛡️ ადმინები</h5> <div id="l-admins"></div>
-            <h5 style="color:#ccc; margin-top:15px;">👤 წევრები</h5> <div id="l-members"></div>
-        </div>
-    </div>
+<div class="top-navbar">
+    <div class="nav-item" onclick="toggleMenu('rooms-menu')">🏠 <span>ოთახები</span></div>
+    <div class="nav-item" onclick="toggleMenu('friends-menu')">👥 <span>მეგობრები</span></div>
+    <div class="nav-item" onclick="toggleMenu('messenger-menu')">💬 <span>მესენჯერი <b class="badge" id="dm-count">0</b></span></div>
+    <div class="nav-item" onclick="toggleMenu('profile-menu')">👤 <span>პროფილი</span></div>
+    <div class="nav-item" onclick="toggleDarkMode()">🌓 <span>რეჟიმი</span></div>
 </div>
 
-<div id="userPopup">
-    <img id="pop-img" class="avatar" style="width:65px; height:65px; margin-bottom:10px;">
-    <h4 id="pop-name" style="margin:5px 0;"></h4>
-    <p id="pop-status" style="font-size:12px; opacity:0.8;"></p>
-    <hr>
-    <button class="p-btn" onclick="friendAction('request')">➕ მეგობრობა</button>
-    <button class="p-btn" onclick="startPrivate()">💬 მიწერა</button>
-    <div id="admin-zone" style="display:none; border-top:1px solid rgba(255,255,255,0.1); margin-top:5px; padding-top:5px;">
-        <button class="p-btn" style="color:orange;" onclick="promoteAdmin()">⭐ ადმინად დანიშვნა</button>
-        <button class="p-btn" style="color:#ff4d4d;" onclick="banUserPrompt()">🚫 დაბლოკვა (მიზეზით)</button>
-        <button class="p-btn" style="color:yellow;" onclick="addEmojiPrompt()">➕ სმაილის დამატება</button>
+<div id="rooms-menu" class="dropdown-panel">
+    <h3>აირჩიე ოთახი</h3>
+    <div id="room-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+</div>
+
+<div id="friends-menu" class="dropdown-panel">
+    <h3>მეგობრები და ხალხი</h3>
+    <div id="user-list"></div>
+</div>
+
+<div id="messenger-menu" class="dropdown-panel">
+    <h3>პირადი შეტყობინებები</h3>
+    <div id="dm-list">არ არის ახალი სმს</div>
+</div>
+
+<div id="profile-menu" class="dropdown-panel" style="text-align: center;">
+    <img id="my-avatar" class="avatar" style="width: 80px; height: 80px;">
+    <h2 id="my-name">სახელი</h2>
+    <p id="my-status-text">ჩემი სტატუსი...</p>
+    <button onclick="alert('ფოტოს შეცვლა')" style="padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px;">შეცვლა</button>
+</div>
+
+<div class="main-chat">
+    <div id="messages-box"></div>
+
+    <div class="input-area">
+        <button style="background: none; border: none; font-size: 20px; cursor: pointer;">😊</button>
+        <input type="text" id="chat-input" placeholder="დაწერე მესიჯი...">
+        <button onclick="send()" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer;">გაგზავნა</button>
     </div>
 </div>
 
 <script>
-    // --- SUPABASE დაყენება ---
     const S_URL = 'https://ftfciebnywbondaiarnc.supabase.co';
     const S_KEY = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI';
     const sb = supabase.createClient(S_URL, S_KEY);
 
-    let curRoom = 1;
-    let myProfile = null;
-    let selectedUID = null;
+    let currentRoom = 1;
+    let myUser = null;
 
-    // --- ფუნქციები ---
-    async function init() {
-        const { data: { user } } = await sb.auth.getUser();
-        if(!user) { alert("გთხოვთ გაიაროთ ავტორიზაცია!"); return; }
-
-        // ჩემი პროფილის წამოღება
-        let { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single();
-        myProfile = p;
-
-        document.getElementById('my-avatar').src = p.avatar_url || 'https://via.placeholder.com/60';
-        document.getElementById('my-nick').innerText = p.username;
-
-        genRooms();
-        loadMsgs();
-        loadUsers();
-        loadEmojis();
-        checkNewPrivates();
-        hearts();
-
-        // Realtime მოსმენა
-        sb.channel('updates').on('postgres_changes', {event:'*', schema:'public', table:'messages'}, () => loadMsgs()).subscribe();
-        sb.channel('users').on('postgres_changes', {event:'*', schema:'public', table:'profiles'}, () => loadUsers()).subscribe();
+    // --- მენიუების მართვა ---
+    function toggleMenu(id) {
+        const menus = document.querySelectorAll('.dropdown-panel');
+        menus.forEach(m => {
+            if(m.id === id) {
+                m.style.display = (m.style.display === 'block' ? 'none' : 'block');
+            } else {
+                m.style.display = 'none';
+            }
+        });
     }
 
-    function genRooms() {
-        const c = document.getElementById('room-list');
+    // --- თემის შეცვლა ---
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+    }
+
+    // --- ინიციალიზაცია ---
+    async function init() {
+        const { data: { user } } = await sb.auth.getUser();
+        if(!user) return;
+        
+        let { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single();
+        myUser = p;
+        document.getElementById('my-avatar').src = p.avatar_url || 'https://via.placeholder.com/80';
+        document.getElementById('my-name').innerText = p.username;
+
+        createRooms();
+        loadMessages();
+        loadUsers();
+        hearts();
+        
+        // Realtime მოსმენა
+        sb.channel('any').on('postgres_changes', {event:'*', schema:'public', table:'messages'}, () => loadMessages()).subscribe();
+    }
+
+    function createRooms() {
+        const list = document.getElementById('room-list');
         for(let i=1; i<=12; i++) {
-            let d = document.createElement('div');
-            d.className = 'u-item'; d.innerHTML = `🏠 ოთახი #${i}`;
-            d.onclick = () => { curRoom = i; document.getElementById('room-name').innerText = `ოთახი #${i}`; loadMsgs(); toggleSide('rooms-side'); };
-            c.appendChild(d);
+            const btn = document.createElement('div');
+            btn.style = "padding: 15px; background: var(--primary); color: white; border-radius: 10px; text-align: center; cursor: pointer;";
+            btn.innerText = "ოთახი " + i;
+            btn.onclick = () => { currentRoom = i; loadMessages(); toggleMenu('rooms-menu'); };
+            list.appendChild(btn);
         }
     }
 
-    async function loadMsgs() {
-        const { data } = await sb.from('messages').select('*, profiles(username, avatar_url, role)').eq('room_id', curRoom).order('created_at', {ascending:true});
-        const cont = document.getElementById('msg-container');
-        cont.innerHTML = '';
+    async function loadMessages() {
+        const { data } = await sb.from('messages').select('*, profiles(username, avatar_url, role)').eq('room_id', currentRoom).order('created_at', {ascending: true});
+        const box = document.getElementById('messages-box');
+        box.innerHTML = '';
         data.forEach(m => {
-            const isMe = m.user_id === myProfile.id;
-            const time = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            const isAdmin = (myProfile.role === 'owner' || myProfile.role === 'admin');
-
-            cont.innerHTML += `
-                <div class="bubble" style="${isMe ? 'align-self: flex-end; background:rgba(128,0,32,0.2); flex-direction: row-reverse;' : ''}">
+            const isMe = m.user_id === myUser.id;
+            box.innerHTML += `
+                <div class="msg ${isMe ? 'my-msg' : ''}">
                     <img src="${m.profiles.avatar_url || 'https://via.placeholder.com/35'}" class="avatar">
-                    <div style="${isMe ? 'text-align: right;' : ''}">
-                        <small><b>${m.profiles.username}</b> <span class="badge ${m.profiles.role === 'owner' ? 'b-owner' : 'b-admin'}">${m.profiles.role}</span></small>
-                        <div style="word-break: break-all;">${m.content}</div>
-                        <small style="font-size:9px; opacity:0.5;">${time} ${isAdmin ? `<span style="color:red; cursor:pointer; margin-left:10px;" onclick="deleteMsg('${m.id}')">🗑️</span>` : ''}</small>
+                    <div>
+                        <small><b>${m.profiles.username}</b></small>
+                        <div>${m.content}</div>
                     </div>
                 </div>`;
         });
-        cont.scrollTop = cont.scrollHeight;
+        box.scrollTop = box.scrollHeight;
     }
 
     async function send() {
-        const i = document.getElementById('mInput');
-        if(!i.value.trim()) return;
-        await sb.from('messages').insert([{ content: i.value, user_id: myProfile.id, room_id: curRoom }]);
-        i.value = '';
+        const inp = document.getElementById('chat-input');
+        if(!inp.value) return;
+        await sb.from('messages').insert([{ content: inp.value, user_id: myUser.id, room_id: currentRoom }]);
+        inp.value = '';
     }
-
-    async function deleteMsg(id) {
-        if(confirm("წავშალოთ ეს სმს?")) await sb.from('messages').delete().eq('id', id);
-    }
-
-    async function loadUsers() {
-        const { data } = await sb.from('profiles').select('*');
-        const lists = { owner: 'l-owners', admin: 'l-admins', member: 'l-members' };
-        Object.values(lists).forEach(id => document.getElementById(id).innerHTML = '');
-        
-        data.forEach(u => {
-            const div = document.createElement('div');
-            div.className = 'u-item';
-            div.innerHTML = `<img src="${u.avatar_url || 'https://via.placeholder.com/30'}" class="avatar" style="width:25px; height:25px;"> ${u.username}`;
-            div.onclick = (e) => showPopup(e, u);
-            document.getElementById(lists[u.role] || 'l-members').appendChild(div);
-        });
-    }
-
-    function showPopup(e, u) {
-        selectedUID = u.id;
-        const p = document.getElementById('userPopup');
-        document.getElementById('pop-img').src = u.avatar_url || 'https://via.placeholder.com/65';
-        document.getElementById('pop-name').innerText = u.username;
-        document.getElementById('pop-status').innerText = u.status || '...';
-        
-        document.getElementById('admin-zone').style.display = (myProfile.role === 'owner' || myProfile.role === 'admin') ? 'block' : 'none';
-        
-        p.style.display = 'block';
-        p.style.left = Math.min(e.pageX, window.innerWidth - 220) + 'px';
-        p.style.top = Math.min(e.pageY, window.innerHeight - 300) + 'px';
-    }
-
-    async function loadEmojis() {
-        const { data } = await sb.from('emojis').select('*');
-        const p = document.getElementById('emoji-panel');
-        p.innerHTML = '';
-        data?.forEach(em => {
-            const img = document.createElement('img');
-            img.src = em.url; img.style = "width:35px; height:35px; cursor:pointer; object-fit:contain;";
-            img.onclick = () => { document.getElementById('mInput').value += ` ${em.url} `; p.style.display='none'; };
-            p.appendChild(img);
-        });
-    }
-
-    async function banUserPrompt() {
-        const reason = prompt("მიუთითეთ დაბლოკვის მიზეზი:");
-        if(reason) {
-            await sb.from('profiles').update({ is_blocked: true, block_reason: reason }).eq('id', selectedUID);
-            alert("მომხმარებელი დაიბლოკა!");
-        }
-    }
-
-    async function checkNewPrivates() {
-        const { count } = await sb.from('direct_messages').select('*', { count: 'exact', head: true }).eq('to_user', myProfile.id).eq('is_read', false);
-        const dot = document.getElementById('msg-dot');
-        if(count > 0) { dot.innerText = count; dot.style.display = 'block'; }
-    }
-
-    function toggleSide(id) { document.getElementById(id).classList.toggle('active'); }
-    function toggleTheme() { document.body.classList.toggle('dark-mode'); }
-    function toggleEmojis() { const p = document.getElementById('emoji-panel'); p.style.display = p.style.display === 'grid' ? 'none' : 'grid'; }
 
     function hearts() {
         setInterval(() => {
             const h = document.createElement('div'); h.className = 'heart'; h.innerHTML = '❤';
-            h.style.left = Math.random() * 100 + 'vw'; h.style.animationDuration = (Math.random() * 5 + 5) + 's';
-            document.getElementById('hearts').appendChild(h);
-            setTimeout(() => h.remove(), 10000);
-        }, 1500);
+            h.style.left = Math.random() * 100 + 'vw'; h.style.animationDuration = (Math.random() * 4 + 6) + 's';
+            document.getElementById('hearts-bg').appendChild(h);
+            setTimeout(() => h.remove(), 8000);
+        }, 1000);
     }
-
-    window.onclick = (e) => { if(!e.target.closest('#userPopup') && !e.target.closest('.u-item')) document.getElementById('userPopup').style.display='none'; };
 
     init();
 </script>
+
 </body>
 </html>
