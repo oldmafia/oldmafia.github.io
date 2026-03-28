@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLD MAFIA CHAT</title>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:sans-serif;
+  background:#0b0000;
+  color:white;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TOP */
+.topbar{
+  background:black;
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+  box-shadow:0 0 10px red;
+}
+
+/* ROOMS */
+.sidebar{
+  position:fixed;
+  left:-250px;
+  top:0;
+  width:250px;
+  height:100%;
+  background:#070000;
+  transition:0.3s;
+  padding-top:60px;
+}
+.sidebar.active{ left:0; }
+
+.room{
+  padding:12px;
+  border-bottom:1px solid #200;
+  cursor:pointer;
+}
+.room:hover{ background:#300; }
+
+/* CHAT */
+.chat{
+  flex:1;
+  overflow-y:auto;
+  padding:10px;
+}
+
+.message{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.avatar{
+  width:35px;
+  height:35px;
+  border-radius:50%;
+  background:red;
+}
+
+.msg{
+  background:#111;
+  padding:8px;
+  border-radius:10px;
+  border:1px solid red;
+}
+
+.nick{
+  color:red;
+  font-weight:bold;
+  font-size:13px;
+}
+
+/* INPUT */
+.input{
+  display:flex;
+  padding:10px;
+  background:black;
+}
+.input input{
+  flex:1;
+  padding:10px;
+  border:none;
+  background:#111;
+  color:white;
+}
+.input button{
+  background:red;
+  border:none;
+  padding:10px;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div onclick="toggleMenu()">☰</div>
+  <div id="roomName">☕ კაფე-ბარი</div>
+  <div onclick="logout()">🚪</div>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="room">☕ კაფე-ბარი</div>
+  <div class="room">💎 ვიპ</div>
+  <div class="room">🕵️ გამოძიება</div>
+  <div class="room">🔐 შიფროგრამა</div>
+  <div class="room">😂 იუმორი</div>
+</div>
+
+<div id="chat" class="chat"></div>
+
+<div class="input">
+  <input id="msg" placeholder="დაწერე...">
+  <button onclick="send()">გაგზავნა</button>
+</div>
+
+<script>
+
+// ERROR DEBUG
+window.onerror = e => alert("ERROR: " + e)
+
+// SUPABASE
+const SUPABASE_URL = "https://ftfciebnywbondaiarnc.supabase.co"
+const SUPABASE_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
+const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// USER
+let nick = localStorage.getItem("user_nick") || "სტუმარი"
+let currentRoom = "☕ კაფე-ბარი"
+
+// MENU
+function toggleMenu(){
+  document.getElementById("sidebar").classList.toggle("active")
+}
+
+// LOGOUT
+function logout(){
+  localStorage.clear()
+  window.location.href = "index.html"
+}
+
+// ROOMS CLICK
+document.querySelectorAll(".room").forEach(r=>{
+  r.onclick = ()=>{
+    currentRoom = r.textContent.trim()
+    document.getElementById("roomName").innerText = currentRoom
+    document.getElementById("sidebar").classList.remove("active")
+    load()
+  }
+})
+
+// RENDER MESSAGE
+function render(user,text,time){
+  let chat = document.getElementById("chat")
+
+  chat.innerHTML += `
+  <div class="message">
+    <div class="avatar"></div>
+    <div class="msg">
+      <div class="nick">${user} <span style="font-size:10px">${time}</span></div>
+      <div>${text}</div>
+    </div>
+  </div>
+  `
+
+  chat.scrollTop = chat.scrollHeight
+}
+
+// LOAD MESSAGES
+async function load(){
+  let {data} = await supa
+    .from("messages")
+    .select("*")
+    .eq("room_nan", currentRoom)
+    .order("created_at", {ascending:true})
+
+  document.getElementById("chat").innerHTML = ""
+
+  data?.forEach(m=>{
+    let t = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+    render(m.user_nam || "უცნობი", m.text, t)
+  })
+}
+
+// SEND
+async function send(){
+  let input = document.getElementById("msg")
+
+  if(!input.value) return
+
+  await supa.from("messages").insert([{
+    user_nam: nick,
+    text: input.value,
+    room_nan: currentRoom
+  }])
+
+  input.value = ""
+}
+
+// REALTIME
+supa.channel("chat")
+.on("postgres_changes",
+{event:"INSERT", schema:"public", table:"messages"},
+payload=>{
+  if(payload.new.room_nan === currentRoom){
+    let t = new Date(payload.new.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+    render(payload.new.user_nam, payload.new.text, t)
+  }
+})
+.subscribe()
+
+// ENTER SEND
+document.getElementById("msg").addEventListener("keypress", e=>{
+  if(e.key==="Enter") send()
+})
+
+// INIT
+load()
+
+</script>
+
+</body>
+</html>
