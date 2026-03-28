@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>სულის თბილეთი - ჩატი</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* მცურავი გულები */
+        .heart-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .floating-heart {
+            position: absolute;
+            bottom: -50px;
+            font-size: 24px;
+            color: #800020;
+            opacity: 0.6;
+            animation: floatUp 6s linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* დღის რეჟიმი */
+        body.day-mode {
+            background: linear-gradient(135deg, #fef5e8 0%, #fae6d4 100%);
+        }
+
+        body.day-mode .sidebar {
+            background: rgba(255, 245, 235, 0.95);
+            border-right: 1px solid #d4a5a5;
+        }
+
+        body.day-mode .message {
+            background: #fff5ea;
+            color: #4a2a2a;
+        }
+
+        /* ღამის რეჟიმი */
+        body.night-mode {
+            background: linear-gradient(135deg, #1a0f0a 0%, #2a1810 100%);
+        }
+
+        body.night-mode .sidebar {
+            background: rgba(20, 12, 8, 0.95);
+            border-right: 1px solid #5a2a2a;
+            color: #e6d5c5;
+        }
+
+        body.night-mode .message {
+            background: #2a1e18;
+            color: #f0e0d0;
+        }
+
+        body.night-mode .room-item {
+            color: #e6d5c5;
+        }
+
+        body.night-mode .room-item:hover {
+            background: #3a2a24;
+        }
+
+        body.night-mode .room-item.active {
+            background: #800020;
+        }
+
+        /* მთავარი განლაგება */
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* საიდბარი */
+        .sidebar {
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        /* პროფილი */
+        .profile {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(128, 0, 32, 0.3);
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 3px solid #800020;
+        }
+
+        .nickname {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status {
+            font-size: 12px;
+            opacity: 0.7;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        /* ოთახები */
+        .rooms {
+            padding: 15px;
+            flex: 1;
+        }
+
+        .rooms h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .room-item {
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .room-item.active {
+            background: #800020;
+            color: white;
+        }
+
+        /* მომხმარებლები */
+        .users {
+            padding: 15px;
+            border-top: 1px solid rgba(128, 0, 32, 0.3);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .users h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .user-group {
+            margin-bottom: 12px;
+        }
+
+        .user-group-title {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            opacity: 0.7;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .user-item:hover {
+            background: rgba(128, 0, 32, 0.2);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .user-name {
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            position: absolute;
+            right: 10px;
+        }
+
+        .search-users {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(128, 0, 32, 0.3);
+            background: transparent;
+        }
+
+        /* ჩატის არეალი */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            align-self: flex-start;
+            max-width: 70%;
+            margin: 5px 0;
+            padding: 10px 15px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-sender {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-sender img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .message-time {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .admin-actions {
+            display: none;
+            margin-left: 10px;
+        }
+
+        .user-item:hover .admin-actions {
+            display: inline-flex;
+        }
+
+        /* შეტყობინების ველი */
+        .input-area {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+        }
+
+        .emoji-btn, .send-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        /* ემოჯი პანელი */
+        .emoji-panel {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: #2a1e18;
+            border-radius: 15px;
+            padding: 15px;
+            display: none;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .emoji-panel.active {
+            display: grid;
+        }
+
+        .emoji-item {
+            font-size: 24px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* პირადი ჩატი */
+        .private-chat {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 320px;
+            height: 450px;
+            background: #2a1e18;
+            border-radius: 15px;
+            display: none;
+            flex-direction: column;
+            z-index: 200;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+        }
+
+        .private-chat.active {
+            display: flex;
+        }
+
+        .private-header {
+            padding: 10px;
+            background: #800020;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .private-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .private-input {
+            display: flex;
+            padding: 10px;
+            gap: 5px;
+        }
+
+        .private-input input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 20px;
+            border: none;
+        }
+
+        .unread-badge {
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100%;
+                z-index: 1000;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body class="day-mode">
+    <div class="heart-container" id="heartContainer"></div>
+
+    <div class="app">
+        <div class="sidebar" id="sidebar">
+            <div class="profile">
+                <img class="avatar" id="avatar" src="https://via.placeholder.com/80/800020/fff?text=User" onclick="changeAvatar()">
+                <div class="nickname" id="nickname">მომხმარებელი</div>
+                <div class="status" id="status" onclick="changeStatus()">აქტიური</div>
+            </div>
+
+            <div class="rooms">
+                <h3><i class="fas fa-comments"></i> ოთახები</h3>
+                <div id="roomsList"></div>
+            </div>
+
+            <div class="users">
+                <h3><i class="fas fa-users"></i> მომხმარებლები</h3>
+                <input type="text" class="search-users" id="searchUsers" placeholder="ძებნა...">
+                <div id="usersList"></div>
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="chat-header">
+                <button class="theme-btn" onclick="toggleSidebar()" style="font-size: 20px;">☰</button>
+                <h3 id="currentRoom">ოთახი 1</h3>
+                <button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
+            </div>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="input-area">
+                <button class="emoji-btn" onclick="toggleEmojiPanel()"><i class="fas fa-smile"></i></button>
+                <input type="text" id="messageInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="emoji-panel" id="emojiPanel"></div>
+
+    <div class="private-chat" id="privateChat">
+        <div class="private-header">
+            <span id="privateChatName"></span>
+            <button onclick="closePrivateChat()" style="background:none;border:none;color:white;">✕</button>
+        </div>
+        <div class="private-messages" id="privateMessages"></div>
+        <div class="private-input">
+            <input type="text" id="privateInput" placeholder="შეტყობინება..." onkeypress="if(event.key==='Enter') sendPrivateMessage()">
+            <button onclick="sendPrivateMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './supabase-config.js';
+
+        // ============ მომხმარებლის მონაცემები ============
+        let currentUser = {
+            id: localStorage.getItem('userId') || 'user_' + Date.now(),
+            nickname: localStorage.getItem('nickname') || 'მომხმარებელი',
+            avatar: localStorage.getItem('avatar') || 'https://via.placeholder.com/80/800020/fff?text=User',
+            status: localStorage.getItem('status') || 'აქტიური',
+            role: localStorage.getItem('role') || 'member'
+        };
+
+        let currentRoom = 1;
+        let allUsers = [];
+        let customEmojis = ['😀', '😂', '😍', '🥰', '😎', '🔥', '❤️', '💔', '🎉', '👍', '👎'];
+        let privateChats = {};
+        let activePrivateChat = null;
+
+        // შეინახე მომხმარებელი
+        function saveUser() {
+            localStorage.setItem('userId', currentUser.id);
+            localStorage.setItem('nickname', currentUser.nickname);
+            localStorage.setItem('avatar', currentUser.avatar);
+            localStorage.setItem('status', currentUser.status);
+            localStorage.setItem('role', currentUser.role);
+        }
+
+        // მომხმარებლის დამატება Supabase-ში
+        async function addUserToDB() {
+            const { error } = await supabase
+                .from('users')
+                .upsert({
+                    id: currentUser.id,
+                    nickname: currentUser.nickname,
+                    avatar: currentUser.avatar,
+                    status: currentUser.status,
+                    role: currentUser.role,
+                    online: true,
+                    last_seen: new Date()
+                });
+            if (error) console.error('Error saving user:', error);
+        }
+
+        // მომხმარებლების ჩატვირთვა
+        async function loadUsers() {
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .order('role', { ascending: false });
+            
+            if (error) {
+                console.error('Error loading users:', error);
+                return;
+            }
+            
+            allUsers = data;
+            renderUsers();
+        }
+
+        // მომხმარებლების ჩვენება
+        function renderUsers() {
+            const search = document.getElementById('searchUsers').value.toLowerCase();
+            const founders = allUsers.filter(u => u.role === 'founder' && u.nickname.toLowerCase().includes(search));
+            const admins = allUsers.filter(u => u.role === 'admin' && u.nickname.toLowerCase().includes(search));
+            const members = allUsers.filter(u => u.role === 'member' && u.nickname.toLowerCase().includes(search));
+            
+            const container = document.getElementById('usersList');
+            container.innerHTML = `
+                ${founders.length ? `<div class="user-group"><div class="user-group-title">👑 დამფუძვნებლები</div>${founders.map(u => renderUserItem(u)).join('')}</div>` : ''}
+                ${admins.length ? `<div class="user-group"><div class="user-group-title">⚡ ადმინები</div>${admins.map(u => renderUserItem(u)).join('')}</div>` : ''}
+                ${members.length ? `<div class="user-group"><div class="user-group-title">👥 წევრები</div>${members.map(u => renderUserItem(u)).join('')}</div>` : ''}
+            `;
+        }
+
+        function renderUserItem(user) {
+            return `
+                <div class="user-item" onclick="window.openPrivateChat('${user.id}', '${user.nickname}')">
+                    <img class="user-avatar" src="${user.avatar}" onerror="this.src='https://via.placeholder.com/32/800020/fff'">
+                    <div class="user-name">${user.nickname}</div>
+                    <div class="online-dot" style="background: ${user.online ? '#4caf50' : '#999'}"></div>
+                    ${currentUser.role === 'founder' && user.id !== currentUser.id ? `
+                        <div class="admin-actions">
+                            <button onclick="event.stopPropagation(); assignRole('${user.id}', 'admin')" title="ადმინად დანიშვნა">👑</button>
+                            <button onclick="event.stopPropagation(); removeRole('${user.id}')" title="როლის ჩამორთმევა">🔻</button>
+                            <button onclick="event.stopPropagation(); blockUser('${user.id}')" title="დაბლოკვა">🚫</button>
+                        </div>
+                    ` : ''}
+                    ${currentUser.role === 'admin' && user.role !== 'founder' && user.id !== currentUser.id ? `
+                        <div class="admin-actions">
+                            <button onclick="event.stopPropagation(); blockUser('${user.id}')" title="დაბლოკვა">🚫</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // როლების მართვა
+        window.assignRole = async function(userId, role) {
+            if (currentUser.role !== 'founder') return;
+            const { error } = await supabase.from('users').update({ role }).eq('id', userId);
+            if (!error) loadUsers();
+        };
+
+        window.removeRole = async function(userId) {
+            if (currentUser.role !== 'founder') return;
+            const { error } = await supabase.from('users').update({ role: 'member' }).eq('id', userId);
+            if (!error) loadUsers();
+        };
+
+        window.blockUser = function(userId) {
+            const reason = prompt('დაბლოკვის მიზეზი:');
+            if (reason) alert(`მომხმარებელი დაბლოკილია. მიზეზი: ${reason}`);
+        };
+
+        // ოთახები
+        const rooms = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        
+        function renderRooms() {
+            const container = document.getElementById('roomsList');
+            container.innerHTML = rooms.map(room => `
+                <div class="room-item ${room === currentRoom ? 'active' : ''}" onclick="switchRoom(${room})">
+                    <span>ოთახი ${room}</span>
+                </div>
+            `).join('');
+        }
+
+        window.switchRoom = function(roomId) {
+            currentRoom = roomId;
+            renderRooms();
+            document.getElementById('currentRoom').textContent = `ოთახი ${roomId}`;
+            loadMessages();
+        };
+
+        // შეტყობინებების ჩატვირთვა
+        async function loadMessages() {
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('room_id', currentRoom)
+                .order('created_at', { ascending: true });
+            
+            if (error) {
+                console.error('Error loading messages:', error);
+                return;
+            }
+            
+            renderMessages(data);
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages');
+            container.innerHTML = messages.map(msg => `
+                <div class="message">
+                    <div class="message-sender">
+                        <img src="${msg.avatar}" onerror="this.src='https://via.placeholder.com/24/800020/fff'">
+                        <span>${msg.nickname}</span>
+                        ${(currentUser.role === 'admin' || currentUser.role === 'founder') ? `
+                            <button onclick="deleteMessage('${msg.id}')" style="background:none;border:none;cursor:pointer;">🗑️</button>
+                        ` : ''}
+                    </div>
+                    <div>${escapeHtml(msg.text)}</div>
+                    <div class="message-time">${new Date(msg.created_at).toLocaleTimeString()}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.deleteMessage = async function(messageId) {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'founder') return;
+            const { error } = await supabase.from('messages').delete().eq('id', messageId);
+            if (!error) loadMessages();
+        };
+
+        window.sendMessage = async function() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const { error } = await supabase.from('messages').insert({
+                room_id: currentRoom,
+                user_id: currentUser.id,
+                nickname: currentUser.nickname,
+                avatar: currentUser.avatar,
+                text: text,
+                created_at: new Date()
+            });
+            
+            if (!error) {
+                input.value = '';
+                loadMessages();
+            }
+        };
+
+        // პროფილი
+        window.changeAvatar = function() {
+            const url = prompt('ავატარის URL:', currentUser.avatar);
+            if (url) {
+                currentUser.avatar = url;
+                document.getElementById('avatar').src = url;
+                saveUser();
+                addUserToDB();
+                updateProfileInMessages();
+            }
+        };
+
+        window.changeStatus = function() {
+            const status = prompt('სტატუსი:', currentUser.status);
+            if (status) {
+                currentUser.status = status;
+                document.getElementById('status').textContent = status;
+                saveUser();
+                addUserToDB();
+            }
+        };
+
+        async function updateProfileInMessages() {
+            const { error } = await supabase
+                .from('messages')
+                .update({ nickname: currentUser.nickname, avatar: currentUser.avatar })
+                .eq('user_id', currentUser.id);
+        }
+
+        // ემოჯები
+        function renderEmojiPanel() {
+            const panel = document.getElementById('emojiPanel');
+            panel.innerHTML = customEmojis.map(emoji => `
+                <div class="emoji-item" onclick="addEmoji('${emoji}')">${emoji}</div>
+            `).join('');
+            
+            if (currentUser.role === 'admin' || currentUser.role === 'founder') {
+                panel.innerHTML += `<div class="emoji-item" onclick="addCustomEmoji()">➕</div>`;
+            }
+        }
+
+        window.toggleEmojiPanel = function() {
+            document.getElementById('emojiPanel').classList.toggle('active');
+        };
+
+        window.addEmoji = function(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+            input.focus();
+            document.getElementById('emojiPanel').classList.remove('active');
+        };
+
+        window.addCustomEmoji = function() {
+            const newEmoji = prompt('ახალი ემოჯი:');
+            if (newEmoji && (currentUser.role === 'admin' || currentUser.role === 'founder')) {
+                customEmojis.push(newEmoji);
+                renderEmojiPanel();
+            }
+        };
+
+        // პირადი ჩატი
+        window.openPrivateChat = function(userId, userName) {
+            if (!privateChats[userId]) {
+                privateChats[userId] = { userId, userName, messages: [], unread: 0 };
+            }
+            activePrivateChat = userId;
+            document.getElementById('privateChatName').textContent = userName;
+            renderPrivateMessages();
+            document.getElementById('privateChat').classList.add('active');
+        };
+
+        function renderPrivateMessages() {
+            if (!activePrivateChat) return;
+            const chat = privateChats[activePrivateChat];
+            const container = document.getElementById('privateMessages');
+            container.innerHTML = (chat.messages || []).map(msg => `
+                <div class="message" style="max-width:90%;margin:5px 0;padding:8px;background:#3a2a24;">
+                    <div><strong>${msg.senderName}</strong></div>
+                    <div>${escapeHtml(msg.text)}</div>
+                    <div style="font-size:10px;">${msg.time}</div>
+                </div>
+            `).join('');
+        }
+
+        window.sendPrivateMessage = function() {
+            if (!activePrivateChat) return;
+            const input = document.getElementById('privateInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            if (!privateChats[activePrivateChat].messages) privateChats[activePrivateChat].messages = [];
+            privateChats[activePrivateChat].messages.push({
+                senderId: currentUser.id,
+                senderName: currentUser.nickname,
+                text: text,
+                time: new Date().toLocaleTimeString()
+            });
+            
+            input.value = '';
+            renderPrivateMessages();
+        };
+
+        window.closePrivateChat = function() {
+            document.getElementById('privateChat').classList.remove('active');
+            activePrivateChat = null;
+        };
+
+        // თემა
+        window.toggleTheme = function() {
+            const body = document.body;
+            if (body.classList.contains('day-mode')) {
+                body.classList.remove('day-mode');
+                body.classList.add('night-mode');
+            } else {
+                body.classList.remove('night-mode');
+                body.classList.add('day-mode');
+            }
+        };
+
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('open');
+        };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // გულების ანიმაცია
+        function startHearts() {
+            setInterval(() => {
+                const heart = document.createElement('div');
+                heart.className = 'floating-heart';
+                heart.innerHTML = '❤️';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDuration = 4 + Math.random() * 5 + 's';
+                heart.style.fontSize = 20 + Math.random() * 40 + 'px';
+                document.getElementById('heartContainer').appendChild(heart);
+                setTimeout(() => heart.remove(), 8000);
+            }, 800);
+        }
+
+        // ინიციალიზაცია
+        async function init() {
+            document.getElementById('avatar').src = currentUser.avatar;
+            document.getElementById('nickname').textContent = currentUser.nickname;
+            document.getElementById('status').textContent = currentUser.status;
+            
+            await addUserToDB();
+            await loadUsers();
+            renderRooms();
+            renderEmojiPanel();
+            await loadMessages();
+            startHearts();
+            
+            setInterval(async () => {
+                await supabase.from('users').update({ online: true, last_seen: new Date() }).eq('id', currentUser.id);
+                await loadUsers();
+            }, 30000);
+        }
+
+        init();
+        
+        document.getElementById('searchUsers').addEventListener('input', () => renderUsers());
+    </script>
+</body>
+</html>
