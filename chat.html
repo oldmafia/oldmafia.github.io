@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatApp - მარტივი ვერსია</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ზედა ბარი */
+        .header {
+            background: #2a2a2a;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #800020;
+        }
+
+        .logo {
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            background: #3a3a3a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .theme-btn {
+            background: #800020;
+        }
+
+        /* მთავარი კონტეინერი */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* მარცხენა პანელი */
+        .sidebar {
+            width: 250px;
+            background: #222;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .section {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .section-title {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .room-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .room {
+            background: #333;
+            padding: 8px;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .room.active {
+            background: #800020;
+        }
+
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px;
+            background: #333;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #b85c1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .user-name {
+            color: #fff;
+            font-size: 13px;
+        }
+
+        /* ჩატის არე */
+        .chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;
+        }
+
+        .chat-header {
+            padding: 12px;
+            background: #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .room-name {
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .profile-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #b85c1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .profile-name {
+            color: #fff;
+            font-size: 13px;
+        }
+
+        /* შეტყობინებები */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        .message.my {
+            align-self: flex-end;
+            background: #800020;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+
+        .message-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #b85c1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .message-name {
+            font-weight: bold;
+        }
+
+        .message-time {
+            font-size: 9px;
+            opacity: 0.6;
+        }
+
+        .message-text {
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        /* შეყვანის ველი */
+        .input-area {
+            padding: 12px;
+            background: #2a2a2a;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #333;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 25px;
+            border: none;
+            outline: none;
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .input-area button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: #800020;
+            color: #fff;
+        }
+
+        /* მოდალი */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 16px;
+            width: 300px;
+        }
+
+        .modal-content input, .modal-content textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">💗 ChatApp</div>
+        <div class="header-buttons">
+            <button class="header-btn" id="profileBtn">👤</button>
+            <button class="header-btn" id="friendsBtn">👥</button>
+            <button class="header-btn theme-btn" id="themeBtn">🌙</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="sidebar">
+            <div class="section">
+                <div class="section-title">📌 ოთახები (12)</div>
+                <div class="room-list" id="roomList"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">👥 მეგობრები</div>
+                <div class="user-list" id="friendList"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">🟢 ონლაინ</div>
+                <div class="user-list" id="onlineList"></div>
+            </div>
+        </div>
+
+        <div class="chat">
+            <div class="chat-header">
+                <div class="room-name" id="roomName">ოთახი 1</div>
+                <div class="profile" id="profileClick">
+                    <div>
+                        <div class="profile-name" id="userName">მომხმარებელი</div>
+                    </div>
+                    <div class="profile-img" id="userAvatar">👤</div>
+                </div>
+            </div>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="დაწერე შეტყობინება...">
+                <button id="sendBtn">📤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- პროფილის მოდალი -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <h3 style="color:#fff;">💗 პროფილი</h3>
+            <input type="text" id="editName" placeholder="ნიკნეიმი">
+            <textarea id="editStatus" rows="2" placeholder="სტატუსი"></textarea>
+            <div class="modal-buttons">
+                <button id="saveProfile" style="background:#800020; color:#fff;">შენახვა</button>
+                <button id="closeProfile">დახურვა</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- მეგობრების მოდალი -->
+    <div class="modal" id="friendsModal">
+        <div class="modal-content">
+            <h3 style="color:#fff;">👥 მეგობრები</h3>
+            <div id="friendsList" style="max-height:300px; overflow-y:auto;"></div>
+            <button id="closeFriends" style="margin-top:10px; padding:8px;">დახურვა</button>
+        </div>
+    </div>
+
+    <script>
+        // მომხმარებელი
+        let currentUser = {
+            id: 'user1',
+            name: 'მომხმარებელი',
+            status: '💗 აქტიური',
+            avatar: '👤',
+            friends: []
+        };
+
+        // სხვა მომხმარებლები
+        let users = [
+            { id: 'user2', name: 'ანა', status: '😊', avatar: '👩', friends: [] },
+            { id: 'user3', name: 'ნიკა', status: '💪', avatar: '👨', friends: [] },
+            { id: 'user4', name: 'სოფო', status: '🌸', avatar: '👧', friends: [] }
+        ];
+
+        // ოთახები
+        let rooms = [];
+        for (let i = 1; i <= 12; i++) {
+            rooms.push({
+                id: i,
+                name: `ოთახი ${i}`,
+                messages: JSON.parse(localStorage.getItem(`room_${i}`)) || []
+            });
+        }
+
+        let currentRoom = 0;
+
+        // შეტყობინების გაგზავნა
+        function sendMessage() {
+            let input = document.getElementById('messageInput');
+            let text = input.value.trim();
+            if (!text) return;
+
+            let msg = {
+                id: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                avatar: currentUser.avatar,
+                text: text,
+                time: new Date().toLocaleTimeString()
+            };
+
+            rooms[currentRoom].messages.push(msg);
+            localStorage.setItem(`room_${rooms[currentRoom].id}`, JSON.stringify(rooms[currentRoom].messages));
+            input.value = '';
+            renderMessages();
+        }
+
+        // შეტყობინებების ჩვენება
+        function renderMessages() {
+            let container = document.getElementById('messages');
+            let messages = rooms[currentRoom].messages;
+            
+            container.innerHTML = messages.map(msg => `
+                <div class="message ${msg.userId === currentUser.id ? 'my' : ''}">
+                    <div class="message-header">
+                        <div class="message-avatar">${msg.avatar}</div>
+                        <span class="message-name">${msg.userName}</span>
+                        <span class="message-time">${msg.time}</span>
+                    </div>
+                    <div class="message-text">${msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                </div>
+            `).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ოთახების ჩვენება
+        function renderRooms() {
+            let container = document.getElementById('roomList');
+            container.innerHTML = rooms.map((room, i) => `
+                <div class="room ${currentRoom === i ? 'active' : ''}" onclick="changeRoom(${i})">
+                    📌 ${room.name}
+                </div>
+            `).join('');
+        }
+
+        // ოთახის შეცვლა
+        window.changeRoom = function(index) {
+            currentRoom = index;
+            document.getElementById('roomName').innerHTML = rooms[currentRoom].name;
+            renderRooms();
+            renderMessages();
+        };
+
+        // მეგობრების ჩვენება
+        function renderFriends() {
+            let friends = users.filter(u => currentUser.friends.includes(u.id));
+            let container = document.getElementById('friendList');
+            container.innerHTML = friends.map(user => `
+                <div class="user" onclick="chatWithUser('${user.id}')">
+                    <div class="user-avatar">${user.avatar}</div>
+                    <div class="user-name">${user.name}</div>
+                </div>
+            `).join('');
+            
+            if (friends.length === 0) {
+                container.innerHTML = '<div style="color:#888; padding:8px;">💗 არ გყავს მეგობრები</div>';
+            }
+        }
+
+        // ონლაინ მომხმარებლები
+        function renderOnline() {
+            let online = users.filter(u => u.id !== currentUser.id);
+            let container = document.getElementById('onlineList');
+            container.innerHTML = online.map(user => `
+                <div class="user" onclick="addFriend('${user.id}')">
+                    <div class="user-avatar">${user.avatar}</div>
+                    <div class="user-name">${user.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // მეგობრის დამატება
+        window.addFriend = function(userId) {
+            if (!currentUser.friends.includes(userId)) {
+                currentUser.friends.push(userId);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                renderFriends();
+                alert('✅ მეგობარი დაემატა!');
+            }
+        };
+
+        // მეგობართან წერა
+        window.chatWithUser = function(userId) {
+            let user = users.find(u => u.id === userId);
+            alert(`💬 პირადი მესიჯი ${user.name} - ეს ფუნქცია მალე დაემატება`);
+        };
+
+        // პროფილის გახსნა
+        function openProfile() {
+            document.getElementById('editName').value = currentUser.name;
+            document.getElementById('editStatus').value = currentUser.status;
+            document.getElementById('profileModal').classList.add('show');
+        }
+
+        // პროფილის შენახვა
+        function saveProfile() {
+            let newName = document.getElementById('editName').value.trim();
+            if (newName) currentUser.name = newName;
+            currentUser.status = document.getElementById('editStatus').value;
+            
+            document.getElementById('userName').innerHTML = currentUser.name;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            renderFriends();
+            renderMessages();
+            document.getElementById('profileModal').classList.remove('show');
+            alert('✅ პროფილი განახლდა!');
+        }
+
+        // მეგობრების მოდალი
+        function openFriendsModal() {
+            let container = document.getElementById('friendsList');
+            let friends = users.filter(u => currentUser.friends.includes(u.id));
+            container.innerHTML = friends.map(user => `
+                <div style="display:flex; align-items:center; gap:10px; padding:8px; background:#333; margin:5px 0; border-radius:8px;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:#b85c1a; display:flex; align-items:center; justify-content:center;">${user.avatar}</div>
+                    <div style="color:#fff;">${user.name}</div>
+                </div>
+            `).join('');
+            
+            if (friends.length === 0) {
+                container.innerHTML = '<div style="color:#888; padding:20px; text-align:center;">💗 არ გყავს მეგობრები</div>';
+            }
+            
+            document.getElementById('friendsModal').classList.add('show');
+        }
+
+        // თემის შეცვლა
+        function toggleTheme() {
+            let body = document.body;
+            let btn = document.getElementById('themeBtn');
+            if (body.style.background === 'rgb(26, 26, 26)' || body.style.background === '') {
+                body.style.background = '#fff5e8';
+                body.style.color = '#333';
+                btn.innerHTML = '🌙';
+            } else {
+                body.style.background = '#1a1a1a';
+                body.style.color = '#fff';
+                btn.innerHTML = '☀️';
+            }
+        }
+
+        // მონაცემების ჩატვირთვა
+        let savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            let u = JSON.parse(savedUser);
+            currentUser.name = u.name;
+            currentUser.status = u.status;
+            currentUser.friends = u.friends || [];
+        }
+
+        // ინიციალიზაცია
+        function init() {
+            document.getElementById('userName').innerHTML = currentUser.name;
+            renderRooms();
+            renderFriends();
+            renderOnline();
+            changeRoom(0);
+            
+            // Event listeners
+            document.getElementById('sendBtn').onclick = sendMessage;
+            document.getElementById('messageInput').onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+            document.getElementById('profileBtn').onclick = openProfile;
+            document.getElementById('profileClick').onclick = openProfile;
+            document.getElementById('friendsBtn').onclick = openFriendsModal;
+            document.getElementById('saveProfile').onclick = saveProfile;
+            document.getElementById('closeProfile').onclick = () => document.getElementById('profileModal').classList.remove('show');
+            document.getElementById('closeFriends').onclick = () => document.getElementById('friendsModal').classList.remove('show');
+            document.getElementById('themeBtn').onclick = toggleTheme;
+        }
+
+        init();
+    </script>
+</body>
+</html>
