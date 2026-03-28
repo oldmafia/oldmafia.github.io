@@ -1,233 +1,158 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OLD MAFIA CHAT</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ჩემი ჩატი</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        :root {
+            --bg-color: #fff5f5; /* კრემისფერი დღის რეჟიმი */
+            --heart-color: rgba(128, 0, 32, 0.4); /* შინდისფერი გულები */
+            --sidebar-bg: #f8e8e8;
+            --chat-bubble: #ffffff;
+            --text-color: #333;
+        }
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+        body.dark-mode {
+            --bg-color: #1a0005; /* შავი "დამპალ" შინდისფერში */
+            --sidebar-bg: #2d000a;
+            --chat-bubble: #4a0011;
+            --text-color: #ffe0e0;
+        }
 
-<style>
-body{
-  margin:0;
-  font-family:sans-serif;
-  background:#0b0000;
-  color:white;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: 0.3s;
+        }
 
-/* TOP */
-.topbar{
-  background:black;
-  padding:10px;
-  display:flex;
-  justify-content:space-between;
-  box-shadow:0 0 10px red;
-}
+        /* ანიმაციური მცურავი გულები */
+        .heart-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-/* ROOMS */
-.sidebar{
-  position:fixed;
-  left:-250px;
-  top:0;
-  width:250px;
-  height:100%;
-  background:#070000;
-  transition:0.3s;
-  padding-top:60px;
-}
-.sidebar.active{ left:0; }
+        .heart {
+            position: absolute;
+            font-size: 50px;
+            color: var(--heart-color);
+            animation: float 10s infinite linear;
+            opacity: 0.6;
+        }
 
-.room{
-  padding:12px;
-  border-bottom:1px solid #200;
-  cursor:pointer;
-}
-.room:hover{ background:#300; }
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+        }
 
-/* CHAT */
-.chat{
-  flex:1;
-  overflow-y:auto;
-  padding:10px;
-}
+        /* მთავარი განლაგება */
+        .rooms-sidebar { width: 200px; background: var(--sidebar-bg); z-index: 1; overflow-y: auto; padding: 10px; border-right: 2px solid var(--heart-color); }
+        .chat-area { flex: 1; display: flex; flex-direction: column; z-index: 1; position: relative; }
+        .users-sidebar { width: 250px; background: var(--sidebar-bg); z-index: 1; padding: 10px; border-left: 2px solid var(--heart-color); }
 
-.message{
-  display:flex;
-  gap:10px;
-  margin-bottom:10px;
-}
+        .room-item { padding: 10px; margin: 5px 0; background: var(--chat-bubble); border-radius: 8px; cursor: pointer; text-align: center; }
+        
+        /* ჩატის მესიჯები */
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 70%; padding: 10px; border-radius: 15px; background: var(--chat-bubble); align-self: flex-start; position: relative; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
+        .msg .time { font-size: 0.7em; opacity: 0.7; margin-left: 10px; }
+        .msg .avatar { width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
 
-.avatar{
-  width:35px;
-  height:35px;
-  border-radius:50%;
-  background:red;
-}
+        /* მომხმარებელთა სია ჯგუფებად */
+        .user-group { margin-bottom: 15px; }
+        .group-title { font-weight: bold; border-bottom: 1px solid var(--heart-color); margin-bottom: 5px; color: #800020; }
+        .user-item { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
+        .status-dot { width: 10px; height: 10px; background: #00ff00; border-radius: 50%; }
 
-.msg{
-  background:#111;
-  padding:8px;
-  border-radius:10px;
-  border:1px solid red;
-}
-
-.nick{
-  color:red;
-  font-weight:bold;
-  font-size:13px;
-}
-
-/* INPUT */
-.input{
-  display:flex;
-  padding:10px;
-  background:black;
-}
-.input input{
-  flex:1;
-  padding:10px;
-  border:none;
-  background:#111;
-  color:white;
-}
-.input button{
-  background:red;
-  border:none;
-  padding:10px;
-  color:white;
-}
-</style>
+        /* კონტროლის ღილაკები */
+        .controls { padding: 15px; display: flex; gap: 10px; background: var(--sidebar-bg); }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 20px; border: none; }
+        button { padding: 10px 20px; border-radius: 20px; border: none; background: #800020; color: white; cursor: pointer; }
+    </style>
 </head>
-
 <body>
 
-<div class="topbar">
-  <div onclick="toggleMenu()">☰</div>
-  <div id="roomName">☕ კაფე-ბარი</div>
-  <div onclick="logout()">🚪</div>
+<div class="heart-bg" id="heartContainer"></div>
+
+<div class="rooms-sidebar">
+    <h3>ოთახები</h3>
+    <div id="roomList"></div>
 </div>
 
-<div class="sidebar" id="sidebar">
-  <div class="room">☕ კაფე-ბარი</div>
-  <div class="room">💎 ვიპ</div>
-  <div class="room">🕵️ გამოძიება</div>
-  <div class="room">🔐 შიფროგრამა</div>
-  <div class="room">😂 იუმორი</div>
+<div class="chat-area">
+    <div style="padding: 10px; background: var(--sidebar-bg); display: flex; justify-content: space-between;">
+        <h2 id="currentRoom">ოთახი 1</h2>
+        <button onclick="toggleTheme()">🌓 რეჟიმი</button>
+    </div>
+    
+    <div id="messages">
+        <div class="msg">
+            <img src="https://via.placeholder.com/30" class="avatar">
+            <strong>ნიკი:</strong> გამარჯობა! <span class="time">12:30</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button>😊</button>
+        <input type="text" placeholder="დაწერე სმს...">
+        <button>გაგზავნა</button>
+    </div>
 </div>
 
-<div id="chat" class="chat"></div>
-
-<div class="input">
-  <input id="msg" placeholder="დაწერე...">
-  <button onclick="send()">გაგზავნა</button>
+<div class="users-sidebar">
+    <div class="user-group">
+        <div class="group-title">დამფუძნებლები</div>
+        <div id="ownersList"></div>
+    </div>
+    <div class="user-group">
+        <div class="group-title">ადმინები</div>
+        <div id="adminsList"></div>
+    </div>
+    <div class="user-group">
+        <div class="group-title">წევრები</div>
+        <div id="membersList"></div>
+    </div>
 </div>
 
 <script>
+    // 12 ოთახის გენერაცია
+    const roomList = document.getElementById('roomList');
+    for(let i=1; i<=12; i++) {
+        const div = document.createElement('div');
+        div.className = 'room-item';
+        div.innerText = `ოთახი ${i}`;
+        div.onclick = () => document.getElementById('currentRoom').innerText = `ოთახი ${i}`;
+        roomList.appendChild(div);
+    }
 
-// ERROR DEBUG
-window.onerror = e => alert("ERROR: " + e)
+    // თემის შეცვლა
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+    }
 
-// SUPABASE
-const SUPABASE_URL = "https://ftfciebnywbondaiarnc.supabase.co"
-const SUPABASE_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-
-// USER
-let nick = localStorage.getItem("user_nick") || "სტუმარი"
-let currentRoom = "☕ კაფე-ბარი"
-
-// MENU
-function toggleMenu(){
-  document.getElementById("sidebar").classList.toggle("active")
-}
-
-// LOGOUT
-function logout(){
-  localStorage.clear()
-  window.location.href = "index.html"
-}
-
-// ROOMS CLICK
-document.querySelectorAll(".room").forEach(r=>{
-  r.onclick = ()=>{
-    currentRoom = r.textContent.trim()
-    document.getElementById("roomName").innerText = currentRoom
-    document.getElementById("sidebar").classList.remove("active")
-    load()
-  }
-})
-
-// RENDER MESSAGE
-function render(user,text,time){
-  let chat = document.getElementById("chat")
-
-  chat.innerHTML += `
-  <div class="message">
-    <div class="avatar"></div>
-    <div class="msg">
-      <div class="nick">${user} <span style="font-size:10px">${time}</span></div>
-      <div>${text}</div>
-    </div>
-  </div>
-  `
-
-  chat.scrollTop = chat.scrollHeight
-}
-
-// LOAD MESSAGES
-async function load(){
-  let {data} = await supa
-    .from("messages")
-    .select("*")
-    .eq("room_nan", currentRoom)
-    .order("created_at", {ascending:true})
-
-  document.getElementById("chat").innerHTML = ""
-
-  data?.forEach(m=>{
-    let t = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
-    render(m.user_nam || "უცნობი", m.text, t)
-  })
-}
-
-// SEND
-async function send(){
-  let input = document.getElementById("msg")
-
-  if(!input.value) return
-
-  await supa.from("messages").insert([{
-    user_nam: nick,
-    text: input.value,
-    room_nan: currentRoom
-  }])
-
-  input.value = ""
-}
-
-// REALTIME
-supa.channel("chat")
-.on("postgres_changes",
-{event:"INSERT", schema:"public", table:"messages"},
-payload=>{
-  if(payload.new.room_nan === currentRoom){
-    let t = new Date(payload.new.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
-    render(payload.new.user_nam, payload.new.text, t)
-  }
-})
-.subscribe()
-
-// ENTER SEND
-document.getElementById("msg").addEventListener("keypress", e=>{
-  if(e.key==="Enter") send()
-})
-
-// INIT
-load()
-
+    // გულების ანიმაციის შექმნა
+    function createHearts() {
+        const container = document.getElementById('heartContainer');
+        for(let i=0; i<15; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.innerHTML = '❤';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.animationDelay = Math.random() * 5 + 's';
+            heart.style.fontSize = (Math.random() * 30 + 20) + 'px';
+            container.appendChild(heart);
+        }
+    }
+    createHearts();
 </script>
 
 </body>
