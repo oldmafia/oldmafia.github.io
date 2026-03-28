@@ -2,174 +2,260 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <title>Magical Chat - Old Mafia 💖</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia - Magical Chat 💖</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
+            --maroon: #800020;
+            --dark-maroon: #1a0205;
+            --gold: #ffd700;
             /* ღამის რეჟიმი (ნაგულისხმევი) */
-            --bg: #1a0205; --panel: #2d0a0e; --text: #eecaca; --maroon: #800020; --gold: #ffd700;
+            --bg: #1a0205;
+            --panel: #2d0a0e;
+            --text: #eecaca;
+            --shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
+
         .light-mode {
-            --bg: #f5f5dc; --panel: #ffffff; --text: #800020;
+            --bg: #f5f5dc;
+            --panel: #ffffff;
+            --text: #800020;
+            --shadow: 0 10px 30px rgba(128,0,32,0.1);
         }
 
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; transition: 0.5s; }
 
-        /* მცურავი გულები */
-        .hearts-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        .heart { position: absolute; color: var(--maroon); opacity: 0.5; animation: floatUp 7s linear infinite; }
-        @keyframes floatUp { 0% { transform: translateY(110vh) rotate(0deg); } 100% { transform: translateY(-10vh) rotate(360deg); } }
+        /* მცურავი შინდისფერი გულები */
+        .hearts-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .heart { position: absolute; color: var(--maroon); opacity: 0.6; animation: floatUp 8s linear infinite; filter: drop-shadow(0 0 5px var(--maroon)); font-size: 30px; }
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+            20% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
 
-        /* სტრუქტურა */
-        .container { display: flex; height: 100vh; position: relative; z-index: 1; }
-        .sidebar { width: 320px; background: var(--panel); border-right: 2px solid var(--maroon); display: flex; flex-direction: column; padding: 15px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
-        .chat-area { flex: 1; display: flex; flex-direction: column; }
+        .app-container { display: flex; height: 100vh; position: relative; z-index: 1; }
 
-        /* ოთახების სტილი */
-        .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
-        .room-btn { padding: 10px; border: 1px solid var(--maroon); border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.3s; }
-        .room-btn.active { background: var(--maroon); color: white; }
-
-        /* მესიჯები */
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .msg { align-self: flex-start; display: flex; gap: 10px; max-width: 80%; }
-        .msg-bubble { background: var(--panel); padding: 10px 15px; border-radius: 15px 15px 15px 0; border: 1px solid var(--maroon); position: relative; }
-        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--maroon); cursor: pointer; }
-        .msg-time { font-size: 10px; opacity: 0.6; display: block; margin-top: 5px; }
-
-        /* როლები */
-        .role-badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
-        .role-founder { background: var(--gold); color: black; }
-        .role-admin { background: var(--maroon); color: white; }
-
-        /* ინდიკატორი */
-        #unread-pvt { position: absolute; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; margin-left: -10px; }
-
-        /* Input */
-        .input-bar { padding: 15px; background: var(--panel); display: flex; gap: 10px; align-items: center; }
-        input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--maroon); background: var(--bg); color: var(--text); outline: none; }
+        /* Sidebar - მარცხენა მხარე */
+        .sidebar { width: 320px; background: var(--panel); border-right: 2px solid var(--maroon); display: flex; flex-direction: column; padding: 15px; box-shadow: var(--shadow); }
+        .user-profile { text-align: center; padding-bottom: 20px; border-bottom: 1px solid var(--maroon); }
+        .main-avatar { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--maroon); object-fit: cover; cursor: pointer; }
         
+        .rooms-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 20px 0; }
+        .room-btn { padding: 10px; border: 1px solid var(--maroon); border-radius: 10px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.3s; font-size: 13px; }
+        .room-btn:hover, .room-btn.active { background: var(--maroon); color: white; box-shadow: 0 0 10px var(--maroon); }
+
+        /* Online List Grouped */
+        .online-scroll { flex: 1; overflow-y: auto; margin-top: 10px; padding-right: 5px; }
+        .online-scroll h4 { font-size: 12px; color: var(--gold); border-bottom: 1px solid rgba(255,215,0,0.2); margin: 15px 0 8px; text-transform: uppercase; }
+        .user-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer; padding: 5px; border-radius: 8px; transition: 0.2s; }
+        .user-row:hover { background: rgba(128,0,32,0.15); }
+        .row-avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--maroon); }
+
+        /* Chat Main Area */
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.05); }
+        .chat-header { padding: 15px 25px; background: rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--maroon); }
+        
+        .messages-box { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
+        
+        /* შეტყობინებები - ყოველთვის მარცხნივ */
+        .msg-wrap { align-self: flex-start; max-width: 75%; display: flex; gap: 12px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .msg-bubble { background: var(--panel); padding: 12px 18px; border-radius: 18px 18px 18px 0; border: 1px solid var(--maroon); box-shadow: 4px 4px 15px rgba(0,0,0,0.3); position: relative; }
+        .msg-sender { font-size: 12px; font-weight: bold; color: var(--gold); margin-bottom: 4px; display: block; }
+        .msg-time { font-size: 10px; opacity: 0.5; margin-top: 6px; display: block; text-align: right; }
+
+        /* Input Bar */
+        .input-area { padding: 20px; display: flex; gap: 12px; background: var(--panel); border-top: 1px solid var(--maroon); align-items: center; }
+        .input-area input { flex: 1; padding: 14px 20px; border-radius: 30px; border: 1px solid var(--maroon); background: var(--bg); color: var(--text); outline: none; font-size: 15px; }
+        .btn-circle { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--maroon); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.3s; }
+        .btn-circle:hover { transform: scale(1.1); background: #a00028; }
+
+        /* Mini Messenger Popup */
+        #mini-messenger { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: var(--panel); border: 2px solid var(--maroon); border-radius: 20px; padding: 25px; display: none; box-shadow: 0 0 100px #000; z-index: 1000; text-align: center; }
+        
+        .unread-badge { background: #ff0000; color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; }
         .hidden { display: none !important; }
     </style>
 </head>
-<body>
+<body class="dark-mode">
 
-<div class="hearts-bg" id="hearts-box"></div>
+    <div class="hearts-bg" id="hearts-layer"></div>
 
-<div class="container">
-    <aside class="sidebar">
-        <div style="text-align:center">
-            <img id="my-avatar" src="https://via.placeholder.com/60" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold)">
-            <h3 id="my-nick">...</h3>
-            <button onclick="document.body.classList.toggle('light-mode')" style="background:var(--maroon); color:white; border:none; border-radius:10px; padding:5px 10px; cursor:pointer">☀️/🌙</button>
-        </div>
-
-        <div class="rooms-grid">
-            <script>
-                for(let i=1; i<=12; i++) document.write(`<div class="room-btn" id="room-${i}" onclick="joinRoom(${i})">ოთახი ${i}</div>`);
-            </script>
-        </div>
-
-        <div style="overflow-y:auto">
-            <h5 style="color:var(--gold)">👑 დამფუძნებლები</h5>
-            <div id="list-founder"></div>
-            <h5 style="color:#ff4d4d">🛡️ ადმინები</h5>
-            <div id="list-admin"></div>
-            <h5>👥 წევრები</h5>
-            <div id="list-member"></div>
-        </div>
-    </aside>
-
-    <main class="chat-area">
-        <div class="messages" id="msg-box"></div>
-        <div class="input-bar">
-            <button onclick="toggleEmoji()" style="font-size:20px; background:none; border:none; cursor:pointer">😊</button>
-            <input type="text" id="msg-input" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') send()">
-            <button onclick="send()" style="background:var(--maroon); color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer">გაგზავნა</button>
-        </div>
-    </main>
-</div>
-
-<script>
-    const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co"; // შენი პროექტის URL
-    const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
-    const _sb = supabase.createClient(SB_URL, SB_KEY);
-
-    let currentRoom = 1;
-    let me = null;
-
-    // 1. გულების გენერაცია
-    setInterval(() => {
-        const h = document.createElement('div');
-        h.className = 'heart'; h.innerHTML = '❤';
-        h.style.left = Math.random() * 100 + 'vw';
-        h.style.fontSize = (Math.random() * 20 + 20) + 'px';
-        document.getElementById('hearts-box').appendChild(h);
-        setTimeout(() => h.remove(), 7000);
-    }, 800);
-
-    // 2. მონაცემების ჩატვირთვა (Messages)
-    async function loadMessages() {
-        const { data } = await _sb.from('messages').select('*, profiles(*)').eq('room_id', currentRoom).order('created_at', {ascending: true});
-        const box = document.getElementById('msg-box');
-        box.innerHTML = '';
-        data?.forEach(m => {
-            const isBoss = me?.role === 'admin' || me?.role === 'founder';
-            box.innerHTML += `
-                <div class="msg">
-                    <img src="${m.profiles.avatar_url}" class="msg-avatar">
-                    <div class="msg-bubble">
-                        <strong style="font-size:12px">${m.profiles.nickname}</strong>
-                        <div>${m.content}</div>
-                        <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        ${isBoss ? `<small onclick="delMsg('${m.id}')" style="color:red; cursor:pointer">წაშლა</small>` : ''}
-                    </div>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="user-profile">
+                <img id="my-avatar" src="https://via.placeholder.com/90" class="main-avatar">
+                <h3 id="my-nick">იტვირთება...</h3>
+                <div style="display: flex; gap: 5px; justify-content: center; margin-top: 10px;">
+                    <button onclick="toggleTheme()" class="room-btn" style="padding: 5px 15px;">🌙/☀️</button>
+                    <button onclick="logout()" class="room-btn" style="padding: 5px 15px; border-color: #ff4d4d; color: #ff4d4d;">გასვლა</button>
                 </div>
-            `;
-        });
-        box.scrollTop = box.scrollHeight;
-    }
+            </div>
 
-    // 3. გაგზავნა
-    async function send() {
-        const el = document.getElementById('msg-input');
-        if(!el.value) return;
-        await _sb.from('messages').insert([{ content: el.value, room_id: currentRoom, profile_id: me.id }]);
-        el.value = '';
-    }
+            <div class="rooms-list" id="roomsGrid">
+                <script>
+                    for(let i=1; i<=12; i++) {
+                        document.write(`<div class="room-btn" id="r-${i}" onclick="switchRoom(${i})">ოთახი ${i}</div>`);
+                    }
+                </script>
+            </div>
 
-    // 4. ადმინ ფუნქცია: წაშლა
-    async function delMsg(id) {
-        if(confirm("წავშალოთ?")) {
-            await _sb.from('messages').delete().eq('id', id);
+            <div class="online-scroll">
+                <h4>👑 დამფუძნებლები</h4>
+                <div id="list-founders"></div>
+                <h4>🛡️ ადმინები</h4>
+                <div id="list-admins"></div>
+                <h4>👥 წევრები</h4>
+                <div id="list-members"></div>
+            </div>
+        </aside>
+
+        <main class="chat-main">
+            <header class="chat-header">
+                <h2 id="room-name">ოთახი 1</h2>
+                <div style="position: relative; cursor: pointer;">
+                    <span style="font-size: 24px;">📩</span>
+                    <span class="unread-badge" id="pvt-count">0</span>
+                </div>
+            </header>
+
+            <div class="messages-box" id="chatBox"></div>
+
+            <div class="input-area">
+                <button class="btn-circle" style="background:none; color:var(--maroon)" onclick="alert('სმაილები მალე დაემატება!')">😊</button>
+                <input type="text" id="msgInput" placeholder="დაწერე შეტყობინება..." onkeypress="if(event.key==='Enter') sendMsg()">
+                <button class="btn-circle" onclick="sendMsg()">🚀</button>
+            </div>
+        </main>
+    </div>
+
+    <div id="mini-messenger">
+        <img id="m-avatar" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid var(--maroon)">
+        <h3 id="m-nick" style="margin:10px 0">ნიკი</h3>
+        <p id="m-status" style="font-size:13px; opacity:0.8">სტატუსი...</p>
+        <div id="admin-controls" class="hidden">
+            <button onclick="banUser()" style="color:red; background:none; border:1px solid red; padding:5px; border-radius:5px; cursor:pointer">დაბლოკვა (მიზეზით)</button>
+        </div>
+        <hr style="border:0; border-top:1px solid var(--maroon); margin:15px 0">
+        <button onclick="addFriend()" class="room-btn" style="width:100%">მეგობრებში დამატება</button>
+        <button onclick="closeMini()" class="room-btn" style="width:100%; margin-top:8px">დახურვა</button>
+    </div>
+
+    <script>
+        // --- SUPABASE დაყენება ---
+        const SB_URL = "https://ftfciebnywbondaiarnc.supabase.co"; 
+        const SB_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
+        const _sb = supabase.createClient(SB_URL, SB_KEY);
+
+        let currentRoom = 1;
+        let me = null;
+
+        // 1. გულების გენერატორი
+        function createHeart() {
+            const container = document.getElementById('hearts-layer');
+            const h = document.createElement('div');
+            h.className = 'heart';
+            h.innerHTML = '❤';
+            h.style.left = Math.random() * 100 + 'vw';
+            h.style.animationDuration = (Math.random() * 3 + 5) + 's';
+            container.appendChild(h);
+            setTimeout(() => h.remove(), 8000);
+        }
+        setInterval(createHeart, 600);
+
+        // 2. Auth შემოწმება (რომ არ დაგაბრუნოს ინდექსზე)
+        async function checkUser() {
+            const { data: { session } } = await _sb.auth.getSession();
+            if (!session) {
+                window.location.href = "index.html";
+                return;
+            }
+            
+            const { data: profile } = await _sb.from('profiles').select('*').eq('id', session.user.id).single();
+            if (profile) {
+                me = profile;
+                document.getElementById('my-nick').innerText = me.nickname;
+                document.getElementById('my-avatar').src = me.avatar_url || 'https://via.placeholder.com/90';
+                loadMessages();
+                loadOnlineUsers();
+            }
+        }
+
+        // 3. მესიჯების ჩატვირთვა
+        async function loadMessages() {
+            const { data, error } = await _sb
+                .from('messages')
+                .select('*, profiles(*)')
+                .eq('room_id', currentRoom)
+                .order('created_at', { ascending: true });
+
+            const box = document.getElementById('chatBox');
+            box.innerHTML = '';
+            
+            data?.forEach(m => {
+                const canDelete = (me.role === 'admin' || me.role === 'founder');
+                box.innerHTML += `
+                    <div class="msg-wrap">
+                        <img src="${m.profiles.avatar_url}" class="row-avatar" onclick="openMini('${m.profiles.id}')">
+                        <div class="msg-bubble">
+                            <span class="msg-sender">${m.profiles.nickname}</span>
+                            <span>${m.content}</span>
+                            <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            ${canDelete ? `<button onclick="delMsg('${m.id}')" style="color:red; background:none; border:none; cursor:pointer; font-size:10px">წაშლა</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // 4. მესიჯის გაგზავნა
+        async function sendMsg() {
+            const inp = document.getElementById('msgInput');
+            if(!inp.value.trim()) return;
+
+            await _sb.from('messages').insert([
+                { room_id: currentRoom, content: inp.value, profile_id: me.id }
+            ]);
+            inp.value = '';
+        }
+
+        // 5. ოთახის შეცვლა
+        function switchRoom(id) {
+            currentRoom = id;
+            document.getElementById('room-name').innerText = "ოთახი " + id;
+            document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('r-'+id).classList.add('active');
             loadMessages();
         }
-    }
 
-    // 5. ოთახის შეცვლა
-    function joinRoom(id) {
-        currentRoom = id;
-        document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`room-${id}`).classList.add('active');
-        loadMessages();
-    }
-
-    // 6. Realtime მოსმენა
-    _sb.channel('db-changes').on('postgres_changes', {event:'*', schema:'public', table:'messages'}, () => loadMessages()).subscribe();
-
-    // 7. საწყისი იდენტიფიკაცია (მაგალითისთვის)
-    async function init() {
-        const { data: { user } } = await _sb.auth.getUser();
-        if(user) {
-            const { data: prof } = await _sb.from('profiles').select('*').eq('id', user.id).single();
-            me = prof;
-            document.getElementById('my-nick').innerText = me.nickname;
-            document.getElementById('my-avatar').src = me.avatar_url;
+        // 6. რეჟიმის შეცვლა
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
         }
-        loadMessages();
-    }
 
-    init();
-</script>
+        // 7. გასვლა
+        async function logout() {
+            await _sb.auth.signOut();
+            window.location.href = "index.html";
+        }
+
+        // Realtime განახლება
+        _sb.channel('realtime-chat').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+            loadMessages();
+        }).subscribe();
+
+        window.onload = checkUser;
+
+        // მინი პროფილის ფუნქციები
+        function openMini(uid) {
+            document.getElementById('mini-messenger').style.display = 'block';
+            // აქ დაამატებ პროფილის წამოღების ლოგიკას
+        }
+        function closeMini() { document.getElementById('mini-messenger').style.display = 'none'; }
+    </script>
 </body>
 </html>
