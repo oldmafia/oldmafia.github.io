@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Old Mafia - სრული ჩატი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        body {
+            --bg: #0a0508; --text: #f0e6e8; --card: #1a0f12; --border: #4a1a2a;
+            --nav: #120a0c; --accent: #8b0000; --accent-dark: #5a0000; --input: #1f1216;
+            --circle-color: rgba(139, 0, 0, 0.25);
+            background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            position: relative;
+        }
+        body.day-mode { 
+            --bg: #fff5f0; --text: #2c1a1a; --card: #ffffff; --border: #e6b8a2; 
+            --nav: #ffe8e0; --accent: #8b0000; --input: #fffaf5;
+            --circle-color: rgba(139, 0, 0, 0.15);
+        }
+        
+        /* მოცურავე შინდისფერი წრე
