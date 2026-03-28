@@ -1,136 +1,438 @@
 <!DOCTYPE html>
-<html>
+<html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💖 სულის თბილეთი</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: system-ui, sans-serif;
-            background: linear-gradient(135deg, #fff5e8, #fae8d8);
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #fff5e8 0%, #fae8d8 100%);
+            position: relative;
+        }
+
+        /* მცურავი გულები */
+        .hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .heart {
+            position: absolute;
+            bottom: -50px;
+            color: #800020;
+            font-size: 30px;
+            animation: floatHeart linear forwards;
+        }
+        @keyframes floatHeart {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* მთავარი კონტეინერი */
+        .app {
             height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
-        .chat-box {
-            width: 90%;
-            max-width: 500px;
-            height: 80vh;
-            background: rgba(255,255,255,0.9);
-            border-radius: 20px;
+
+        /* ზედა ბარი */
+        .top-bar {
+            background: rgba(255, 245, 235, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(128, 0, 32, 0.1);
+            border-bottom: 1px solid rgba(128, 0, 32, 0.2);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo i {
+            font-size: 28px;
+            color: #800020;
+        }
+        .logo h1 {
+            font-size: 20px;
+            color: #5a2a2a;
+        }
+        .online-stats {
+            background: rgba(128, 0, 32, 0.1);
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+        .theme-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #800020;
+            padding: 8px;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .theme-btn:hover {
+            background: rgba(128, 0, 32, 0.1);
+        }
+
+        /* მთავარი კონტენტი */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* საიდბარი */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 245, 235, 0.9);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(128, 0, 32, 0.2);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transition: 0.3s;
         }
-        .header {
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(128, 0, 32, 0.2);
+        }
+        .sidebar-header h3 {
+            color: #800020;
+            font-size: 16px;
+        }
+        .room-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .room-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #5a2a2a;
+        }
+        .room-item i {
+            font-size: 18px;
+        }
+        .room-item:hover {
+            background: rgba(128, 0, 32, 0.1);
+        }
+        .room-item.active {
             background: #800020;
             color: white;
+        }
+        .user-section {
             padding: 15px;
-            text-align: center;
+            border-top: 1px solid rgba(128, 0, 32, 0.2);
+        }
+        .user-section h4 {
+            font-size: 13px;
+            color: #800020;
+            margin-bottom: 10px;
+        }
+        .user-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .user-item:hover {
+            background: rgba(128, 0, 32, 0.1);
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #800020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .user-name {
+            flex: 1;
+            font-size: 13px;
+        }
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .user-status.online { background: #4caf50; }
+        .user-status.offline { background: #999; }
+
+        /* ჩატის არეალი */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 248, 240, 0.7);
+        }
+        .chat-header {
+            padding: 15px 20px;
+            background: rgba(255, 245, 235, 0.8);
+            border-bottom: 1px solid rgba(128, 0, 32, 0.1);
+        }
+        .chat-header h2 {
+            font-size: 18px;
+            color: #5a2a2a;
         }
         .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .message {
-            background: white;
-            padding: 10px;
-            border-radius: 15px;
-            max-width: 80%;
+            max-width: 70%;
             align-self: flex-start;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .message .name {
-            font-weight: bold;
-            font-size: 12px;
-            color: #800020;
-        }
-        .message .text { margin-top: 5px; }
-        .message .time { font-size: 10px; color: gray; margin-top: 5px; }
-        .input-area {
-            display: flex;
-            padding: 15px;
-            gap: 10px;
             background: white;
-            border-top: 1px solid #eee;
+            padding: 12px 16px;
+            border-radius: 20px;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .message-sender {
+            font-size: 12px;
+            font-weight: bold;
+            color: #800020;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .message-text {
+            font-size: 14px;
+            color: #3a2a2a;
+            word-wrap: break-word;
+        }
+        .message-time {
+            font-size: 10px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .input-area {
+            padding: 15px 20px;
+            background: white;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid rgba(128, 0, 32, 0.1);
         }
         .input-area input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
+            padding: 12px 18px;
+            border: 1px solid rgba(128, 0, 32, 0.2);
+            border-radius: 30px;
+            font-size: 14px;
             outline: none;
+            transition: 0.2s;
+        }
+        .input-area input:focus {
+            border-color: #800020;
+            box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.1);
         }
         .input-area button {
             background: #800020;
-            color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .input-area button:hover {
+            transform: scale(1.05);
+            background: #a03040;
+        }
+
+        /* მობილური */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100%;
+                z-index: 100;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .menu-btn {
+                display: block;
+            }
+        }
+        .menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #800020;
             cursor: pointer;
         }
-        .online-info {
-            font-size: 12px;
-            margin-top: 5px;
+        @media (max-width: 768px) {
+            .menu-btn { display: block; }
         }
     </style>
 </head>
 <body>
-    <div class="chat-box">
-        <div class="header">
-            <h3>💖 სულის თბილეთი</h3>
-            <div class="online-info" id="onlineInfo">ონლაინ: 0</div>
+    <div class="hearts" id="hearts"></div>
+
+    <div class="app">
+        <div class="top-bar">
+            <div class="logo">
+                <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+                <i class="fas fa-heart"></i>
+                <h1>სულის თბილეთი</h1>
+            </div>
+            <div class="online-stats">
+                <span class="online-dot"></span>
+                <span id="onlineCount">0</span>
+                <span>ონლაინ</span>
+            </div>
+            <button class="theme-btn" id="themeBtn"><i class="fas fa-moon"></i></button>
         </div>
-        <div class="messages" id="messages"></div>
-        <div class="input-area">
-            <input type="text" id="messageInput" placeholder="დაწერე შეტყობინება..." autocomplete="off">
-            <button id="sendBtn">გაგზავნა</button>
+
+        <div class="main">
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-comments"></i> ოთახები</h3>
+                </div>
+                <div class="room-list" id="roomList"></div>
+                <div class="user-section">
+                    <h4><i class="fas fa-users"></i> მომხმარებლები</h4>
+                    <div class="user-list" id="userList"></div>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="chat-header">
+                    <h2><i class="fas fa-hashtag"></i> <span id="currentRoom">ოთახი 1</span></h2>
+                </div>
+                <div class="messages" id="messages"></div>
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="დაწერე შეტყობინება..." autocomplete="off">
+                    <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { supabase } from './supabase-config.js';
 
-        // მომხმარებლის მონაცემები
+        // მომხმარებელი
         let currentUser = {
             id: localStorage.getItem('userId') || 'user_' + Date.now(),
-            nickname: localStorage.getItem('nickname') || prompt('შეიყვანე შენი სახელი:', 'მეგობარი') || 'მეგობარი',
-            avatar: '',
+            nickname: localStorage.getItem('nickname') || '',
             role: 'member'
         };
+
+        if (!currentUser.nickname) {
+            currentUser.nickname = prompt('💖 შეიყვანე შენი სახელი:', 'მეგობარი') || 'მეგობარი';
+            localStorage.setItem('nickname', currentUser.nickname);
+        }
         localStorage.setItem('userId', currentUser.id);
-        localStorage.setItem('nickname', currentUser.nickname);
 
         let currentRoom = 1;
+        let allUsers = [];
 
-        // მომხმარებლის დამატება
-        async function addUser() {
-            await supabase.from('users').upsert({
-                id: currentUser.id,
-                nickname: currentUser.nickname,
-                role: currentUser.role,
-                online: true,
-                last_seen: new Date()
-            });
+        // ავატარის ასო
+        function getAvatarLetter(name) {
+            return name.charAt(0).toUpperCase();
         }
 
-        // მომხმარებლების ჩატვირთვა
-        async function loadUsers() {
-            const { data } = await supabase.from('users').select('*');
-            if (data) {
-                const online = data.filter(u => u.online).length;
-                document.getElementById('onlineInfo').innerHTML = `🟢 ონლაინ: ${online} | 👥 სულ: ${data.length}`;
+        // ოთახების ჩვენება
+        function renderRooms() {
+            const container = document.getElementById('roomList');
+            container.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const div = document.createElement('div');
+                div.className = `room-item ${i === currentRoom ? 'active' : ''}`;
+                div.innerHTML = `<i class="fas fa-hashtag"></i> <span>ოთახი ${i}</span>`;
+                div.onclick = () => switchRoom(i);
+                container.appendChild(div);
             }
         }
 
-        // შეტყობინებების ჩატვირთვა
+        function switchRoom(roomId) {
+            currentRoom = roomId;
+            document.getElementById('currentRoom').textContent = `ოთახი ${roomId}`;
+            renderRooms();
+            loadMessages();
+        }
+
+        // მომხმარებლების ჩვენება
+        async function loadUsers() {
+            const { data } = await supabase.from('users').select('*');
+            if (data) {
+                allUsers = data;
+                const online = data.filter(u => u.online).length;
+                document.getElementById('onlineCount').textContent = online;
+                
+                const container = document.getElementById('userList');
+                container.innerHTML = data.map(user => `
+                    <div class="user-item">
+                        <div class="user-avatar">${getAvatarLetter(user.nickname)}</div>
+                        <div class="user-name">${escapeHtml(user.nickname)}</div>
+                        <div class="user-status ${user.online ? 'online' : 'offline'}"></div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // შეტყობინებების ჩვენება
         async function loadMessages() {
             const { data } = await supabase
                 .from('messages')
@@ -142,9 +444,11 @@
                 const container = document.getElementById('messages');
                 container.innerHTML = data.map(msg => `
                     <div class="message">
-                        <div class="name">${escapeHtml(msg.nickname)}</div>
-                        <div class="text">${escapeHtml(msg.text)}</div>
-                        <div class="time">${new Date(msg.created_at).toLocaleTimeString()}</div>
+                        <div class="message-sender">
+                            <span>${escapeHtml(msg.nickname)}</span>
+                        </div>
+                        <div class="message-text">${escapeHtml(msg.text)}</div>
+                        <div class="message-time">${new Date(msg.created_at).toLocaleTimeString()}</div>
                     </div>
                 `).join('');
                 container.scrollTop = container.scrollHeight;
@@ -169,30 +473,84 @@
             loadMessages();
         }
 
+        // მომხმარებლის დამატება
+        async function addUser() {
+            await supabase.from('users').upsert({
+                id: currentUser.id,
+                nickname: currentUser.nickname,
+                role: currentUser.role,
+                online: true,
+                last_seen: new Date()
+            });
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // ღილაკები
+        // გულების ანიმაცია
+        function startHearts() {
+            setInterval(() => {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = '❤️';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.fontSize = (25 + Math.random() * 40) + 'px';
+                heart.style.animationDuration = (4 + Math.random() * 6) + 's';
+                document.getElementById('hearts').appendChild(heart);
+                setTimeout(() => heart.remove(), 10000);
+            }, 600);
+        }
+
+        // თემა
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            if (body.style.background.includes('fff5e8')) {
+                body.style.background = 'linear-gradient(135deg, #1a0f0a 0%, #2a1810 100%)';
+                document.querySelector('.top-bar').style.background = 'rgba(20, 12, 8, 0.95)';
+                document.querySelector('.sidebar').style.background = 'rgba(20, 12, 8, 0.9)';
+                document.querySelector('.chat-area').style.background = 'rgba(25, 15, 10, 0.7)';
+                document.querySelector('.chat-header').style.background = 'rgba(20, 12, 8, 0.8)';
+                document.querySelector('.input-area').style.background = '#2a1e18';
+                btn.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                body.style.background = 'linear-gradient(135deg, #fff5e8 0%, #fae8d8 100%)';
+                document.querySelector('.top-bar').style.background = 'rgba(255, 245, 235, 0.95)';
+                document.querySelector('.sidebar').style.background = 'rgba(255, 245, 235, 0.9)';
+                document.querySelector('.chat-area').style.background = 'rgba(255, 248, 240, 0.7)';
+                document.querySelector('.chat-header').style.background = 'rgba(255, 245, 235, 0.8)';
+                document.querySelector('.input-area').style.background = 'white';
+                btn.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+        }
+
+        // მობილური მენიუ
+        document.getElementById('menuBtn')?.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('open');
+        });
+
         document.getElementById('sendBtn').onclick = sendMessage;
         document.getElementById('messageInput').onkeypress = (e) => {
             if (e.key === 'Enter') sendMessage();
         };
+        document.getElementById('themeBtn').onclick = toggleTheme;
 
-        // ონლაინ სტატუსის განახლება ყოველ 10 წამში
+        // ონლაინ სტატუსი ყოველ 15 წამში
         setInterval(async () => {
             await supabase.from('users').update({ online: true, last_seen: new Date() }).eq('id', currentUser.id);
             await loadUsers();
             await loadMessages();
-        }, 10000);
+        }, 15000);
 
-        // ინიციალიზაცია
         async function init() {
             await addUser();
+            renderRooms();
             await loadUsers();
             await loadMessages();
+            startHearts();
         }
         init();
     </script>
