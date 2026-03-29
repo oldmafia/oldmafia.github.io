@@ -1,0 +1,26 @@
+-- მომხმარებლები
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  username TEXT,
+  avatar_url TEXT,
+  status TEXT,
+  role TEXT DEFAULT 'user',
+  is_online BOOLEAN DEFAULT false
+);
+
+-- მესიჯები
+CREATE TABLE messages (
+  id SERIAL PRIMARY KEY,
+  room_id INT,
+  user_id UUID REFERENCES users(id),
+  text TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- მეგობრები
+CREATE TABLE friends (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  friend_id UUID REFERENCES users(id),
+  status TEXT DEFAULT 'pending'
+);
