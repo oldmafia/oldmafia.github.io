@@ -28,14 +28,30 @@ body {
   color: var(--text);
 }
 
+/* ❤️ hearts */
+.heart {
+  position: fixed;
+  color: var(--accent);
+  animation: float 6s linear infinite;
+  opacity: 0.3;
+}
+
+@keyframes float {
+  0% { transform: translateY(100vh); }
+  100% { transform: translateY(-10vh); }
+}
+
 /* TOP */
 .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 10px;
   background: var(--card);
   border-bottom: 2px solid var(--accent);
 }
 
-/* ROOMS HORIZONTAL */
+/* ROOMS */
 .rooms {
   display: flex;
   overflow-x: auto;
@@ -55,11 +71,6 @@ body {
 
 .room.active {
   border: 2px solid var(--accent);
-}
-
-.room span {
-  display: block;
-  font-size: 25px;
 }
 
 /* CHAT */
@@ -102,6 +113,7 @@ button {
 
 <div class="topbar">
   ❤️ MY CHAT
+  <button onclick="toggleTheme()">🌗</button>
 </div>
 
 <div class="rooms" id="rooms"></div>
@@ -115,16 +127,16 @@ button {
 
 <script>
 
-// 🔑 შენი მონაცემები ჩასვი
-const supabase = window.supabase.createClient(
-сonst supabaseUrl = 'https://ftfciebnywbondaiarnc.supabase.co'
-const supabaseKey = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI'
-);
+// 🔑 ჩასვი შენი მონაცემები აქ
+const supabaseUrl = "PASTE_URL_HERE";
+const supabaseKey = "PASTE_KEY_HERE";
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentRoom = "room1";
 let currentUser = null;
 
-// 🧠 ოთახები (emoji + name)
+// 🏠 rooms
 const rooms = [
   {name:"room1", icon:"🔥"},
   {name:"room2", icon:"❤️"},
@@ -140,7 +152,19 @@ const rooms = [
   {name:"room12", icon:"🌙"}
 ];
 
-// 🏠 render rooms
+// ❤️ hearts
+function createHeart() {
+  const heart = document.createElement("div");
+  heart.className = "heart";
+  heart.innerText = "❤️";
+  heart.style.left = Math.random() * 100 + "vw";
+  heart.style.fontSize = (20 + Math.random() * 40) + "px";
+  document.body.appendChild(heart);
+  setTimeout(() => heart.remove(), 6000);
+}
+setInterval(createHeart, 500);
+
+// rooms UI
 function renderRooms() {
   const container = document.getElementById("rooms");
   container.innerHTML = "";
@@ -150,7 +174,7 @@ function renderRooms() {
     div.className = "room";
     if (r.name === currentRoom) div.classList.add("active");
 
-    div.innerHTML = `<span>${r.icon}</span>${r.name}`;
+    div.innerHTML = `<div style="font-size:25px">${r.icon}</div>${r.name}`;
 
     div.onclick = () => {
       currentRoom = r.name;
@@ -162,13 +186,13 @@ function renderRooms() {
   });
 }
 
-// 👤 get user
+// user
 async function getUser() {
   const { data } = await supabase.auth.getUser();
   currentUser = data.user;
 }
 
-// 📥 load messages
+// load messages
 async function loadMessages() {
   const { data } = await supabase
     .from("messages")
@@ -182,16 +206,14 @@ async function loadMessages() {
   data.forEach(msg => {
     const div = document.createElement("div");
     div.className = "msg";
-    div.innerHTML = `
-      ${msg.avatar} <b>${msg.nickname}</b>: ${msg.text}
-    `;
+    div.innerHTML = `${msg.avatar} <b>${msg.nickname}</b>: ${msg.text}`;
     chat.appendChild(div);
   });
 
   chat.scrollTop = chat.scrollHeight;
 }
 
-// 📤 send message
+// send
 async function sendMessage() {
   const input = document.getElementById("msgInput");
   if (!input.value) return;
@@ -199,27 +221,30 @@ async function sendMessage() {
   await supabase.from("messages").insert([{
     text: input.value,
     room: currentRoom,
-    nickname: currentUser.email,
+    nickname: currentUser?.email || "Guest",
     avatar: "🙂"
   }]);
 
   input.value = "";
 }
 
-// 🔄 realtime
+// realtime
 supabase
   .channel("chat")
   .on("postgres_changes",
     { event: "INSERT", schema: "public", table: "messages" },
     payload => {
-      if (payload.new.room === currentRoom) {
-        loadMessages();
-      }
+      if (payload.new.room === currentRoom) loadMessages();
     }
   )
   .subscribe();
 
-// INIT
+// theme
+function toggleTheme() {
+  document.body.classList.toggle("light");
+}
+
+// init
 (async () => {
   await getUser();
   renderRooms();
