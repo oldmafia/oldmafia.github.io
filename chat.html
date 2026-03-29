@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>💖 შინდისფერი ჩატი 💖</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Tahoma', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ანიმაციური გულები */
+        .heart-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-heart {
+            position: absolute;
+            color: #b22222;
+            font-size: 30px;
+            animation: floatHeart linear infinite;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        @keyframes floatHeart {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* დღის რეჟიმი */
+        body.day-mode {
+            background: linear-gradient(135deg, #fef5e7 0%, #fff3e0 100%);
+        }
+
+        body.day-mode .chat-container,
+        body.day-mode .rooms-sidebar,
+        body.day-mode .users-sidebar,
+        body.day-mode .modal-content {
+            background: rgba(255, 248, 240, 0.96);
+            backdrop-filter: blur(10px);
+        }
+
+        body.day-mode .message {
+            background: #ffffff;
+            border-left: 4px solid #b22222;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        body.day-mode .message.right {
+            background: #b22222;
+            color: white;
+        }
+
+        body.day-mode .room-btn {
+            background: #fff0e6;
+            color: #5a2a2a;
+        }
+
+        body.day-mode .room-btn.active {
+            background: #b22222;
+            color: white;
+        }
+
+        /* ღამის რეჟიმი */
+        body.night-mode {
+            background: linear-gradient(135deg, #1a0f0f 0%, #2d1a1a 100%);
+        }
+
+        body.night-mode .chat-container,
+        body.night-mode .rooms-sidebar,
+        body.night-mode .users-sidebar,
+        body.night-mode .modal-content {
+            background: rgba(30, 18, 18, 0.96);
+            backdrop-filter: blur(10px);
+            color: #f0e0e0;
+        }
+
+        body.night-mode .message {
+            background: #3a2525;
+            border-left: 4px solid #b22222;
+            color: #f0e0e0;
+        }
+
+        body.night-mode .message.right {
+            background: #8b3a3a;
+            color: white;
+        }
+
+        body.night-mode .room-btn {
+            background: #3a2525;
+            color: #f0c0c0;
+        }
+
+        body.night-mode .room-btn.active {
+            background: #b22222;
+            color: white;
+        }
+
+        body.night-mode .user-item {
+            background: #3a2525;
+        }
+
+        body.night-mode .input-area input {
+            background: #2a1a1a;
+            color: #f0e0e0;
+            border-color: #b22222;
+        }
+
+        /* ძირითადი ლეიოუთი */
+        .app-wrapper {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .rooms-sidebar {
+            width: 220px;
+            padding: 20px 12px;
+            overflow-y: auto;
+            border-right: 2px solid #b22222;
+            box-shadow: 2px 0 15px rgba(178, 34, 34, 0.2);
+        }
+
+        .rooms-sidebar h3 {
+            text-align: center;
+            color: #b22222;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .room-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .room-btn:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(178, 34, 34, 0.3);
+        }
+
+        .room-btn.active {
+            box-shadow: 0 0 15px rgba(178, 34, 34, 0.5);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 18px 25px;
+            border-bottom: 2px solid #b22222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            color: #b22222;
+            font-size: 1.5rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .theme-toggle, .profile-btn {
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover, .profile-btn:hover {
+            background: rgba(178, 34, 34, 0.2);
+            transform: scale(1.1);
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 15px;
+            border-radius: 18px;
+            position: relative;
+            animation: fadeIn 0.3s;
+            word-wrap: break-word;
+        }
+
+        .message.left {
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.right {
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #b22222;
+        }
+
+        .message-time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-left: auto;
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message-actions {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            display: none;
+            gap: 5px;
+        }
+
+        .message:hover .message-actions {
+            display: flex;
+        }
+
+        .delete-msg {
+            background: rgba(0,0,0,0.5);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #ff6b6b;
+            font-size: 12px;
+            padding: 4px 6px;
+        }
+
+        .input-area {
+            padding: 18px 20px;
+            display: flex;
+            gap: 12px;
+            border-top: 2px solid #b22222;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #b22222;
+            border-radius: 30px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .emoji-btn, .send-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            background: #b22222;
+            color: white;
+            font-size: 22px;
+            transition: all 0.3s;
+        }
+
+        .emoji-btn:hover, .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px #b22222;
+        }
+
+        .users-sidebar {
+            width: 280px;
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 2px solid #b22222;
+        }
+
+        .users-sidebar h3 {
+            color: #b22222;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .search-users {
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border: 2px solid #b22222;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+        }
+
+        .user-group {
+            margin-bottom: 20px;
+        }
+
+        .user-group h4 {
+            color: #b22222;
+            margin-bottom: 10px;
+            font-size: 13px;
+            border-bottom: 1px solid #b22222;
+            padding-bottom: 5px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .user-item:hover {
+            background: rgba(178, 34, 34, 0.2);
+            transform: translateX(3px);
+        }
+
+        .user-item .avatar {
+            width: 36px;
+            height: 36px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .user-status {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+            display: inline-block;
+        }
+
+        .offline-indicator {
+            background: #9e9e9e;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .user-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 6px;
+            border-radius: 8px;
+        }
+
+        .user-actions button:hover {
+            background: rgba(178, 34, 34, 0.3);
+        }
+
+        /* მოდალები */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            width: 450px;
+            max-width: 90%;
+            max-height: 85vh;
+            padding: 25px;
+            border-radius: 25px;
+            position: relative;
+            overflow-y: auto;
+            border: 2px solid #b22222;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #b22222;
+        }
+
+        .profile-pic {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-pic img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #b22222;
+        }
+
+        .status-input, .emoji-select, .comment-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #b22222;
+            border-radius: 15px;
+            outline: none;
+        }
+
+        .role-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .role-buttons button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            background: #b22222;
+            color: white;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .emoji-item {
+            font-size: 28px;
+            cursor: pointer;
+            text-align: center;
+            padding: 8px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .emoji-item:hover {
+            background: rgba(178, 34, 34, 0.3);
+            transform: scale(1.1);
+        }
+
+        .add-emoji-area {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .add-emoji-area input {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #b22222;
+            border-radius: 20px;
+        }
+
+        .private-messages-area {
+            height: 350px;
+            overflow-y: auto;
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px solid #b22222;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .private-msg {
+            max-width: 85%;
+            padding: 8px 12px;
+            border-radius: 15px;
+        }
+
+        .private-msg.sent {
+            align-self: flex-end;
+            background: #b22222;
+            color: white;
+        }
+
+        .private-msg.received {
+            align-self: flex-start;
+            background: rgba(178, 34, 34, 0.2);
+        }
+
+        .friend-request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            background: rgba(178, 34, 34, 0.1);
+            border-radius: 12px;
+        }
+
+        .friend-request-item button {
+            padding: 5px 12px;
+            margin-left: 8px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        .accept-btn { background: #4caf50; color: white; }
+        .reject-btn { background: #b22222; color: white; }
+
+        .block-reason {
+            font-size: 11px;
+            color: #ff6b6b;
+            margin-top: 4px;
+        }
+
+        .pm-badge {
+            background: #ff9800;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .rooms-sidebar { width: 70px; }
+            .rooms-sidebar h3 { display: none; }
+            .room-btn { font-size: 11px; padding: 10px 5px; }
+            .users-sidebar { width: 240px; }
+        }
+    </style>
+</head>
+<body class="day-mode">
+    <div class="heart-bg" id="heartBg"></div>
+    
+    <div class="app-wrapper">
+        <div class="rooms-sidebar">
+            <h3>🏠 ოთახები</h3>
+            <div id="roomsList"></div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2 id="currentRoomName">📌 ოთახი 1</h2>
+                <div class="header-actions">
+                    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                    <button class="profile-btn" onclick="openProfileModal()">👤</button>
+                </div>
+            </div>
+            <div class="messages-area" id="messagesArea"></div>
+            <div class="input-area">
+                <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
+                <input type="text" id="messageInput" placeholder="დაწერეთ მესიჯი..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+            <div id="emojiPickerPanel" style="display: none; padding: 15px; border-top: 2px solid #b22222;">
+                <div class="emoji-grid" id="emojiGrid"></div>
+                <div class="add-emoji-area" id="adminEmojiPanel" style="display: none;">
+                    <input type="text" id="newEmojiInput" placeholder="ახალი ემოჯი (მაგ: 🎄)">
+                    <button onclick="addCustomEmoji()">➕ დამატება</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="users-sidebar">
+            <h3>👥 მომხმარებლები</h3>
+            <input type="text" class="search-users" id="searchUsersInput" placeholder="🔍 ძებნა..." oninput="filterUsersList()">
+            <div id="usersListContainer"></div>
+            <div style="margin-top: 15px;">
+                <h4 style="color:#b22222;">🤝 მეგობრები</h4>
+                <div id="friendsList"></div>
+                <h4 style="color:#b22222; margin-top: 10px;">📨 მოთხოვნები</h4>
+                <div id="friendRequestsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- პროფილის მოდალი -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeProfileModal()">&times;</span>
+            <h3 style="color:#b22222; text-align:center;">👤 ჩემი პროფილი</h3>
+            <div class="profile-pic">
+                <img id="profileAvatarImg" src="" alt="avatar">
+                <input type="file" id="avatarFileInput" accept="image/*" style="display: none;" onchange="uploadAvatarImage(this)">
+                <button onclick="document.getElementById('avatarFileInput').click()" style="margin-top: 10px;">📷 ფოტოს ატვირთვა</button>
+            </div>
+            <input type="text" id="profileStatusInput" class="status-input" placeholder="სტატუსი...">
+            <select id="profileEmotionSelect" class="emoji-select">
+                <option value="😊">😊 ბედნიერი</option>
+                <option value="❤️">❤️ შეყვარებული</option>
+                <option value="🎉">🎉 მხიარული</option>
+                <option value="😢">😢 მოწყენილი</option>
+                <option value="🔥">🔥 მაგარი</option>
+                <option value="💪">💪 ძლიერი</option>
+            </select>
+            <textarea id="profileCommentInput" class="comment-input" rows="2" placeholder="კომენტარი პროფილზე..."></textarea>
+            <button onclick="saveProfileData()" style="width:100%; padding:12px; background:#b22222; color:white; border:none; border-radius:25px; margin-top:10px;">💾 შენახვა</button>
+            <div id="profileCommentsList" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- პირადი ჩატის მოდალი -->
+    <div id="privateChatModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closePrivateChatModal()">&times;</span>
+            <h3 id="privateChatTitle" style="color:#b22222;">💬 პირადი საუბარი</h3>
+            <div class="private-messages-area" id="privateMessagesContainer"></div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="privateMessageInput" style="flex:1; padding:12px; border:2px solid #b22222; border-radius:25px;" placeholder="დაწერეთ მესიჯი..." onkeypress="handlePrivateKeyPress(event)">
+                <button onclick="sendPrivateMessage()" style="padding:12px 20px; background:#b22222; color:white; border:none; border-radius:25px;">📨 გაგზავნა</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== მონაცემები ====================
+        let currentUser = {
+            id: 'u1',
+            name: 'მე',
+            role: 'founder',
+            avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+            status: '🌹 აქ ვარ',
+            emotion: '❤️',
+            online: true,
+            comments: []
+        };
+
+        let allUsers = [
+            { id: 'u1', name: 'მე', role: 'founder', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', status: '🌹 აქ ვარ', emotion: '❤️', online: true },
+            { id: 'u2', name: 'ნინო', role: 'admin', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135768.png', status: '✨ მოდი ჩათში', emotion: '😊', online: true },
+            { id: 'u3', name: 'ანა', role: 'member', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135789.png', status: '🎵 მუსიკას ვუსმენ', emotion: '🎉', online: true },
+            { id: 'u4', name: 'გიო', role: 'member', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135712.png', status: '💤 დასვენება', emotion: '😊', online: false },
+            { id: 'u5', name: 'თეო', role: 'member', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135760.png', status: '📚 ვსწავლობ', emotion: '🔥', online: true },
+            { id: 'u6', name: 'ლუკა', role: 'member', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135732.png', status: '🎮 თამაში', emotion: '💪', online: false },
+            { id: 'u7', name: 'სალომე', role: 'member', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135776.png', status: '☕ ყავას ვსვამ', emotion: '😊', online: true },
+            { id: 'u8', name: 'დათო', role: 'member', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135740.png', status: '🏃 სპორტი', emotion: '🎉', online: true }
+        ];
+
+        // 12 ოთახი
+        let chatRooms = [];
+        for (let i = 1; i <= 12; i++) {
+            chatRooms.push({
+                id: i,
+                name: `📌 ოთახი ${i}`,
+                messages: []
+            });
+        }
+
+        let currentRoom = chatRooms[0];
+        let nextMessageId = 1;
+        
+        // ემოჯიები
+        let globalEmojis = ['😊', '❤️', '🎉', '😢', '🔥', '💪', '😂', '😍', '😎', '🥰', '😘', '💖'];
+        
+        // პირადი ჩატები
+        let privateChats = {};
+        
+        // მეგობრები
+        let myFriends = [];
+        let pendingRequests = [
+            { from: 'u3', fromName: 'ანა', to: 'u1' }
+        ];
+        
+        // დაბლოკილები
+        let blockedUsersList = [];
+        
+        // პირადი ჩატის მიმდინარე მომხმარებელი
+        let currentPrivateUser = null;
+        
+        // PM ინდიკატორი (დაუკითხავი მესიჯების რაოდენობა)
+        let unreadPMs = {};
+        
+        // ==================== ფუნქციები ====================
+        
+        // გულების ანიმაცია
+        function startHeartAnimation() {
+            setInterval(() => {
+                const heartBg = document.getElementById('heartBg');
+                const heart = document.createElement('div');
+                heart.className = 'floating-heart';
+                heart.innerHTML = '❤️';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.fontSize = (Math.random() * 40 + 20) + 'px';
+                heart.style.animationDuration = (Math.random() * 12 + 8) + 's';
+                heart.style.animationDelay = Math.random() * 5 + 's';
+                heartBg.appendChild(heart);
+                setTimeout(() => heart.remove(), 14000);
+            }, 1800);
+        }
+        
+        // ოთახების გამოტანა
+        function renderRooms() {
+            const container = document.getElementById('roomsList');
+            container.innerHTML = chatRooms.map(room => `
+                <button class="room-btn ${currentRoom.id === room.id ? 'active' : ''}" onclick="switchToRoom(${room.id})">
+                    ${room.name}
+                </button>
+            `).join('');
+        }
+        
+        function switchToRoom(roomId) {
+            currentRoom = chatRooms.find(r => r.id === roomId);
+            document.getElementById('currentRoomName').innerHTML = `📌 ${currentRoom.name}`;
+            renderRooms();
+            renderMessages();
+        }
+        
+        // მესიჯების ჩვენება
+        function renderMessages() {
+            const area = document.getElementById('messagesArea');
+            const messages = [...currentRoom.messages].reverse();
+            area.innerHTML = messages.map(msg => {
+                const user = allUsers.find(u => u.id === msg.userId);
+                const isBlocked = blockedUsersList.some(b => b.userId === msg.userId);
+                if (isBlocked && msg.userId !== currentUser.id) return '';
+                return `
+                    <div class="message left">
+                        <div class="message-header">
+                            <img src="${user?.avatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" class="avatar">
+                            <strong>${user?.name || 'უცნობი'} ${user?.emotion || ''}</strong>
+                            <span class="message-time">${msg.time}</span>
+                        </div>
+                        <div class="message-text">${escapeHtml(msg.text)}</div>
+                        ${(currentUser.role === 'admin' || currentUser.role === 'founder') ? `
+                            <div class="message-actions">
+                                <button class="delete-msg" onclick="deleteRoomMessage(${msg.id})">🗑️</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            area.scrollTop = area.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const msg = {
+                id: nextMessageId++,
+                userId: currentUser.id,
+                text: text,
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+            };
+            currentRoom.messages.unshift(msg);
+            renderMessages();
+            input.value = '';
+        }
+        
+        function deleteRoomMessage(msgId) {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'founder') return;
+            currentRoom.messages = currentRoom.messages.filter(m => m.id !== msgId);
+            renderMessages();
+        }
+        
+        // ემოჯიები
+        function toggleEmojiPicker() {
+            const panel = document.getElementById('emojiPickerPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (panel.style.display === 'block') {
+                renderEmojiGrid();
+                if (currentUser.role === 'admin' || currentUser.role === 'founder') {
+                    document.getElementById('adminEmojiPanel').style.display = 'flex';
+                } else {
+                    document.getElementById('adminEmojiPanel').style.display = 'none';
+                }
+            }
+        }
+        
+        function renderEmojiGrid() {
+            const grid = document.getElementById('emojiGrid');
+            grid.innerHTML = globalEmojis.map(emoji => `
+                <div class="emoji-item" onclick="addEmojiToInput('${emoji}')">${emoji}</div>
+            `).join('');
+        }
+        
+        function addEmojiToInput(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+            input.focus();
+        }
+        
+        function addCustomEmoji() {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'founder') return;
+            const newEmoji = document.getElementById('newEmojiInput').value.trim();
+            if (newEmoji && !globalEmojis.includes(newEmoji)) {
+                globalEmojis.push(newEmoji);
+                renderEmojiGrid();
+                document.getElementById('newEmojiInput').value = '';
+            }
+        }
+        
+        // მომხმარებლების სია
+        function renderUsersList() {
+            const searchTerm = document.getElementById('searchUsersInput').value.toLowerCase();
+            const founders = allUsers.filter(u => u.role === 'founder' && u.id !== currentUser.id && u.name.toLowerCase().includes(searchTerm));
+            const admins = allUsers.filter(u => u.role === 'admin' && u.id !== currentUser.id && u.name.toLowerCase().includes(searchTerm));
+            const members = allUsers.filter(u => u.role === 'member' && u.id !== currentUser.id && u.name.toLowerCase().includes(searchTerm));
+            
+            const container = document.getElementById('usersListContainer');
+            container.innerHTML = `
+                <div class="user-group">
+                    <h4>👑 დამფუძნებლები</h4>
+                    ${founders.map(u => renderUserItem(u)).join('') || '<div style="padding:5px; opacity:0.6;">არავინ</div>'}
+                </div>
+                <div class="user-group">
+                    <h4>⚙️ ადმინები</h4>
+                    ${admins.map(u => renderUserItem(u)).join('') || '<div style="padding:5px; opacity:0.6;">არავინ</div>'}
+                </div>
+                <div class="user-group">
+                    <h4>👥 წევრები</h4>
+                    ${members.map(u => renderUserItem(u)).join('') || '<div style="padding:5px; opacity:0.6;">არავინ</div>'}
+                </div>
+            `;
+            
+            // მეგობრების სია
+            const friendsContainer = document.getElementById('friendsList');
+            const myFriendsList = allUsers.filter(u => myFriends.includes(u.id));
+            friendsContainer.innerHTML = myFriendsList.map(f => `
+                <div class="user-item" onclick="openPrivateChat('${f.id}')">
+                    <img src="${f.avatar}" class="avatar">
+                    <div class="user-info">
+                        <div class="user-name">${f.name} ${f.emotion}</div>
+                        <div class="user-status">${f.status}</div>
+                    </div>
+                    <span class="online-indicator ${f.online ? '' : 'offline-indicator'}"></span>
+                    ${unreadPMs[f.id] ? `<span class="pm-badge">${unreadPMs[f.id]}</span>` : ''}
+                </div>
+            `).join('') || '<div style="padding:5px; opacity:0.6;">მეგობრები არ არიან</div>';
+            
+            // მოთხოვნები
+            const requestsContainer = document.getElementById('friendRequestsList');
+            const myRequests = pendingRequests.filter(r => r.to === currentUser.id);
+            requestsContainer.innerHTML = myRequests.map(req => `
+                <div class="friend-request-item">
+                    <span>${req.fromName} გამოგიგზავნათ მოთხოვნა</span>
+                    <div>
+                        <button class="accept-btn" onclick="acceptFriendRequest('${req.from}')">✅</button>
+                        <button class="reject-btn" onclick="rejectFriendRequest('${req.from}')">❌</button>
+                    </div>
+                </div>
+            `).join('') || '<div style="padding:5px; opacity:0.6;">მოთხოვნები არ არის</div>';
+        }
+        
+        function renderUserItem(user) {
+            const isBlocked = blockedUsersList.some(b => b.userId === user.id);
+            return `
+                <div class="user-item" onclick="openPrivateChat('${user.id}')">
+                    <img src="${user.avatar}" class="avatar">
+                    <div class="user-info">
+                        <div class="user-name">${user.name} ${user.emotion}</div>
+                        <div class="user-status">${user.status}</div>
+                    </div>
+                    <span class="online-indicator ${user.online ? '' : 'offline-indicator'}"></span>
+                    <div class="user-actions" onclick="event.stopPropagation()">
+                        ${currentUser.role === 'founder' ? `
+                            <button onclick="assignUserRole('${user.id}', 'admin')" title="ადმინად დანიშვნა">👑</button>
+                            <button onclick="assignUserRole('${user.id}', 'member')" title="როლის ჩამორთმევა">🔻</button>
+                            <button onclick="blockUserWithReason('${user.id}')" title="დაბლოკვა">🚫</button>
+                        ` : currentUser.role === 'admin' ? `
+                            <button onclick="blockUserWithReason('${user.id}')" title="დაბლოკვა">🚫</button>
+                        ` : ''}
+                        <button onclick="addToFriends('${user.id}')" title="მეგობრად დამატება">🤝</button>
+                    </div>
+                </div>
+                ${isBlocked ? `<div class="block-reason">🔒 დაბლოკილია: ${blockedUsersList.find(b => b.userId === user.id)?.reason}</div>` : ''}
+            `;
+        }
+        
+        function filterUsersList() {
+            renderUsersList();
+        }
+        
+        function assignUserRole(userId, role) {
+            if (currentUser.role !== 'founder') return;
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                user.role = role;
+                renderUsersList();
+            }
+        }
+        
+        function blockUserWithReason(userId) {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'founder') return;
+            const reason = prompt('დაბლოკვის მიზეზი:');
+            if (reason && reason.trim()) {
+                if (!blockedUsersList.some(b => b.userId === userId)) {
+                    blockedUsersList.push({ userId, reason, blockedBy: currentUser.id });
+                    alert(`✅ ${allUsers.find(u => u.id === userId)?.name} დაბლოკილია. მიზეზი: ${reason}`);
+                    renderUsersList();
+                }
+            }
+        }
+        
+        // მეგობრები
+        function addToFriends(userId) {
+            if (myFriends.includes(userId)) {
+                alert('უკვე მეგობარი ხართ!');
+                return;
+            }
+            const user = allUsers.find(u => u.id === userId);
+            pendingRequests.push({ from: currentUser.id, fromName: currentUser.name, to: userId });
+            alert(`🤝 მოთხოვნა გაეგზავნა ${user?.name}-ს`);
+        }
+        
+        function acceptFriendRequest(fromId) {
+            myFriends.push(fromId);
+            pendingRequests = pendingRequests.filter(r => !(r.from === fromId && r.to === currentUser.id));
+            renderUsersList();
+            alert('✅ მეგობარი დაემატა!');
+        }
+        
+        function rejectFriendRequest(fromId) {
+            pendingRequests = pendingRequests.filter(r => !(r.from === fromId && r.to === currentUser.id));
+            renderUsersList();
+            alert('❌ მოთხოვნა უარყოფილია');
+        }
+        
+        // პროფილი
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'flex';
+            document.getElementById('profileAvatarImg').src = currentUser.avatar;
+            document.getElementById('profileStatusInput').value = currentUser.status;
+            document.getElementById('profileEmotionSelect').value = currentUser.emotion;
+            document.getElementById('profileCommentInput').value = '';
+            
+            const commentsDiv = document.getElementById('profileCommentsList');
+            commentsDiv.innerHTML = '<h4 style="color:#b22222;">💬 კომენტარები</h4>' + 
+                (currentUser.comments.map(c => `<div style="padding:8px; border-bottom:1px solid #b22222;"><strong>${c.fromName}:</strong> ${c.text}</div>`).join('') || '<div>კომენტარები არ არის</div>');
+        }
+        
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+        
+        function uploadAvatarImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentUser.avatar = e.target.result;
+                    document.getElementById('profileAvatarImg').src = currentUser.avatar;
+                    renderUsersList();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function saveProfileData() {
+            currentUser.status = document.getElementById('profileStatusInput').value;
+            currentUser.emotion = document.getElementById('profileEmotionSelect').value;
+            const comment = document.getElementById('profileCommentInput').value.trim();
+            if (comment) {
+                currentUser.comments.unshift({ fromName: currentUser.name, text: comment, time: new Date().toLocaleString() });
+            }
+            closeProfileModal();
+            renderUsersList();
+            alert('✅ პროფილი განახლდა!');
+        }
+        
+        // პირადი ჩატი
+        function openPrivateChat(userId) {
+            currentPrivateUser = userId;
+            const user = allUsers.find(u => u.id === userId);
+            document.getElementById('privateChatTitle').innerHTML = `💬 ${user?.name} ${user?.emotion || ''}`;
+            if (!privateChats[userId]) {
+                privateChats[userId] = [];
+            }
+            renderPrivateMessages();
+            document.getElementById('privateChatModal').style.display = 'flex';
+            
+            // წაშალე დაუკითხავი
+            if (unreadPMs[userId]) {
+                delete unreadPMs[userId];
+                renderUsersList();
+            }
+        }
+        
+        function closePrivateChatModal() {
+            document.getElementById('privateChatModal').style.display = 'none';
+            currentPrivateUser = null;
+        }
+        
+        function renderPrivateMessages() {
+            const container = document.getElementById('privateMessagesContainer');
+            const messages = privateChats[currentPrivateUser] || [];
+            container.innerHTML = messages.map(msg => `
+                <div class="private-msg ${msg.from === currentUser.id ? 'sent' : 'received'}">
+                    <div style="font-size:11px; opacity:0.7;">${msg.time}</div>
+                    <div>${escapeHtml(msg.text)}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function sendPrivateMessage() {
+            const input = document.getElementById('privateMessageInput');
+            const text = input.value.trim();
+            if (!text || !currentPrivateUser) return;
+            
+            const msg = {
+                from: currentUser.id,
+                to: currentPrivateUser,
+                text: text,
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+            };
+            privateChats[currentPrivateUser].push(msg);
+            renderPrivateMessages();
+            input.value = '';
+        }
+        
+        function handlePrivateKeyPress(event) {
+            if (event.key === 'Enter') sendPrivateMessage();
+        }
+        
+        // პირადი მესიჯის მიღების სიმულაცია (დემო)
+        function simulateIncomingPM() {
+            setInterval(() => {
+                const randomUser = allUsers.find(u => u.id !== currentUser.id && !myFriends.includes(u.id));
+                if (randomUser && Math.random() > 0.7) {
+                    if (!privateChats[randomUser.id]) privateChats[randomUser.id] = [];
+                    privateChats[randomUser.id].push({
+                        from: randomUser.id,
+                        to: currentUser.id,
+                        text: `გამარჯობა! 😊 (ავტომატური)`,
+                        time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                    });
+                    if (!unreadPMs[randomUser.id]) unreadPMs[randomUser.id] = 0;
+                    unreadPMs[randomUser.id]++;
+                    renderUsersList();
+                }
+            }, 30000);
+        }
+        
+        // თემა
+        function toggleTheme() {
+            const body = document.body;
+            if (body.classList.contains('day-mode')) {
+                body.classList.remove('day-mode');
+                body.classList.add('night-mode');
+                document.querySelector('.theme-toggle').innerHTML = '☀️';
+            } else {
+                body.classList.remove('night-mode');
+                body.classList.add('day-mode');
+                document.querySelector('.theme-toggle').innerHTML = '🌙';
+            }
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendMessage();
+        }
+        
+        // ინიციალიზაცია
+        function init() {
+            startHeartAnimation();
+            renderRooms();
+            renderMessages();
+            renderUsersList();
+            simulateIncomingPM();
+            
+            // დამატება ნიმუშის მესიჯები
+            if (chatRooms[0].messages.length === 0) {
+                chatRooms[0].messages.push({ id: nextMessageId++, userId: 'u2', text: 'გამარჯობა ყველას! 🌹', time: '12:30' });
+                chatRooms[0].messages.push({ id: nextMessageId++, userId: 'u3', text: 'მოგესალმებით 💖', time: '12:31' });
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>
