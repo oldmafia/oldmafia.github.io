@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<title>Chat</title>
+
+<style>
+body {margin:0;font-family:sans-serif;}
+body.light {background:#f5eee6;}
+body.dark {background:#0a0a0a;color:white;}
+
+.topbar {
+  display:flex;
+  justify-content:space-between;
+  padding:10px;
+  background:#800020;
+  color:white;
+}
+
+.rooms {
+  width:200px;
+  float:left;
+  height:90vh;
+  overflow:auto;
+}
+
+.room {padding:10px;cursor:pointer;}
+.room:hover {background:#800020;color:white;}
+
+.chat {margin-left:200px;padding:10px;}
+
+.messages {height:60vh;overflow:auto;border:1px solid #ccc;padding:10px;}
+
+.msg {
+  padding:8px;
+  margin:5px 0;
+  border-radius:10px;
+  background:#eee;
+}
+.dark .msg {background:#222;}
+
+.time {font-size:10px;float:right;}
+
+.input-area {display:flex;margin-top:10px;}
+
+input {flex:1;padding:10px;}
+
+button {padding:10px;}
+
+.profile, .messenger {
+  display:none;
+  position:fixed;
+  right:0;
+  top:50px;
+  width:250px;
+  background:#222;
+  color:white;
+  padding:10px;
+}
+
+.heart {
+  position:fixed;
+  width:80px;
+  height:80px;
+  background:url('https://upload.wikimedia.org/wikipedia/commons/3/35/Red_Heart.svg');
+  background-size:cover;
+  animation:float 10s linear infinite;
+  opacity:0.15;
+}
+
+@keyframes float {
+  0% {transform:translateY(100vh);}
+  100% {transform:translateY(-100vh);}
+}
+</style>
+</head>
+
+<body class="light">
+
+<div class="topbar">
+  <div>❤️ Chat</div>
+  <div>
+    <button onclick="toggleProfile()">პროფილი</button>
+    <button onclick="toggleMessenger()">მესენჯერი</button>
+    <button onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+
+<div class="rooms" id="rooms"></div>
+
+<div class="chat">
+  <div class="messages" id="messages"></div>
+
+  <div id="emojiBox"></div>
+
+  <div class="input-area">
+    <button onclick="toggleEmoji()">😊</button>
+    <input id="msgInput">
+    <button onclick="sendMsg()">გაგზავნა</button>
+  </div>
+</div>
+
+<div class="profile" id="profile">
+  <h3>პროფილი</h3>
+  <input id="status" placeholder="სტატუსი"><br><br>
+  <button onclick="saveProfile()">შენახვა</button>
+</div>
+
+<div class="messenger" id="messenger">
+  <h3>პირადი ჩატი</h3>
+  <div id="pmessages"></div>
+</div>
+
+<script>
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/+esm';
+
+const supabaseUrl = 'https://ftfciebnywbondaiarnc.supabase.co';
+const supabaseKey = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI';
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+
+
+);
+
+let currentRoom = 1;
+let currentUser = null;
+let userRole = "user";
+
+/* INIT */
+init();
+
+async function init(){
+  const { data } = await supabase.auth.getUser();
+  currentUser = data.user;
+
+  await loadRole();
+  loadRooms();
+  loadMessages();
+  loadEmojis();
+}
+
+/* ROLES */
+async function loadRole(){
+  let { data } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", currentUser.id)
+    .single();
+
+  if(data) userRole = data.role;
+}
+
+/* ROOMS */
+function loadRooms(){
+  for(let i=1;i<=12;i++){
+    let div=document.createElement("div");
+    div.className="room";
+    div.innerText="ოთახი "+i;
+    div.onclick=()=>{
+      currentRoom=i;
+      loadMessages();
+    };
+    rooms.appendChild(div);
+  }
+}
+
+/* LOAD MESSAGES */
+async function loadMessages(){
+  let { data } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("room_id", currentRoom)
+    .order("created_at");
+
+  messages.innerHTML="";
+
+  data.forEach(m=>{
+    let div=document.createElement("div");
+    div.className="msg";
+
+    let time=new Date(m.created_at).toLocaleTimeString();
+
+    div.innerHTML = m.text + 
+      "<span class='time'>"+time+"</span>";
+
+    /* DELETE BUTTON */
+    if(userRole==="admin" || userRole==="founder"){
+      let btn=document.createElement("button");
+      btn.innerText="❌";
+      btn.onclick=()=>deleteMsg(m.id);
+      div.appendChild(btn);
+    }
+
+    messages.appendChild(div);
+  });
+}
+
+/* SEND */
+async function sendMsg(){
+  let text=msgInput.value;
+  if(!text) return;
+
+  await supabase.from("messages").insert({
+    text:text,
+    room_id:currentRoom,
+    user_id:currentUser.id
+  });
+
+  msgInput.value="";
+}
+
+/* DELETE */
+async function deleteMsg(id){
+  await supabase.from("messages").delete().eq("id",id);
+  loadMessages();
+}
+
+/* REALTIME */
+supabase
+.channel("chat")
+.on("postgres_changes",
+ {event:"INSERT",schema:"public",table:"messages"},
+ ()=>loadMessages()
+).subscribe();
+
+/* PROFILE */
+async function saveProfile(){
+  await supabase.from("profiles").upsert({
+    id:currentUser.id,
+    status:status.value
+  });
+}
+
+/* EMOJIS */
+async function loadEmojis(){
+  let { data } = await supabase.from("emojis").select("*");
+
+  data.forEach(e=>{
+    let btn=document.createElement("button");
+    btn.innerText=e.symbol;
+    btn.onclick=()=>{
+      msgInput.value += e.symbol;
+    };
+    emojiBox.appendChild(btn);
+  });
+}
+
+function toggleEmoji(){
+  emojiBox.style.display =
+    emojiBox.style.display==="none"?"block":"none";
+}
+
+/* PRIVATE MSG */
+async function sendPrivate(targetId, text){
+  await supabase.from("private_messages").insert({
+    sender_id:currentUser.id,
+    receiver_id:targetId,
+    text:text
+  });
+}
+
+/* UI */
+function toggleProfile(){
+  profile.style.display =
+    profile.style.display==="block"?"none":"block";
+}
+
+function toggleMessenger(){
+  messenger.style.display =
+    messenger.style.display==="block"?"none":"block";
+}
+
+function toggleTheme(){
+  document.body.classList.toggle("dark");
+  document.body.classList.toggle("light");
+}
+
+/* HEARTS */
+setInterval(()=>{
+  let h=document.createElement("div");
+  h.className="heart";
+  h.style.left=Math.random()*100+"vw";
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),10000);
+},2000);
+
+</script>
+
+</body>
+</html>
