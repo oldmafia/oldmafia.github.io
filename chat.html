@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ჩემი ჩათი</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --dark-wine: #4a0404;
+            --light-cream: #f5f5dc;
+            --heart-color: #800020;
+        }
+
+        body { margin: 0; padding: 0; overflow: hidden; transition: 0.5s; font-family: sans-serif; }
+        body.dark-mode { background-color: #0b0000; color: #fff; }
+        body.light-mode { background-color: var(--light-cream); color: #333; }
+
+        /* ანიმაციური გულები - ფიქსირებული ფონი */
+        #hearts-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; overflow: hidden;
+        }
+        .heart {
+            position: absolute; font-size: 50px; /* დიდი გულები */
+            color: var(--heart-color);
+            filter: drop-shadow(0 0 10px var(--dark-wine));
+            animation: float 12s infinite linear;
+            opacity: 0;
+        }
+        @keyframes float {
+            0% { transform: translateY(110vh) scale(0.5) rotate(0deg); opacity: 0; }
+            20% { opacity: 0.7; }
+            80% { opacity: 0.7; }
+            100% { transform: translateY(-20vh) scale(1.5) rotate(45deg); opacity: 0; }
+        }
+
+        /* მთავარი კონტეინერი */
+        .wrapper { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; }
+        header { background: rgba(0,0,0,0.7); padding: 15px; text-align: center; border-bottom: 2px solid var(--dark-wine); }
+        #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
+
+        /* სმს-ები */
+        .msg { margin-bottom: 15px; display: flex; align-items: flex-end; }
+        .bubble { 
+            padding: 12px; border-radius: 15px; max-width: 70%; 
+            background: rgba(74, 4, 4, 0.4); border: 1px solid var(--dark-wine);
+            backdrop-filter: blur(5px);
+        }
+        .light-mode .bubble { background: #fff; color: #000; }
+
+        /* მენიუ და ინპუტი */
+        .input-area { display: flex; padding: 15px; background: #000; border-top: 1px solid var(--dark-wine); }
+        input { flex: 1; padding: 12px; border-radius: 20px; border: none; background: #222; color: #fff; }
+        
+        .nav-bar { height: 65px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 2px solid var(--dark-wine); }
+        .btn { font-size: 25px; cursor: pointer; }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <div id="hearts-bg"></div>
+
+    <div class="wrapper">
+        <header><h2>ჩათის ოთახი</h2></header>
+        <div id="chat-box"></div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="დაწერე მესიჯი...">
+            <button id="sendBtn" style="margin-left:10px; border-radius:50%; width:45px; height:45px; background:var(--dark-wine); color:white; border:none; cursor:pointer;">➤</button>
+        </div>
+
+        <nav class="nav-bar">
+            <div class="btn">🏠</div>
+            <div class="btn">💬</div>
+            <div class="btn">👥</div>
+            <div class="btn" id="themeBtn">🌙</div>
+        </nav>
+    </div>
+
+    <script>
+        const S_URL = 'https://ftfciebnywbondaiarnc.supabase.co';
+        const S_KEY = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI';
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // 1. მესიჯების გამოჩენა
+        function addMsg(data) {
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.innerHTML = `<div class="bubble"><b>იუზერი:</b><br>${data.content || data.text}</div>`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 2. წამოღება (Load)
+        async function load() {
+            let { data } = await _supabase.from('messages').select('*').order('created_at', { ascending: true });
+            if (data) data.forEach(addMsg);
+        }
+
+        // 3. გაგზავნა (Send)
+        sendBtn.onclick = async () => {
+            if (!userInput.value) return;
+            await _supabase.from('messages').insert([{ content: userInput.value }]);
+            userInput.value = '';
+        }
+
+        // 4. რეალურ დროში განახლება
+        _supabase.channel('room1').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            addMsg(payload.new);
+        }).subscribe();
+
+        // 5. გულების ანიმაცია (რომელიც აუცილებლად იმუშავებს)
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.innerHTML = '❤';
+            heart.className = 'heart';
+            heart.style.left = Math.random() * 100 + "vw";
+            heart.style.animationDuration = (Math.random() * 5 + 7) + "s";
+            document.getElementById('hearts-bg').appendChild(heart);
+            setTimeout(() => heart.remove(), 12000);
+        }
+        setInterval(createHeart, 1000); // ყოველ წამს ააგდებს გულს
+
+        // 6. რეჟიმის შეცვლა
+        document.getElementById('themeBtn').onclick = () => {
+            document.body.classList.toggle('light-mode');
+            document.body.classList.toggle('dark-mode');
+        };
+
+        load();
+    </script>
+</body>
+</html>
