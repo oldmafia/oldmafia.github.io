@@ -1,0 +1,40 @@
+function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageName + 'Page').classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('active'); if (btn.getAttribute('data-page') === pageName) btn.classList.add('active'); });
+            if (pageName === 'online') renderOnlineUsers();
+            if (pageName === 'friends') { renderFriendsList(); renderFriendRequestsList(); }
+            if (pageName === 'messages') renderPrivateChatsList();
+            if (pageName === 'profile') { const user = users.find(u => u.username === currentUser); document.getElementById('profileName').innerHTML = currentUser; document.getElementById('statusInput').value = user?.status || ''; document.getElementById('userId').innerHTML = Math.floor(Math.random() * 10000) + 1000; if (user?.avatar) { document.getElementById('profileAvatar').style.backgroundImage = `url(${user.avatar})`; document.getElementById('profileAvatar').style.backgroundSize = 'cover'; document.getElementById('profileAvatar').innerHTML = ''; } renderAlbum(); }
+        }
+        
+        function showNotification(msg) { const notif = document.createElement('div'); notif.className = 'notification'; notif.textContent = msg; document.body.appendChild(notif); setTimeout(() => notif.remove(), 3000); }
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        function startHearts() { setInterval(() => { const heart = document.createElement('div'); heart.className = 'heart'; heart.innerHTML = ['❤️', '💖', '💗', '💕', '💘'][Math.floor(Math.random()*5)]; heart.style.left = Math.random()*100+'%'; heart.style.fontSize = (24+Math.random()*20)+'px'; document.getElementById('hearts').appendChild(heart); setTimeout(() => heart.remove(), 5000); }, 2500); }
+        function toggleTheme() { document.body.classList.toggle('day-mode'); document.getElementById('themeToggle').innerHTML = document.body.classList.contains('day-mode') ? '☀️' : '🌙'; }
+        
+        function initApp() {
+            renderRooms();
+            renderOnlineUsers();
+            renderFriendsList();
+            renderFriendRequestsList();
+            renderPrivateChatsList();
+            startHearts();
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.querySelectorAll('.nav-btn[data-page]').forEach(btn => { btn.addEventListener('click', () => showPage(btn.getAttribute('data-page'))); });
+            showPage('home');
+        }
+        
+        // შემოწმება უკვე შესულია თუ არა
+        const savedUser = localStorage.getItem('mafia_current_user');
+        if (savedUser) {
+            currentUser = savedUser;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('mainPages').style.display = 'block';
+            loadData();
+            initApp();
+        }
+    </script>
+</body>
+</html>
