@@ -3,47 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Old Mafia - All Rooms</title>
+    <title>Old Mafia - Admin Control</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body.night-mode { --bg: #000; --txt: #e0c8a8; --card: #0a0a0a; --accent: #ff0000; --nav: #050505; --border: #333; }
-        body.day-mode { --bg: #fff8f0; --txt: #2c2418; --card: #fff; --accent: #c55a3a; --nav: #fff4e6; --border: #e8d4b0; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; transition: 0.3s; }
+        body.night-mode { --bg: #000; --txt: #e0c8a8; --accent: #ff0000; --nav: #050505; --card: #0a0a0a; --border: #333; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
 
-        /* 📱 Layout */
-        .page { display: none; height: calc(100vh - 65px); overflow-y: auto; position: relative; z-index: 5; }
-        .page.active { display: block; }
+        /* ❤️🔥 მფრინავი წითელი გულები */
+        .fire-heart { position: fixed; color: #ff0000; font-size: 40px; pointer-events: none; z-index: 2; animation: float 6s linear infinite; filter: drop-shadow(0 0 10px red); }
+        @keyframes float { 0% { bottom: -50px; opacity: 0; } 15% { opacity: 0.8; } 100% { bottom: 105%; opacity: 0; } }
 
-        /* ❤️🔥 ღაჟღაჟა წითელი გულები */
-        .fire-heart {
-            position: fixed; color: #ff0000; font-size: 40px; pointer-events: none; z-index: 2;
-            animation: fireHeartFloat 6s linear infinite;
-            filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.9)) drop-shadow(0 0 25px rgba(255, 0, 0, 0.7));
-        }
-        @keyframes fireHeartFloat { 0% { bottom: -70px; opacity: 0; } 15% { opacity: 0.9; } 100% { bottom: 105%; opacity: 0; } }
+        /* 🧭 Nav & Indicator */
+        .navigation { position: fixed; bottom: 0; width: 100%; height: 65px; background: var(--nav); border-top: 1px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 5000; }
+        .nav-item { position: relative; cursor: pointer; font-size: 26px; opacity: 0.5; color: var(--txt); }
+        .nav-item.active { opacity: 1; color: var(--accent); }
+        .badge { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; background: red; border-radius: 50%; display: none; box-shadow: 0 0 10px red; }
 
         /* 🏠 Rooms Menu */
         .rooms-grid { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .room-btn { 
-            background: var(--card); padding: 20px 10px; border-radius: 12px; border: 1px solid var(--border);
-            text-align: center; cursor: pointer; border-bottom: 4px solid var(--accent); font-weight: bold;
-        }
-        .room-btn:active { transform: scale(0.95); }
-        .logout-btn { grid-column: span 2; background: #330000; color: white; border-color: red; }
+        .room-btn { background: var(--card); padding: 18px 10px; border-radius: 12px; border: 1px solid var(--border); text-align: center; cursor: pointer; border-bottom: 3px solid var(--accent); font-weight: bold; }
 
-        /* 💬 Dynamic Chat Room */
+        /* 😊 Global Emoji Bar */
+        .emoji-panel { display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: rgba(255,0,0,0.05); border-top: 1px solid var(--accent); height: 55px; }
+        .emoji-img { width: 35px; height: 35px; cursor: pointer; transition: 0.2s; object-fit: contain; }
+
+        /* 📱 Page Styling */
+        .page { display: none; height: calc(100vh - 65px); overflow-y: auto; }
+        .page.active { display: block; }
+        
         #roomChatPage { flex-direction: column; display: none; height: calc(100vh - 65px); }
         #roomChatPage.active { display: flex; }
-        .chat-header { background: var(--nav); padding: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--accent); }
-        .chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .chat-input { padding: 10px; display: flex; gap: 10px; background: var(--nav); border-top: 1px solid var(--border); }
-        .chat-input input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--accent); background: var(--bg); color: var(--txt); }
-
-        /* 🧭 Nav */
-        .navigation { position: fixed; bottom: 0; width: 100%; height: 65px; background: var(--nav); border-top: 1px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 5000; }
-        .nav-item { cursor: pointer; font-size: 24px; opacity: 0.5; color: var(--txt); }
-        .nav-item.active { opacity: 1; color: var(--accent); }
+        .chat-header { background: var(--nav); padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--accent); }
+        .chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg-box { padding: 10px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); max-width: 85%; }
+        
+        /* 🛡️ Admin Panel Style */
+        .admin-zone { display: none; padding: 15px; border: 2px dashed var(--accent); margin: 10px; border-radius: 10px; background: rgba(255,0,0,0.05); }
     </style>
 </head>
 <body class="night-mode">
@@ -51,7 +47,14 @@
     <div id="heartsContainer"></div>
 
     <div id="homePage" class="page active">
-        <h2 style="padding:15px; color:var(--accent);">🏰 აირჩიე ოთახი</h2>
+        <h2 style="padding:15px; color:var(--accent);">🏰 ოთახები</h2>
+        
+        <div id="adminPanel" class="admin-zone">
+            <p style="color:red; font-weight:bold; margin-bottom:5px;">🛠️ სმაილების მართვა (Admin Control)</p>
+            <input type="file" id="emojiFile" accept="image/*">
+            <button onclick="uploadEmoji()" style="margin-top:5px; background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">ატვირთვა</button>
+        </div>
+
         <div class="rooms-grid">
             <div class="room-btn" onclick="openRoom('კაფე-ბარი')">☕ კაფე-ბარი</div>
             <div class="room-btn" onclick="openRoom('ვიპ საუბრები')">💎 ვიპ საუბრები</div>
@@ -63,86 +66,135 @@
             <div class="room-btn" onclick="openRoom('იუმორი')">😂 იუმორი</div>
             <div class="room-btn" onclick="openRoom('ადმინისტრაცია')">🛠️ ადმინისტრაცია</div>
             <div class="room-btn" onclick="openRoom('დახმარება')">❓ დახმარება</div>
-            <div class="room-btn logout-btn" onclick="logout()">🚪 გასვლა</div>
         </div>
     </div>
 
     <div id="roomChatPage" class="page">
         <div class="chat-header">
-            <button onclick="showPage('homePage')" style="background:none; border:none; color:var(--accent); font-size:20px; cursor:pointer;">⬅</button>
             <h3 id="currentRoomTitle">ოთახი</h3>
+            <button onclick="showPage('homePage')" style="background:none; border:none; color:red; font-size:22px; cursor:pointer;">✖</button>
         </div>
-        <div class="chat-msgs" id="roomMessages"></div>
-        <div class="chat-input">
-            <input type="text" id="msgInput" placeholder="დაწერე მესიჯი...">
-            <button onclick="sendRoomMsg()" style="background:var(--accent); color:white; border:none; border-radius:50%; width:45px; height:45px;">✈</button>
+        <div id="roomMessages" class="chat-msgs"></div>
+        
+        <div class="emoji-panel" id="emojiBar"></div>
+
+        <div style="padding:10px; display:flex; gap:10px; background:var(--nav);">
+            <input type="text" id="msgInp" placeholder="დაწერე მესიჯი..." style="flex:1; padding:12px; border-radius:20px; border:1px solid red; background:none; color:white;">
+            <button onclick="sendRoomMessage()" style="background:red; color:white; border:none; border-radius:50%; width:45px; height:45px; cursor:pointer;">✈</button>
         </div>
     </div>
 
-    <div id="messengerPage" class="page"><h2 style="padding:20px;">მესენჯერი</h2><div id="users-list"></div></div>
-    <div id="profilePage" class="page">
-        <div class="fb-header"><div style="position:absolute; bottom:-50px; left:50%; transform:translateX(-50%);"><img id="myPic" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--accent); object-fit:cover;"></div></div>
-        <div style="margin-top:60px; text-align:center;"><h2 id="myNick">ნიკი</h2><div id="myGallery" class="rooms-grid" style="margin-top:20px;"></div></div>
-    </div>
+    <div id="messengerPage" class="page"><div id="pm-history-list"></div></div>
 
     <div class="navigation">
         <div class="nav-item active" onclick="showPage('homePage', this)">🏠</div>
-        <div class="nav-item" onclick="showPage('messengerPage', this)">💬</div>
+        <div class="nav-item" onclick="showPage('messengerPage', this)">
+            💬 <div id="msgIndicator" class="badge"></div>
+        </div>
         <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
-        <div class="nav-item" onclick="toggleTheme()">🌙</div>
     </div>
 
     <script>
         const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-        let myNick = localStorage.getItem('nickname');
-        let currentRoom = "";
+        let myNick = localStorage.getItem('nickname') || "Abu007";
+        let currentRoomName = "";
+
+        // 🛡️ ადმინების სია (ჩაამატე ნიკები აქ)
+        const admins = ["Abu007", "Lukinio", "Admin123"];
 
         async function init() {
-            if (!myNick) { location.href='index.html'; return; }
-            const { data: user } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
-            if (user) { document.getElementById('myNick').innerText = user.username; document.getElementById('myPic').src = user.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png"; }
-            startHearts();
+            // ადმინ-პანელის გამოჩენა მხოლოდ სიიდან
+            if (admins.includes(myNick)) {
+                document.getElementById('adminPanel').style.display = 'block';
+            }
+            
+            loadEmojis();
+            loadPMHistory();
+            startFireHearts();
+            checkNewMessages();
+            
+            // რეალურ დროში მესიჯების მოსმენა
+            _s.channel('room-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                if(payload.new.room_name === currentRoomName) loadRoomMsgs();
+            }).subscribe();
         }
 
-        function openRoom(name) {
-            currentRoom = name;
-            document.getElementById('currentRoomTitle').innerText = name;
-            showPage('roomChatPage');
-            loadRoomMessages();
-            // რეალურ დროში განახლება
-            _s.channel('room-updates').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, loadRoomMessages).subscribe();
+        async function loadEmojis() {
+            const { data: emojis } = await _s.from('custom_emojis').select('*');
+            const bar = document.getElementById('emojiBar');
+            if (bar) bar.innerHTML = emojis?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="appendEmoji('${e.emoji_url}')">`).join('') || "";
         }
 
-        async function loadRoomMessages() {
-            const { data: msgs } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(30);
+        function appendEmoji(url) { document.getElementById('msgInp').value += ` :img:${url}: `; }
+
+        async function uploadEmoji() {
+            const file = document.getElementById('emojiFile').files[0];
+            if (!file) return;
+            const path = `emojis/${Date.now()}_${file.name}`;
+            const { data } = await _s.storage.from('avatars').upload(path, file);
+            if (data) {
+                const { data: urlData } = _s.storage.from('avatars').getPublicUrl(path);
+                await _s.from('custom_emojis').insert({ emoji_url: urlData.publicUrl });
+                loadEmojis();
+                alert("სმაილი დაემატა!");
+            }
+        }
+
+        async function loadRoomMsgs() {
+            const { data } = await _s.from('messages').select('*').eq('room_name', currentRoomName).order('created_at', { ascending: false }).limit(40);
             const box = document.getElementById('roomMessages');
-            box.innerHTML = msgs?.reverse().map(m => `<div style="padding:8px; background:var(--card); border-radius:10px; border:1px solid var(--border)"><b>${m.username}:</b> ${m.text}</div>`).join('') || "";
+            box.innerHTML = data?.reverse().map(m => `
+                <div class="msg-box"><b>${m.username}:</b> ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:30px; vertical-align:middle;">')}</div>
+            `).join('') || "";
             box.scrollTop = box.scrollHeight;
         }
 
-        async function sendRoomMsg() {
-            const txt = document.getElementById('msgInput').value;
-            if(!txt) return;
-            await _s.from('messages').insert({ username: myNick, text: txt, room_name: currentRoom });
-            document.getElementById('msgInput').value = "";
+        async function sendRoomMessage() {
+            const val = document.getElementById('msgInp').value;
+            if(!val) return;
+            await _s.from('messages').insert({ username: myNick, text: val, room_name: currentRoomName });
+            document.getElementById('msgInp').value = "";
+        }
+
+        function openRoom(name) {
+            currentRoomName = name;
+            document.getElementById('currentRoomTitle').innerText = name;
+            showPage('roomChatPage');
+            loadRoomMsgs();
         }
 
         function showPage(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if(el) { document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
+            if(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
         }
 
-        function toggleTheme() { document.body.classList.toggle('night-mode'); document.body.classList.toggle('day-mode'); }
-        function logout() { localStorage.clear(); location.href='index.html'; }
-        
-        function startHearts() {
+        function startFireHearts() {
             setInterval(() => {
                 const h = document.createElement('div'); h.className = 'fire-heart'; h.innerText = '❤️';
-                h.style.left = Math.random() * 90 + '%';
+                h.style.left = Math.random() * 95 + '%';
                 document.getElementById('heartsContainer').appendChild(h);
                 setTimeout(() => h.remove(), 6000);
             }, 2000);
+        }
+
+        async function checkNewMessages() {
+            const { count } = await _s.from('direct_messages').select('*', { count: 'exact', head: true }).eq('receiver', myNick).eq('is_read', false);
+            document.getElementById('msgIndicator').style.display = count > 0 ? 'block' : 'none';
+        }
+
+        async function loadPMHistory() {
+            const { data } = await _s.from('direct_messages').select('*').or(`sender.eq.${myNick},receiver.eq.${myNick}`).order('created_at', { ascending: false });
+            const list = document.getElementById('pm-history-list');
+            const partners = new Set();
+            list.innerHTML = "";
+            data?.forEach(m => {
+                const partner = m.sender === myNick ? m.receiver : m.sender;
+                if (!partners.has(partner)) {
+                    partners.add(partner);
+                    list.innerHTML += `<div class="chat-row" onclick="location.href='pm.html?to=${partner}'"><b>${partner}</b><br><small>${m.text.substring(0, 20)}...</small></div>`;
+                }
+            });
         }
 
         window.onload = init;
