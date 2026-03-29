@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat</title>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <style>
 :root {
   --bg: #0d0d0d;
@@ -16,7 +18,6 @@
 .light {
   --bg: #f5e6d3;
   --card: #fff;
-  --accent: #800020;
   --text: black;
 }
 
@@ -25,89 +26,62 @@ body {
   font-family: Arial;
   background: var(--bg);
   color: var(--text);
-  overflow: hidden;
 }
 
-/* ❤️ floating hearts */
-.heart {
-  position: fixed;
-  color: var(--accent);
-  font-size: 30px;
-  animation: float 6s linear infinite;
-  opacity: 0.3;
-}
-
-@keyframes float {
-  0% { transform: translateY(100vh); }
-  100% { transform: translateY(-10vh); }
-}
-
-/* TOP BAR */
+/* TOP */
 .topbar {
+  padding: 10px;
   background: var(--card);
-  padding: 15px;
-  text-align: center;
-  font-weight: bold;
-  cursor: pointer;
   border-bottom: 2px solid var(--accent);
 }
 
-/* ROOMS */
+/* ROOMS HORIZONTAL */
 .rooms {
-  display: none;
-  background: var(--card);
-  max-height: 200px;
-  overflow-y: auto;
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 10px;
 }
 
 .room {
+  min-width: 100px;
   padding: 10px;
-  border-bottom: 1px solid #333;
-  cursor: pointer;
-}
-
-.room:hover {
-  background: var(--accent);
-}
-
-/* SIDEBAR */
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 60px;
-  width: 200px;
-  bottom: 0;
   background: var(--card);
-  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  border: 2px solid transparent;
 }
 
-.sidebar div {
-  margin: 10px 0;
-  cursor: pointer;
+.room.active {
+  border: 2px solid var(--accent);
+}
+
+.room span {
+  display: block;
+  font-size: 25px;
 }
 
 /* CHAT */
 .chat {
-  margin-left: 210px;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 160px);
   overflow-y: auto;
   padding: 10px;
 }
 
 .msg {
   background: var(--card);
-  padding: 10px;
   margin: 5px 0;
+  padding: 10px;
   border-radius: 10px;
 }
 
 /* INPUT */
 .inputArea {
+  display: flex;
   position: fixed;
   bottom: 0;
-  left: 210px;
-  right: 0;
-  display: flex;
+  width: 100%;
 }
 
 input {
@@ -121,95 +95,136 @@ button {
   border: none;
   padding: 10px;
 }
-
 </style>
 </head>
 
 <body>
 
-<div class="topbar" onclick="toggleRooms()">❤️ MY CHAT</div>
-
-<div class="rooms" id="rooms">
-  <div class="room" onclick="changeRoom('Room 1')">Room 1</div>
-  <div class="room" onclick="changeRoom('Room 2')">Room 2</div>
-  <div class="room" onclick="changeRoom('Room 3')">Room 3</div>
-  <div class="room" onclick="changeRoom('Room 4')">Room 4</div>
-  <div class="room" onclick="changeRoom('Room 5')">Room 5</div>
-  <div class="room" onclick="changeRoom('Room 6')">Room 6</div>
-  <div class="room" onclick="changeRoom('Room 7')">Room 7</div>
-  <div class="room" onclick="changeRoom('Room 8')">Room 8</div>
-  <div class="room" onclick="changeRoom('Room 9')">Room 9</div>
-  <div class="room" onclick="changeRoom('Room 10')">Room 10</div>
-  <div class="room" onclick="changeRoom('Room 11')">Room 11</div>
-  <div class="room" onclick="changeRoom('Room 12')">Room 12</div>
+<div class="topbar">
+  ❤️ MY CHAT
 </div>
 
-<div class="sidebar">
-  <div>💬 მესინჯერი</div>
-  <div>👤 პროფილი</div>
-  <div>👥 მეგობრები</div>
-  <div>🟢 ონლაინი</div>
-  <div>📋 რეგისტრირებულები</div>
-  <div onclick="toggleTheme()">🌗 Day/Night</div>
-</div>
+<div class="rooms" id="rooms"></div>
 
 <div class="chat" id="chat"></div>
 
 <div class="inputArea">
   <input id="msgInput" placeholder="დაწერე...">
-  <button onclick="sendMsg()">გაგზავნა</button>
+  <button onclick="sendMessage()">გაგზავნა</button>
 </div>
 
 <script>
 
-// USER (index.html-დან უნდა შეინახო)
-const user = JSON.parse(localStorage.getItem("user")) || {
-  name: "Guest",
-  avatar: "🙂"
-};
+// 🔑 შენი მონაცემები ჩასვი
+const supabase = window.supabase.createClient(
+сonst supabaseUrl = 'https://ftfciebnywbondaiarnc.supabase.co'
+const supabaseKey = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI'
+);
 
-let currentRoom = "Room 1";
+let currentRoom = "room1";
+let currentUser = null;
 
-function toggleRooms() {
-  const r = document.getElementById("rooms");
-  r.style.display = r.style.display === "block" ? "none" : "block";
+// 🧠 ოთახები (emoji + name)
+const rooms = [
+  {name:"room1", icon:"🔥"},
+  {name:"room2", icon:"❤️"},
+  {name:"room3", icon:"🎮"},
+  {name:"room4", icon:"😂"},
+  {name:"room5", icon:"🎵"},
+  {name:"room6", icon:"💎"},
+  {name:"room7", icon:"🚀"},
+  {name:"room8", icon:"👑"},
+  {name:"room9", icon:"⚡"},
+  {name:"room10", icon:"🍷"},
+  {name:"room11", icon:"🎲"},
+  {name:"room12", icon:"🌙"}
+];
+
+// 🏠 render rooms
+function renderRooms() {
+  const container = document.getElementById("rooms");
+  container.innerHTML = "";
+
+  rooms.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "room";
+    if (r.name === currentRoom) div.classList.add("active");
+
+    div.innerHTML = `<span>${r.icon}</span>${r.name}`;
+
+    div.onclick = () => {
+      currentRoom = r.name;
+      renderRooms();
+      loadMessages();
+    };
+
+    container.appendChild(div);
+  });
 }
 
-function changeRoom(room) {
-  currentRoom = room;
-  document.getElementById("chat").innerHTML = "";
+// 👤 get user
+async function getUser() {
+  const { data } = await supabase.auth.getUser();
+  currentUser = data.user;
 }
 
-function sendMsg() {
+// 📥 load messages
+async function loadMessages() {
+  const { data } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("room", currentRoom)
+    .order("created_at", { ascending: true });
+
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  data.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.innerHTML = `
+      ${msg.avatar} <b>${msg.nickname}</b>: ${msg.text}
+    `;
+    chat.appendChild(div);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// 📤 send message
+async function sendMessage() {
   const input = document.getElementById("msgInput");
   if (!input.value) return;
 
-  const div = document.createElement("div");
-  div.className = "msg";
-  div.innerHTML = `${user.avatar} <b>${user.name}</b>: ${input.value}`;
+  await supabase.from("messages").insert([{
+    text: input.value,
+    room: currentRoom,
+    nickname: currentUser.email,
+    avatar: "🙂"
+  }]);
 
-  document.getElementById("chat").appendChild(div);
   input.value = "";
 }
 
-// 🌗 theme
-function toggleTheme() {
-  document.body.classList.toggle("light");
-}
+// 🔄 realtime
+supabase
+  .channel("chat")
+  .on("postgres_changes",
+    { event: "INSERT", schema: "public", table: "messages" },
+    payload => {
+      if (payload.new.room === currentRoom) {
+        loadMessages();
+      }
+    }
+  )
+  .subscribe();
 
-// ❤️ hearts
-function createHeart() {
-  const heart = document.createElement("div");
-  heart.className = "heart";
-  heart.innerText = "❤️";
-  heart.style.left = Math.random() * 100 + "vw";
-  heart.style.fontSize = (20 + Math.random() * 40) + "px";
-  document.body.appendChild(heart);
-
-  setTimeout(() => heart.remove(), 6000);
-}
-
-setInterval(createHeart, 500);
+// INIT
+(async () => {
+  await getUser();
+  renderRooms();
+  loadMessages();
+})();
 
 </script>
 
