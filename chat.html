@@ -159,8 +159,17 @@
     <div id="pmContainer"></div>
 
     <script>
-        // ============ ნიკი ვიღებთ index.html-დან ============
-        let currentUser = localStorage.getItem('mafia_user') || "Abu007";
+        // ============ ვიღებთ ნიკს localStorage-დან ============
+        let currentUser = localStorage.getItem('mafia_user');
+        
+        // თუ ნიკი არ არის, გადავამისამართოთ რეგისტრაციაზე
+        if (!currentUser || currentUser === "null" || currentUser === "undefined" || currentUser === "") {
+            alert("გთხოვთ გაიაროთ რეგისტრაცია!");
+            window.location.href = "index.html";
+        }
+        
+        console.log("✅ შესული მომხმარებელი:", currentUser);
+        
         let currentRoom = null;
         let currentPMUser = null;
         const OWNER = "Abu007";
@@ -208,6 +217,7 @@
             const savedAlbums = localStorage.getItem('mafia_albums_global');
             userAlbums = savedAlbums ? JSON.parse(savedAlbums) : {};
             
+            // თუ მომხმარებელი არ არის სიაში, დავამატოთ
             if (!users.find(u => u.username === currentUser)) {
                 users.push({ username: currentUser, status: "ახალი მოთამაშე", avatar: null, role: "user", online: true, joined: Date.now() });
                 saveUsers();
@@ -400,6 +410,9 @@
             const text = input.value.trim();
             const pendingImage = window.pendingImage;
             if (!text && !pendingImage) return;
+            
+            console.log("📨 გაგზავნა:", currentUser, text);
+            
             messages.push({ id: Date.now(), username: currentUser, text: text || "", time: new Date().toISOString(), room: currentRoom, image: pendingImage || null });
             saveMessages();
             input.value = ''; window.pendingImage = null;
@@ -567,14 +580,10 @@
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
             document.querySelectorAll('.nav-btn[data-page]').forEach(btn => { btn.addEventListener('click', () => showPage(btn.getAttribute('data-page'))); });
             showPage('home');
+            console.log("✅ ჩატი გაშვებულია მომხმარებლით:", currentUser);
         }
         
-        // აქ არ არის რეგისტრაცია! უბრალოდ ვიღებთ ნიკს localStorage-დან
-        if (!currentUser || currentUser === "null" || currentUser === "undefined") {
-            window.location.href = "index.html";
-        } else {
-            init();
-        }
+        init();
     </script>
 </body>
 </html>
