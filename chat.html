@@ -1,173 +1,327 @@
+<!DOCTYPE html>
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OLD MAFIA - SOCIAL CHAT</title>
+    <title>Old Mafia - Fixed Final</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        * { box-sizing: border-box; transition: 0.2s ease; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', sans-serif; }
+        :root { --accent: #ff3b3b; --bg: #0a0c10; --txt: #e6e9f0; --nav: #11151c; --card: rgba(25, 32, 45, 0.9); --border: #2a3440; --glow: rgba(255, 59, 59, 0.4); }
+        body.day-mode { --bg: #fef8ef; --txt: #2c2418; --nav: #fff5e6; --card: #ffffff; --border: #ffe0b5; --glow: rgba(255, 59, 59, 0.2); }
         
-        /* 🔴 ღამის რეჟიმი — შენი ღაჟღაჟა წითელი შავში 🔴 */
-        body.night-mode {
-            --bg-color: #000000;
-            --text-color: #e0c8a8;
-            --chat-bg: radial-gradient(circle at center, #1a0000 0%, #000000 100%);
-            --bubble-bg: #0a0000;
-            --bubble-border: #ff0000;
-            --nick-color: #ff4d4d;
-            --sidebar-bg: #000000;
-            --input-bg: #0a0000;
-            --input-border: #ff0000;
-            --topbar-bg: #050000;
-            --modal-bg: #0a0000;
-            --modal-border: #ff0000;
-            --modal-text: #e0c8a8;
-            --cover-gradient: linear-gradient(to bottom, #ff0000, #000000);
-        }
-        
-        /* ❤️ დღის რეჟიმი — შენი ლამაზი გულები ❤️ */
-        body.day-mode {
-            --bg-color: #fff8f0;
-            --text-color: #2c2418;
-            --chat-bg: #fffef7;
-            --bubble-bg: #ffffff;
-            --bubble-border: #e8d4b0;
-            --nick-color: #c55a3a;
-            --sidebar-bg: #fff8ed;
-            --input-bg: #ffffff;
-            --input-border: #e8d4b0;
-            --topbar-bg: #fff4e6;
-            --modal-bg: #ffffff;
-            --modal-border: #e8d4b0;
-            --modal-text: #2c2418;
-            --cover-gradient: linear-gradient(to bottom, #ffcccc, #fff8f0);
-            background-image: radial-gradient(circle at 15% 25%, rgba(255, 77, 77, 0.2) 3px, transparent 3px),
-                              radial-gradient(circle at 75% 60%, rgba(255, 77, 77, 0.15) 2.5px, transparent 2.5px);
-            background-size: 55px 55px, 40px 40px;
-        }
+        body { background: var(--bg); color: var(--txt); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* გულების ანიმაცია დღის რეჟიმისთვის */
-        body.day-mode .chat-area::after, body.day-mode .modal-content::after {
-            content: "❤️"; position: fixed; bottom: 15%; right: 20px; font-size: 56px; opacity: 0.6; animation: floatHeartGlow 5s infinite ease-in-out; filter: drop-shadow(0 0 8px #ff6699); z-index: 100;
-        }
-        @keyframes floatHeartGlow { 0% { transform: translateY(0); } 50% { transform: translateY(-30px); } 100% { transform: translateY(0); } }
+        /* 🏠 NAVIGATION */
+        .navigation { width: 100%; height: 65px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 1000; flex-shrink: 0; box-shadow: 0 2px 15px var(--glow); }
+        .nav-item { cursor: pointer; font-size: 26px; opacity: 0.5; color: var(--txt); position: relative; transition: 0.2s; }
+        .nav-item.active { opacity: 1; color: var(--accent); transform: scale(1.1); text-shadow: 0 0 10px var(--accent); }
+        .badge { position: absolute; top: -5px; right: -8px; background: red; color: white; font-size: 10px; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 1px solid white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* ძირითადი სტრუქტურა */
-        body { margin: 0; font-family: sans-serif; background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .topbar { background: var(--topbar-bg); padding: 10px 15px; display: flex; align-items: center; border-bottom: 2px solid var(--bubble-border); height: 60px; z-index: 1000; }
-        .chat-area { flex: 1; overflow-y: auto; padding: 15px; background: var(--chat-bg); position: relative; }
-        .input-zone { padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--bubble-border); background: var(--topbar-bg); }
-        .input-zone input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); outline: none; }
-        
-        /* Facebook Style პროფილის მოდალი */
-        .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
-        .modal-content { 
-            background: var(--modal-bg) !important; border: 2px solid var(--modal-border) !important; 
-            width: 100%; max-width: 500px; height: 100%; overflow-y: auto; position: relative;
-        }
+        .content-area { flex: 1; overflow-y: auto; position: relative; padding-bottom: 30px; }
+        .page { display: none; height: 100%; width: 100%; }
+        .page.active { display: block; }
 
-        .fb-header { position: relative; height: 200px; background: var(--cover-gradient); }
-        .fb-profile-pic { 
-            width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--modal-bg);
-            position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%); object-fit: cover;
+        /* 🏰 ROOMS - FIXED HTML DESIGN */
+        .rooms-container { display: flex; flex-direction: column; gap: 12px; padding: 20px 15px; }
+        .room-card { 
+            background: var(--card); padding: 18px 20px; border-radius: 16px; 
+            border: 1px solid var(--border); border-left: 5px solid var(--accent);
+            display: flex; align-items: center; gap: 15px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+        .room-card:active { transform: scale(0.97); background: var(--accent); color: white; }
+        .room-card b { font-size: 18px; flex: 1; }
+        .room-card .icon { font-size: 26px; }
+        .room-card .arrow { opacity: 0.3; font-size: 16px; }
 
-        .fb-body { padding: 70px 20px 20px; text-align: center; }
-        .fb-name { font-size: 24px; margin: 0; color: var(--nick-color); }
-        .fb-stats { display: flex; justify-content: center; gap: 20px; margin: 15px 0; font-weight: bold; }
-        
-        .fb-wall { text-align: left; margin-top: 20px; border-top: 1px solid var(--bubble-border); padding-top: 15px; }
-        .post-card { background: var(--bubble-bg); border: 1px solid var(--bubble-border); padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        
-        .fb-btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 5px; }
-        .btn-main { background: var(--nick-color); color: white; }
-        .btn-back { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; width: 35px; height: 35px; z-index: 6000; }
+        /* 👥 LIST ROWS */
+        .row { display: flex; align-items: center; padding: 12px 15px; background: var(--card); margin: 8px 12px; border-radius: 15px; border: 1px solid var(--border); cursor: pointer; }
+        .row img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); margin-right: 15px; object-fit: cover; }
+        .row-info b { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+
+        /* 😊 EMOJI SYSTEM */
+        .emoji-board { 
+            position: absolute; bottom: 85px; left: 10px; right: 10px; 
+            background: var(--nav); border: 2px solid var(--accent); 
+            border-radius: 20px; display: none; padding: 15px; 
+            grid-template-columns: repeat(5, 1fr); gap: 10px; 
+            max-height: 250px; overflow-y: auto; z-index: 2000;
+        }
+        .emoji-board.active { display: grid; }
+        .emoji-img { width: 100%; aspect-ratio: 1/1; cursor: pointer; object-fit: contain; }
+        .admin-plus { border: 2px dashed var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--accent); cursor: pointer; height: 50px; }
+
+        /* 💬 FOOTER */
+        .chat-footer { background: var(--nav); padding: 12px; border-top: 1px solid var(--border); }
+        .chat-in-box { display: flex; gap: 10px; align-items: center; }
+        .chat-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: 1px solid var(--accent); background: var(--bg); color: var(--txt); outline: none; }
+        .send-btn { background: var(--accent); border: none; color: white; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+
+        /* ❤️ HEARTS */
+        .heart { position: fixed; color: #ff3366; font-size: 25px; pointer-events: none; animation: floatHeart 4s linear forwards; z-index: 9999; }
+        @keyframes floatHeart { 0% { bottom: -20px; opacity: 1; transform: scale(1); } 100% { bottom: 100%; opacity: 0; transform: scale(1.5); } }
+
+        /* 📱 MODALS */
+        .modal-full { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: none; flex-direction: column; }
+        .modal-header { background: var(--nav); padding: 15px; border-bottom: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body class="night-mode">
 
-<div class="topbar">
-    <div style="flex:1; text-align:center; font-weight:bold; color:var(--nick-color);">☕ კაფე-ბარი</div>
-    <button onclick="toggleTheme()" id="themeToggle" style="background:none; border:none; font-size:20px;">🌙</button>
-</div>
+    <div class="navigation">
+        <div class="nav-item active" onclick="showPage('homePage', this)">🏠</div>
+        <div class="nav-item" onclick="showPage('messengerPage', this)">💬 <div id="pmBadge" class="badge">0</div></div>
+        <div class="nav-item" onclick="showPage('onlinePage', this)">👥</div>
+        <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
+        <div class="nav-item" onclick="toggleMode()">🌗</div>
+    </div>
 
-<div class="chat-area" id="chat"></div>
-
-<div class="input-zone">
-    <input type="text" id="msg-input" placeholder="დაწერე...">
-    <button onclick="sendMsg()" style="background:var(--nick-color); color:white; border:none; border-radius:50%; width:40px; height:40px;">✈</button>
-</div>
-
-<div id="userModal" class="modal">
-    <button class="btn-back" onclick="closeModal()">✕</button>
-    <div class="modal-content">
-        <div class="fb-header">
-            <img id="targetAvatar" class="fb-profile-pic" src="">
+    <div class="content-area">
+        <div id="homePage" class="page active">
+            <h3 style="padding: 15px; color: var(--accent); text-align: center;">🏰 12 სათამაშო ოთახი</h3>
+            <div class="rooms-container">
+                <div class="room-card" onclick="openRoom('კაფე-ბარი')"><span class="icon">☕</span><b>კაფე-ბარი</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('ნარდი')"><span class="icon">🎲</span><b>ნარდი</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('ჯოკერი')"><span class="icon">🃏</span><b>ჯოკერი</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('VIP საუბრები')"><span class="icon">💎</span><b>VIP საუბრები</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('ფორუმი')"><span class="icon">📝</span><b>ფორუმი</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('ადმინისტრაცია')"><span class="icon">🛠️</span><b>ადმინისტრაცია</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('იუმორი')"><span class="icon">😂</span><b>იუმორი</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('შიფროგრამა')"><span class="icon">🏆</span><b>შიფროგრამა</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('გამოძიება')"><span class="icon">🎭</span><b>გამოძიება</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('მუსიკალური')"><span class="icon">🎵</span><b>მუსიკალური</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('ვიქტორინა')"><span class="icon">⁉️</span><b>ვიქტორინა</b><span class="arrow">➔</span></div>
+                <div class="room-card" onclick="openRoom('დახმარება')"><span class="icon">🆘</span><b>დახმარება</b><span class="arrow">➔</span></div>
+            </div>
         </div>
-        <div class="fb-body">
-            <h1 id="targetName" class="fb-name">...</h1>
-            <p style="opacity:0.7;">🕵️ მაფიის წევრი</p>
-            
-            <div class="fb-stats">
-                <span>🏆 <span id="quizPoints">0</span></span>
-                <span>👥 50 მეგობარი</span>
-            </div>
 
-            <div>
-                <button class="fb-btn btn-main">➕ მეგობრობა</button>
-                <button class="fb-btn" style="background:var(--bubble-bg); color:var(--text-color); border:1px solid var(--bubble-border);">✉️ მიწერა</button>
-            </div>
+        <div id="messengerPage" class="page">
+            <h3 style="padding:15px;">💬 პირადი მიმოწერები</h3>
+            <div id="pmListContainer"></div>
+        </div>
 
-            <div class="fb-wall">
-                <h3 style="color:var(--nick-color);">📝 ბოლო პოსტები</h3>
-                <div id="userWall">
-                    <div class="post-card">პოსტები იტვირთება... 📸</div>
+        <div id="onlinePage" class="page">
+            <h3 style="padding:15px;">👥 ონლაინ მომხმარებლები (<span id="onlineCount">0</span>)</h3>
+            <div id="onlineList"></div>
+        </div>
+
+        <div id="profilePage" class="page">
+            <div style="text-align:center; padding-top:40px;">
+                <img id="myAvatar" src="https://i.ibb.co/v3m6y6R/avatar.png" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--accent); object-fit:cover; cursor:pointer;" onclick="document.getElementById('avaInput').click()">
+                <h2 id="profileNick" style="margin-top:10px;">Abu007</h2>
+                <div style="margin-top:20px;">
+                    <input type="text" id="statusInput" placeholder="შეცვალე სტატუსი..." style="width:70%; padding:12px; border-radius:20px; border:1px solid var(--accent); background:none; color:var(--txt); text-align:center;">
+                    <button onclick="updateStatus()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:20px; margin-top:10px; cursor:pointer;">შენახვა</button>
                 </div>
             </div>
+            <input type="file" id="avaInput" hidden onchange="uploadAvatar()">
+        </div>
+
+        <div id="roomChatPage" class="page" style="flex-direction: column;">
+            <div class="modal-header"><b id="roomTitle">ოთახი</b><span onclick="closeRoom()" style="color:var(--accent); cursor:pointer; font-size:24px;">✖</span></div>
+            <div id="roomMsgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px;"></div>
+            <div class="chat-footer">
+                <div id="emojiBoard" class="emoji-board"></div>
+                <div class="chat-in-box">
+                    <span onclick="toggleEmoji()" style="font-size:30px; cursor:pointer;">😊</span>
+                    <input type="text" id="msgInput" class="chat-input" placeholder="დაწერე...">
+                    <button class="send-btn" onclick="sendMessage()">✈</button>
+                </div>
+            </div>
+            <input type="file" id="emojiUp" hidden onchange="uploadEmoji()">
         </div>
     </div>
-</div>
 
-<script>
-    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
-    let myNick = localStorage.getItem('nickname');
+    <div id="pmModal" class="modal-full">
+        <div class="modal-header"><b id="pmPartner">---</b><span onclick="closePM()" style="color:var(--accent); cursor:pointer; font-size:24px;">✖</span></div>
+        <div id="pmMsgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:8px;"></div>
+        <div class="chat-footer">
+            <div class="chat-in-box"><input type="text" id="pmInput" class="chat-input" placeholder="პირადად..."><button class="send-btn" onclick="sendPM()">✈</button></div>
+        </div>
+    </div>
 
-    function toggleTheme() {
-        const b = document.body;
-        const btn = document.getElementById('themeToggle');
-        if (b.classList.contains('night-mode')) {
-            b.classList.replace('night-mode', 'day-mode');
-            btn.innerText = '☀️';
-            localStorage.setItem('theme', 'day');
-        } else {
-            b.classList.replace('day-mode', 'night-mode');
-            btn.innerText = '🌙';
-            localStorage.setItem('theme', 'night');
+    <script>
+        const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+        const MY_NICK = localStorage.getItem('nickname') || "Abu007";
+        const ADMINS = ["Abu007", "Lukinio", "AdminMafia"];
+        let currentRoom = "", currentPM = "", presenceState = {};
+
+        async function init() {
+            document.getElementById('profileNick').innerText = MY_NICK;
+            loadProfile();
+            loadEmojis();
+            startHearts();
+            setupPresence();
+            
+            _s.channel('room-updates').on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, () => { if(currentRoom) loadRoomMsgs(); }).subscribe();
+            _s.channel('pm-updates').on('postgres_changes', {event:'INSERT', schema:'public', table:'direct_messages', filter: `receiver=eq.${MY_NICK}`}, (p) => {
+                if(currentPM !== p.new.sender) {
+                    const b = document.getElementById('pmBadge');
+                    b.innerText = parseInt(b.innerText || 0) + 1;
+                    b.style.display = 'flex';
+                }
+                loadPMList();
+                if(currentPM === p.new.sender) loadPMMsgs();
+            }).subscribe();
         }
-    }
 
-    function closeModal() { document.getElementById('userModal').style.display = "none"; }
-
-    async function openProfile(username) {
-        const { data: user } = await _s.from('profiles').select('*').eq('username', username).maybeSingle();
-        if(user) {
-            document.getElementById('targetName').innerText = user.username;
-            document.getElementById('targetAvatar').src = user.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
-            document.getElementById('quizPoints').innerText = user.points || 0;
-            document.getElementById('userModal').style.display = "flex";
+        function setupPresence() {
+            const channel = _s.channel('online_users', { config: { presence: { key: MY_NICK } } });
+            channel.on('presence', { event: 'sync' }, () => {
+                presenceState = channel.presenceState();
+                updateOnlineList();
+            }).subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') await channel.track({ online_at: new Date().toISOString() });
+            });
         }
-    }
 
-    async function init() {
-        const savedTheme = localStorage.getItem('theme') || 'night';
-        if(savedTheme === 'day') toggleTheme();
-        if (!myNick) { location.href = 'index.html'; return; }
-        loadMessages();
-    }
+        function updateOnlineList() {
+            const onlineUsers = Object.keys(presenceState);
+            document.getElementById('onlineCount').innerText = onlineUsers.length;
+            document.getElementById('onlineList').innerHTML = onlineUsers.map(u => `
+                <div class="row" onclick="openPM('${u}')">
+                    <img src="https://i.ibb.co/v3m6y6R/avatar.png">
+                    <div class="row-info"><b>${u} <span class="dot"></span></b><span>ონლაინშია</span></div>
+                </div>
+            `).join('');
+        }
 
-    // აქ ჩაამატე შენი არსებული loadMessages() და sendMsg() ფუნქციები...
+        async function loadProfile() {
+            const {data} = await _s.from('profiles').select('*').eq('username', MY_NICK).maybeSingle();
+            if(data) {
+                if(data.avatar_url) document.getElementById('myAvatar').src = data.avatar_url;
+                document.getElementById('statusInput').value = data.status || "";
+            }
+        }
 
-    window.onload = init;
-</script>
+        async function updateStatus() {
+            const s = document.getElementById('statusInput').value;
+            await _s.from('profiles').update({status: s}).eq('username', MY_NICK);
+            alert("სტატუსი განახლდა!");
+        }
+
+        async function uploadAvatar() {
+            const file = document.getElementById('avaInput').files[0];
+            if(!file) return;
+            const path = `avatars/${MY_NICK}_${Date.now()}.png`;
+            await _s.storage.from('avatars').upload(path, file);
+            const {data} = _s.storage.from('avatars').getPublicUrl(path);
+            await _s.from('profiles').update({avatar_url: data.publicUrl}).eq('username', MY_NICK);
+            document.getElementById('myAvatar').src = data.publicUrl;
+        }
+
+        function openRoom(n) {
+            currentRoom = n;
+            document.getElementById('roomTitle').innerText = n;
+            showPage('roomChatPage');
+            loadRoomMsgs();
+        }
+
+        async function loadRoomMsgs() {
+            if(!currentRoom) return;
+            const {data} = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', {ascending:false}).limit(50);
+            const box = document.getElementById('roomMsgs');
+            box.innerHTML = data?.reverse().map(m => `
+                <div style="align-self: ${m.username === MY_NICK ? 'flex-end' : 'flex-start'}; background: var(--card); padding: 10px; border-radius: 12px; border: 1px solid var(--border); max-width: 85%;">
+                    <b style="color:var(--accent); font-size: 11px;">${m.username}</b><br>
+                    ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:35px;">')}
+                </div>
+            `).join('') || "";
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const val = document.getElementById('msgInput').value.trim();
+            if(!val) return;
+            await _s.from('messages').insert({username:MY_NICK, text:val, room_name:currentRoom});
+            document.getElementById('msgInput').value = "";
+        }
+
+        async function loadPMList() {
+            const {data} = await _s.from('direct_messages').select('*').or(`sender.eq.${MY_NICK},receiver.eq.${MY_NICK}`).order('created_at', {ascending:false});
+            const partners = new Set();
+            const container = document.getElementById('pmListContainer');
+            container.innerHTML = "";
+            data?.forEach(m => {
+                const p = (m.sender === MY_NICK) ? m.receiver : m.sender;
+                if(!partners.has(p)) {
+                    partners.add(p);
+                    container.innerHTML += `<div class="row" onclick="openPM('${p}')"><div class="row-info"><b>${p}</b><span>${m.text.substring(0,25)}...</span></div></div>`;
+                }
+            });
+        }
+
+        function openPM(p) {
+            currentPM = p;
+            document.getElementById('pmPartner').innerText = p;
+            document.getElementById('pmModal').style.display = 'flex';
+            document.getElementById('pmBadge').style.display = 'none';
+            document.getElementById('pmBadge').innerText = "0";
+            loadPMMsgs();
+        }
+
+        async function loadPMMsgs() {
+            const {data} = await _s.from('direct_messages').select('*').or(`and(sender.eq.${MY_NICK},receiver.eq.${currentPM}),and(sender.eq.${currentPM},receiver.eq.${MY_NICK})`).order('created_at', {ascending:true});
+            const box = document.getElementById('pmMsgs');
+            box.innerHTML = data?.map(m => `
+                <div style="align-self: ${m.sender === MY_NICK ? 'flex-end' : 'flex-start'}; background: ${m.sender === MY_NICK ? 'var(--accent)' : 'var(--card)'}; padding: 10px 15px; border-radius: 15px; max-width: 80%; color:white;">
+                    ${m.text}
+                </div>
+            `).join('') || "";
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendPM() {
+            const val = document.getElementById('pmInput').value.trim();
+            if(!val) return;
+            await _s.from('direct_messages').insert({sender:MY_NICK, receiver:currentPM, text:val});
+            document.getElementById('pmInput').value = "";
+            loadPMMsgs();
+        }
+
+        async function loadEmojis() {
+            const {data} = await _s.from('custom_emojis').select('*');
+            const board = document.getElementById('emojiBoard');
+            let html = ADMINS.includes(MY_NICK) ? `<div class="admin-plus" onclick="document.getElementById('emojiUp').click()">+</div>` : "";
+            html += data?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('') || "";
+            board.innerHTML = html;
+        }
+
+        async function uploadEmoji() {
+            const file = document.getElementById('emojiUp').files[0];
+            const path = `emojis/${Date.now()}.png`;
+            await _s.storage.from('avatars').upload(path, file);
+            const {data} = _s.storage.from('avatars').getPublicUrl(path);
+            await _s.from('custom_emojis').insert({emoji_url: data.publicUrl});
+            loadEmojis();
+        }
+
+        function addEmoji(url) { document.getElementById('msgInput').value += ` :img:${url}: `; toggleEmoji(); }
+        function toggleEmoji() { document.getElementById('emojiBoard').classList.toggle('active'); }
+        function toggleMode() { document.body.classList.toggle('night-mode'); document.body.classList.toggle('day-mode'); }
+        function closeRoom() { currentRoom = ""; showPage('homePage', document.querySelector('.nav-item')); }
+        function closePM() { document.getElementById('pmModal').style.display = 'none'; currentPM = ""; }
+
+        function showPage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
+            if(id === 'messengerPage') loadPMList();
+        }
+
+        function startHearts() {
+            setInterval(() => {
+                const h = document.createElement('div'); h.className='heart'; h.innerText='❤️';
+                h.style.left = Math.random() * 90 + '%';
+                document.body.appendChild(h);
+                setTimeout(() => h.remove(), 4000);
+            }, 3000);
+        }
+
+        window.onload = init;
+    </script>
 </body>
 </html>
