@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Old Mafia - Fixed Final</title>
+    <title>Old Mafia - Fixed Abu007 Final</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', sans-serif; }
         :root { --accent: #ff3b3b; --bg: #0a0c10; --txt: #e6e9f0; --nav: #11151c; --card: rgba(25, 32, 45, 0.9); --border: #2a3440; --glow: rgba(255, 59, 59, 0.4); }
         body.day-mode { --bg: #fef8ef; --txt: #2c2418; --nav: #fff5e6; --card: #ffffff; --border: #ffe0b5; --glow: rgba(255, 59, 59, 0.2); }
-        
+        :root { --accent: #ff3b3b; --bg: #0a0c10; --txt: #e6e9f0; --nav: #11151c; --card: #151e2a; --border: #2a3440; --in-bg: #0f141c; }
+        body.day-mode { --bg: #fef8ef; --txt: #2c2418; --nav: #fff5e6; --card: #ffffff; --border: #ffe0b5; --in-bg: #fffaf2; }
+
         body { background: var(--bg); color: var(--txt); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: var(--bg); color: var(--txt); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s; }
 
         /* 🏠 NAVIGATION */
         .navigation { width: 100%; height: 65px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 1000; flex-shrink: 0; box-shadow: 0 2px 15px var(--glow); }
@@ -18,8 +22,14 @@
         .nav-item.active { opacity: 1; color: var(--accent); transform: scale(1.1); text-shadow: 0 0 10px var(--accent); }
         .badge { position: absolute; top: -5px; right: -8px; background: red; color: white; font-size: 10px; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 1px solid white; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        /* ⬆️ NAVIGATION (TOP) */
+        .navigation { width: 100%; height: 65px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 1000; flex-shrink: 0; position: relative; }
+        .nav-item { cursor: pointer; font-size: 28px; opacity: 0.55; color: var(--txt); transition: 0.2s; position: relative; }
+        .nav-item.active { opacity: 1; color: var(--accent); transform: scale(1.1); }
+        .badge { position: absolute; top: -5px; right: -8px; background: red; color: white; font-size: 10px; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; }
 
         .content-area { flex: 1; overflow-y: auto; position: relative; padding-bottom: 30px; }
+        .content-area { flex: 1; overflow-y: auto; position: relative; }
         .page { display: none; height: 100%; width: 100%; }
         .page.active { display: block; }
 
@@ -41,17 +51,25 @@
         .row img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); margin-right: 15px; object-fit: cover; }
         .row-info b { display: flex; align-items: center; gap: 8px; font-size: 16px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        /* 🏰 ROOMS LIST (Vertical, like in the image) */
+        .rooms-list { display: flex; flex-direction: column; gap: 10px; padding: 15px; }
+        .room-card { background: var(--card); padding: 18px 15px; border-radius: 12px; border: 1px solid var(--border); border-bottom: 3px solid var(--accent); text-align: left; cursor: pointer; }
+        .room-card:active { transform: scale(0.98); background: var(--accent); }
+        .room-card b { font-size: 16px; margin-left: 10px; }
 
         /* 😊 EMOJI SYSTEM */
         .emoji-board { 
             position: absolute; bottom: 85px; left: 10px; right: 10px; 
+            position: absolute; bottom: 80px; left: 10px; right: 10px; 
             background: var(--nav); border: 2px solid var(--accent); 
             border-radius: 20px; display: none; padding: 15px; 
+            border-radius: 20px; display: none; padding: 10px; 
             grid-template-columns: repeat(5, 1fr); gap: 10px; 
             max-height: 250px; overflow-y: auto; z-index: 2000;
         }
         .emoji-board.active { display: grid; }
         .emoji-img { width: 100%; aspect-ratio: 1/1; cursor: pointer; object-fit: contain; }
+        .emoji-img { width: 100%; aspect-ratio: 1/1; object-fit: contain; cursor: pointer; }
         .admin-plus { border: 2px dashed var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--accent); cursor: pointer; height: 50px; }
 
         /* 💬 FOOTER */
@@ -59,14 +77,27 @@
         .chat-in-box { display: flex; gap: 10px; align-items: center; }
         .chat-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: 1px solid var(--accent); background: var(--bg); color: var(--txt); outline: none; }
         .send-btn { background: var(--accent); border: none; color: white; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+        /* 👥 LISTS (ONLINE, PM) */
+        .row { display: flex; align-items: center; padding: 12px 15px; background: var(--card); margin: 8px 12px; border-radius: 15px; border: 1px solid var(--border); cursor: pointer; }
+        .row img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); margin-right: 15px; object-fit: cover; }
+        .row-info b { display: block; font-size: 16px; }
+        .row-info span { font-size: 13px; opacity: 0.6; }
 
         /* ❤️ HEARTS */
         .heart { position: fixed; color: #ff3366; font-size: 25px; pointer-events: none; animation: floatHeart 4s linear forwards; z-index: 9999; }
         @keyframes floatHeart { 0% { bottom: -20px; opacity: 1; transform: scale(1); } 100% { bottom: 100%; opacity: 0; transform: scale(1.5); } }
+        /* 💬 CHAT FOOTER */
+        .chat-footer { background: var(--nav); padding: 10px; border-top: 1px solid var(--border); position: relative; }
+        .chat-in-box { display: flex; gap: 10px; align-items: center; }
+        .chat-input { flex: 1; padding: 12px 18px; border-radius: 25px; border: 1px solid var(--accent); background: var(--in-bg); color: var(--txt); font-size: 16px; outline: none; }
+        .send-btn { background: var(--accent); border: none; color: white; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; }
 
         /* 📱 MODALS */
         .modal-full { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: none; flex-direction: column; }
         .modal-header { background: var(--nav); padding: 15px; border-bottom: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        /* ❤️ HEARTS (abu's favorite style) */
+        .heart { position: fixed; color: #ff3366; font-size: 25px; pointer-events: none; animation: floatUp 5s linear forwards; z-index: 9999; filter: drop-shadow(0 0 10px #ff3366); }
+        @keyframes floatUp { 0% { bottom: -20px; opacity: 1; transform: translateX(0); } 100% { bottom: 100%; opacity: 0; transform: translateX(30px) rotate(20deg); } }
     </style>
 </head>
 <body class="night-mode">
@@ -74,10 +105,13 @@
     <div class="navigation">
         <div class="nav-item active" onclick="showPage('homePage', this)">🏠</div>
         <div class="nav-item" onclick="showPage('messengerPage', this)">💬 <div id="pmBadge" class="badge">0</div></div>
+        <div class="nav-item" onclick="showPage('friendsPage', this)">💞</div>
         <div class="nav-item" onclick="showPage('onlinePage', this)">👥</div>
         <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
         <div class="nav-item" onclick="toggleMode()">🌗</div>
     </div>
+
+    <div id="heartsContainer"></div>
 
     <div class="content-area">
         <div id="homePage" class="page active">
@@ -96,39 +130,55 @@
                 <div class="room-card" onclick="openRoom('ვიქტორინა')"><span class="icon">⁉️</span><b>ვიქტორინა</b><span class="arrow">➔</span></div>
                 <div class="room-card" onclick="openRoom('დახმარება')"><span class="icon">🆘</span><b>დახმარება</b><span class="arrow">➔</span></div>
             </div>
+            <div id="roomsList" class="rooms-list"></div>
         </div>
 
         <div id="messengerPage" class="page">
             <h3 style="padding:15px;">💬 პირადი მიმოწერები</h3>
             <div id="pmListContainer"></div>
+            <h3 style="padding: 15px;">💬 მიმოწერა</h3>
+            <div id="pmHistoryList"></div>
         </div>
 
         <div id="onlinePage" class="page">
             <h3 style="padding:15px;">👥 ონლაინ მომხმარებლები (<span id="onlineCount">0</span>)</h3>
+            <h3 style="padding: 15px;">👥 ხალხი საიტზე</h3>
             <div id="onlineList"></div>
         </div>
 
         <div id="profilePage" class="page">
             <div style="text-align:center; padding-top:40px;">
                 <img id="myAvatar" src="https://i.ibb.co/v3m6y6R/avatar.png" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--accent); object-fit:cover; cursor:pointer;" onclick="document.getElementById('avaInput').click()">
+                <img id="myAva" src="https://i.ibb.co/v3m6y6R/avatar.png" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--accent); cursor:pointer;" onclick="document.getElementById('avaUp').click()">
                 <h2 id="profileNick" style="margin-top:10px;">Abu007</h2>
                 <div style="margin-top:20px;">
                     <input type="text" id="statusInput" placeholder="შეცვალე სტატუსი..." style="width:70%; padding:12px; border-radius:20px; border:1px solid var(--accent); background:none; color:var(--txt); text-align:center;">
                     <button onclick="updateStatus()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:20px; margin-top:10px; cursor:pointer;">შენახვა</button>
                 </div>
+                <input type="text" id="dispStatus" onchange="updateStatus()" placeholder="დაწერე სტატუსი..." style="width:80%; margin-top:15px; padding:12px; border-radius:20px; border:1px solid var(--accent); background:none; color:var(--txt); text-align:center;">
+                <p style="margin-top:20px; opacity:0.5;">ID: #<span id="userId">007</span></p>
             </div>
             <input type="file" id="avaInput" hidden onchange="uploadAvatar()">
+            <input type="file" id="avaUp" hidden onchange="doAvaUpload()">
         </div>
 
         <div id="roomChatPage" class="page" style="flex-direction: column;">
             <div class="modal-header"><b id="roomTitle">ოთახი</b><span onclick="closeRoom()" style="color:var(--accent); cursor:pointer; font-size:24px;">✖</span></div>
             <div id="roomMsgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px;"></div>
+            <div style="padding: 15px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-between; align-items:center;">
+                <b id="roomTitle">ოთახი</b> 
+                <span onclick="showPage('homePage')" style="color:var(--accent); cursor:pointer; font-size:24px;">✖</span>
+            </div>
+            <div id="roomMsgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:8px;"></div>
             <div class="chat-footer">
                 <div id="emojiBoard" class="emoji-board"></div>
                 <div class="chat-in-box">
                     <span onclick="toggleEmoji()" style="font-size:30px; cursor:pointer;">😊</span>
                     <input type="text" id="msgInput" class="chat-input" placeholder="დაწერე...">
                     <button class="send-btn" onclick="sendMessage()">✈</button>
+                    <span onclick="toggleEmojiBoard()" style="font-size:32px; cursor:pointer;">😊</span>
+                    <input type="text" id="msgInp" class="chat-input" placeholder="დაწერე შეტყობინება...">
+                    <button class="send-btn" onclick="sendMsg()">✈</button>
                 </div>
             </div>
             <input type="file" id="emojiUp" hidden onchange="uploadEmoji()">
@@ -148,14 +198,27 @@
         const MY_NICK = localStorage.getItem('nickname') || "Abu007";
         const ADMINS = ["Abu007", "Lukinio", "AdminMafia"];
         let currentRoom = "", currentPM = "", presenceState = {};
+        const myNick = localStorage.getItem('nickname') || "Abu007";
+        const admins = ["Abu007", "Lukinio", "AdminMafia"];
+        let currentRoom = "";
+
+        const ROOMS = [
+            {i:"☕", n:"კაფე-ბარი"}, {i:"🎲", n:"ნარდი"}, {i:"🃏", n:"ჯოკერი"}, {i:"💎", n:"VIP საუბრები"},
+            {i:"📝", n:"ფორუმი"}, {i:"🛠️", n:"ადმინისტრაცია"}, {i:"😂", n:"იუმორი"}, {i:"🏆", n:"შიფროგრამა"},
+            {i:"🎭", n:"გამოძიება"}, {i:"🎵", n:"მუსიკალური"}, {i:"⁉️", n:"ვიქტორინა"}, {i:"🆘", n:"დახმარება"}
+        ];
 
         async function init() {
             document.getElementById('profileNick').innerText = MY_NICK;
+            document.getElementById('profileNick').innerText = myNick;
+            renderRooms();
             loadProfile();
+            loadOnline();
+            loadPMHistory();
             loadEmojis();
             startHearts();
             setupPresence();
-            
+
             _s.channel('room-updates').on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, () => { if(currentRoom) loadRoomMsgs(); }).subscribe();
             _s.channel('pm-updates').on('postgres_changes', {event:'INSERT', schema:'public', table:'direct_messages', filter: `receiver=eq.${MY_NICK}`}, (p) => {
                 if(currentPM !== p.new.sender) {
@@ -166,6 +229,8 @@
                 loadPMList();
                 if(currentPM === p.new.sender) loadPMMsgs();
             }).subscribe();
+            _s.channel('room-sync').on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, () => { if(currentRoom) loadRoomMsgs(); }).subscribe();
+            _s.channel('pm-sync').on('postgres_changes', {event:'INSERT', schema:'public', table:'direct_messages'}, () => { loadPMHistory(); }).subscribe();
         }
 
         function setupPresence() {
@@ -177,6 +242,8 @@
                 if (status === 'SUBSCRIBED') await channel.track({ online_at: new Date().toISOString() });
             });
         }
+        function toggleMode() { document.body.classList.toggle('night-mode'); document.body.classList.toggle('day-mode'); }
+        function toggleEmojiBoard() { document.getElementById('emojiBoard').classList.toggle('active'); }
 
         function updateOnlineList() {
             const onlineUsers = Object.keys(presenceState);
@@ -186,14 +253,21 @@
                     <img src="https://i.ibb.co/v3m6y6R/avatar.png">
                     <div class="row-info"><b>${u} <span class="dot"></span></b><span>ონლაინშია</span></div>
                 </div>
+        function renderRooms() {
+            document.getElementById('roomsList').innerHTML = ROOMS.map(r => `
+                <div class="room-card" onclick="openRoom('${r.n}')"><span>${r.i}</span><b>${r.n}</b></div>
             `).join('');
         }
 
         async function loadProfile() {
             const {data} = await _s.from('profiles').select('*').eq('username', MY_NICK).maybeSingle();
+            const {data} = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
             if(data) {
                 if(data.avatar_url) document.getElementById('myAvatar').src = data.avatar_url;
                 document.getElementById('statusInput').value = data.status || "";
+                if(data.avatar_url) document.getElementById('myAva').src = data.avatar_url;
+                document.getElementById('dispStatus').value = data.status || "";
+                document.getElementById('userId').innerText = data.id.substring(0,5);
             }
         }
 
@@ -207,10 +281,15 @@
             const file = document.getElementById('avaInput').files[0];
             if(!file) return;
             const path = `avatars/${MY_NICK}_${Date.now()}.png`;
+        async function doAvaUpload() {
+            const file = document.getElementById('avaUp').files[0];
+            const path = `avatars/${myNick}_${Date.now()}.png`;
             await _s.storage.from('avatars').upload(path, file);
             const {data} = _s.storage.from('avatars').getPublicUrl(path);
             await _s.from('profiles').update({avatar_url: data.publicUrl}).eq('username', MY_NICK);
             document.getElementById('myAvatar').src = data.publicUrl;
+            await _s.from('profiles').update({avatar_url: data.publicUrl}).eq('username', myNick);
+            document.getElementById('myAva').src = data.publicUrl;
         }
 
         function openRoom(n) {
@@ -218,6 +297,9 @@
             document.getElementById('roomTitle').innerText = n;
             showPage('roomChatPage');
             loadRoomMsgs();
+        async function updateStatus() {
+            const status = document.getElementById('dispStatus').value;
+            await _s.from('profiles').update({ status }).eq('username', myNick);
         }
 
         async function loadRoomMsgs() {
@@ -228,6 +310,12 @@
                 <div style="align-self: ${m.username === MY_NICK ? 'flex-end' : 'flex-start'}; background: var(--card); padding: 10px; border-radius: 12px; border: 1px solid var(--border); max-width: 85%;">
                     <b style="color:var(--accent); font-size: 11px;">${m.username}</b><br>
                     ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:35px;">')}
+        async function loadOnline() {
+            const {data} = await _s.from('profiles').select('*').limit(30);
+            document.getElementById('onlineList').innerHTML = data?.map(u => `
+                <div class="row" onclick="alert('${u.username}')">
+                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                    <div class="row-info"><b>${u.username}</b><span>${u.status || 'ონლაინ'}</span></div>
                 </div>
             `).join('') || "";
             box.scrollTop = box.scrollHeight;
@@ -245,11 +333,22 @@
             const partners = new Set();
             const container = document.getElementById('pmListContainer');
             container.innerHTML = "";
+        async function loadPMHistory() {
+            const {data} = await _s.from('direct_messages').select('*').or(`sender.eq.${myNick},receiver.eq.${myNick}`).order('created_at', {ascending:false});
+            const list = document.getElementById('pmHistoryList');
+            const history = new Set();
+            list.innerHTML = "";
             data?.forEach(m => {
                 const p = (m.sender === MY_NICK) ? m.receiver : m.sender;
                 if(!partners.has(p)) {
                     partners.add(p);
                     container.innerHTML += `<div class="row" onclick="openPM('${p}')"><div class="row-info"><b>${p}</b><span>${m.text.substring(0,25)}...</span></div></div>`;
+                const partner = m.sender === myNick ? m.receiver : m.sender;
+                if(!history.has(partner)) {
+                    history.add(partner);
+                    list.innerHTML += `<div class="row" onclick="alert('PM-ზე გადასვლა ${partner}-თან')">
+                        <div class="row-info"><b>${partner}</b><span>${m.text.substring(0,25)}...</span></div>
+                    </div>`;
                 }
             });
         }
@@ -286,9 +385,12 @@
             const {data} = await _s.from('custom_emojis').select('*');
             const board = document.getElementById('emojiBoard');
             let html = ADMINS.includes(MY_NICK) ? `<div class="admin-plus" onclick="document.getElementById('emojiUp').click()">+</div>` : "";
+            let html = admins.includes(myNick) ? `<div class="admin-plus" onclick="document.getElementById('emojiUp').click()">+</div>` : "";
             html += data?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('') || "";
             board.innerHTML = html;
         }
+
+        function addEmoji(url) { document.getElementById('msgInp').value += ` :img:${url}: `; toggleEmojiBoard(); }
 
         async function uploadEmoji() {
             const file = document.getElementById('emojiUp').files[0];
@@ -304,10 +406,42 @@
         function toggleMode() { document.body.classList.toggle('night-mode'); document.body.classList.toggle('day-mode'); }
         function closeRoom() { currentRoom = ""; showPage('homePage', document.querySelector('.nav-item')); }
         function closePM() { document.getElementById('pmModal').style.display = 'none'; currentPM = ""; }
+        function openRoom(name) {
+            currentRoom = name;
+            document.getElementById('roomTitle').innerText = "📡 " + name;
+            showPage('roomChatPage');
+            loadRoomMsgs();
+        }
+
+        async function loadRoomMsgs() {
+            if(!currentRoom) return;
+            const {data} = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', {ascending:false}).limit(40);
+            const box = document.getElementById('roomMsgs');
+            box.innerHTML = data?.reverse().map(m => `
+                <div style="background:var(--card); padding:10px; border-radius:10px; border:1px solid var(--border); align-self: ${m.username === myNick ? 'flex-end' : 'flex-start'}; max-width: 85%;">
+                    <b style="color:var(--accent); font-size:12px;">${escapeHtml(m.username)}</b><br>
+                    ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:28px; vertical-align:middle;">')}
+                </div>
+            `).join('') || "";
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendMsg() {
+            const val = document.getElementById('msgInp').value.trim();
+            if(!val) return;
+            await _s.from('messages').insert({username:myNick, text:val, room_name:currentRoom});
+            document.getElementById('msgInp').value = "";
+        }
+
+        function escapeHtml(text) { return text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
         function showPage(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+            const target = document.getElementById(id);
+            target.style.display = (id === 'roomChatPage') ? 'flex' : 'block';
+            target.classList.add('active');
             if(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
             if(id === 'messengerPage') loadPMList();
         }
@@ -318,6 +452,8 @@
                 h.style.left = Math.random() * 90 + '%';
                 document.body.appendChild(h);
                 setTimeout(() => h.remove(), 4000);
+                document.getElementById('heartsContainer').appendChild(h);
+                setTimeout(() => h.remove(), 5000);
             }, 3000);
         }
 
