@@ -2,576 +2,209 @@
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>შავი შინდისფერი - სოციალური ქსელი</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OLD MAFIA - SOCIAL CHAT</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { box-sizing: border-box; transition: 0.2s ease; }
+        
+        /* 🔴 ღამის რეჟიმი — შენი ღაჟღაჟა წითელი 🔴 */
+        body.night-mode {
+            --bg-color: #000000;
+            --text-color: #e0c8a8;
+            --chat-bg: radial-gradient(circle at center, #1a0000 0%, #000000 100%);
+            --bubble-bg: #0a0000;
+            --bubble-border: #ff0000;
+            --nick-color: #ff4d4d;
+            --sidebar-bg: #000000;
+            --input-bg: #0a0000;
+            --input-border: #ff0000;
+            --topbar-bg: #050000;
+            --modal-bg: #0a0000;
+            --modal-border: #ff0000;
+            --modal-text: #e0c8a8;
+            --cover-gradient: linear-gradient(to bottom, #ff0000, #1a0000);
+        }
+        
+        /* ❤️ დღის რეჟიმი — შენი ლამაზი გულები ❤️ */
+        body.day-mode {
+            --bg-color: #fff8f0;
+            --text-color: #2c2418;
+            --chat-bg: #fffef7;
+            --bubble-bg: #ffffff;
+            --bubble-border: #e8d4b0;
+            --nick-color: #c55a3a;
+            --sidebar-bg: #fff8ed;
+            --input-bg: #ffffff;
+            --input-border: #e8d4b0;
+            --topbar-bg: #fff4e6;
+            --modal-bg: #ffffff;
+            --modal-border: #e8d4b0;
+            --modal-text: #2c2418;
+            --cover-gradient: linear-gradient(to bottom, #ffcccc, #fff8f0);
+            background-image: radial-gradient(circle at 15% 25%, rgba(255, 77, 77, 0.2) 3px, transparent 3px),
+                              radial-gradient(circle at 75% 60%, rgba(255, 77, 77, 0.15) 2.5px, transparent 2.5px);
+            background-size: 55px 55px, 40px 40px;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a0f1a 100%);
-            color: #e0e0e0;
+        /* გულების ანიმაცია დღის რეჟიმისთვის */
+        body.day-mode .chat-area::after, body.day-mode .modal-content::after {
+            content: "❤️"; position: fixed; bottom: 15%; right: 20px; font-size: 56px; opacity: 0.6; animation: floatHeartGlow 5s infinite ease-in-out; filter: drop-shadow(0 0 8px #ff6699); z-index: 100;
+        }
+        @keyframes floatHeartGlow { 0% { transform: translateY(0); } 50% { transform: translateY(-30px); } 100% { transform: translateY(0); } }
+
+        /* ძირითადი სტრუქტურა */
+        body { margin: 0; font-family: sans-serif; background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { background: var(--topbar-bg); padding: 10px 15px; display: flex; align-items: center; border-bottom: 2px solid var(--bubble-border); height: 60px; z-index: 1000; }
+        .chat-area { flex: 1; overflow-y: auto; padding: 15px; background: var(--chat-bg); position: relative; }
+        .input-zone { padding: 12px; display: flex; gap: 10px; border-top: 2px solid var(--bubble-border); background: var(--topbar-bg); }
+        .input-zone input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); outline: none; }
+        
+        .sidebar { position: fixed; left: -280px; width: 280px; height: 100%; background: var(--sidebar-bg); transition: 0.3s; z-index: 4000; border-right: 3px solid var(--bubble-border); }
+        .sidebar.active { left: 0; }
+        .room-item { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,0,0,0.1); }
+        .room-item.active { background: rgba(255,0,0,0.1); font-weight: bold; color: var(--nick-color); }
+        
+        /* 📱 Facebook Style პროფილის მოდალი */
+        .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+        .modal-content { 
+            background: var(--modal-bg) !important; 
+            border: 2px solid var(--modal-border) !important; 
+            color: var(--modal-text) !important;
+            width: 95% !important; max-width: 500px !important; 
+            height: 85vh !important; overflow-y: auto !important; 
+            padding: 0 !important; border-radius: 25px !important; position: relative;
         }
 
-        /* ჰედერი */
-        .header {
-            background: linear-gradient(90deg, #0f0a0f 0%, #1a0f1a 100%);
-            border-bottom: 2px solid #8b1a3a;
-            padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #ff3366, #8b1a3a);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .logo span {
-            font-size: 32px;
-        }
-
-        .search-bar {
-            background: #2a1a2a;
-            border: 1px solid #8b1a3a;
-            border-radius: 25px;
-            padding: 10px 20px;
-            width: 300px;
-            color: #e0e0e0;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        .search-bar:focus {
-            border-color: #ff3366;
-            box-shadow: 0 0 10px rgba(255,51,102,0.3);
-        }
-
-        .user-menu {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .user-menu i {
-            font-size: 24px;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .user-menu i:hover {
-            color: #ff3366;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff3366, #8b1a3a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* მთავარი კონტენტი */
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            display: grid;
-            grid-template-columns: 1fr 2fr 1fr;
-            gap: 20px;
-            padding: 0 20px;
-        }
-
-        /* მარცხენა საიდბარი */
-        .sidebar-left {
-            background: linear-gradient(135deg, #0f0a0f, #1a0f1a);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #8b1a3a;
-            height: fit-content;
-        }
-
-        .profile-card {
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #8b1a3a;
-        }
-
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff3366, #8b1a3a);
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-        }
-
-        .profile-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .menu-item {
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .menu-item:hover {
-            background: #8b1a3a;
-            transform: translateX(5px);
-        }
-
-        /* ძირითადი ფიდი */
-        .main-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .create-post {
-            background: linear-gradient(135deg, #0f0a0f, #1a0f1a);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #8b1a3a;
-        }
-
-        .post-input {
-            background: #2a1a2a;
-            border: 1px solid #8b1a3a;
-            border-radius: 25px;
-            padding: 15px;
-            width: 100%;
-            color: #e0e0e0;
-            resize: none;
-            font-family: inherit;
-            outline: none;
-        }
-
-        .post-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-
-        .post-btn {
-            background: linear-gradient(135deg, #ff3366, #8b1a3a);
-            border: none;
-            padding: 10px 30px;
-            border-radius: 25px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .post-btn:hover {
-            transform: scale(1.05);
-        }
-
-        /* პოსტი */
-        .post {
-            background: linear-gradient(135deg, #0f0a0f, #1a0f1a);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #8b1a3a;
-            transition: transform 0.2s;
-        }
-
-        .post:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(139,26,58,0.3);
-        }
-
-        .post-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .post-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff3366, #8b1a3a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .post-info h4 {
-            font-size: 16px;
-            margin-bottom: 3px;
-        }
-
-        .post-info p {
-            font-size: 12px;
-            color: #888;
-        }
-
-        .post-content {
-            margin: 15px 0;
-            line-height: 1.5;
-        }
-
-        .post-stats {
-            display: flex;
-            gap: 20px;
-            padding: 10px 0;
-            border-top: 1px solid #8b1a3a;
-            border-bottom: 1px solid #8b1a3a;
-            margin: 10px 0;
-        }
-
-        .post-stats span {
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .post-stats span:hover {
-            color: #ff3366;
-        }
-
-        .like-btn {
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 18px;
-        }
-
-        .like-btn.liked {
-            color: #ff3366;
-            animation: heartBeat 0.3s;
-        }
-
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-
-        /* მარჯვენა საიდბარი */
-        .sidebar-right {
-            background: linear-gradient(135deg, #0f0a0f, #1a0f1a);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #8b1a3a;
-            height: fit-content;
-        }
-
-        .suggestion {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .suggestion:hover {
-            background: #8b1a3a;
-        }
-
-        .suggestion-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff3366, #8b1a3a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .follow-btn {
-            margin-left: auto;
-            background: transparent;
-            border: 1px solid #ff3366;
-            padding: 5px 15px;
-            border-radius: 20px;
-            color: #ff3366;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .follow-btn:hover {
-            background: #ff3366;
-            color: white;
-        }
-
-        /* რესპონსივი */
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-            .sidebar-left, .sidebar-right {
-                display: none;
-            }
-            .search-bar {
-                width: 200px;
-            }
-        }
-
-        /* სქროლი */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #0f0a0f;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #8b1a3a;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #ff3366;
-        }
+        .profile-cover { width: 100%; height: 140px; background: var(--cover-gradient); position: relative; }
+        .profile-avatar-big { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--modal-bg); position: absolute; bottom: -50px; left: 20px; object-fit: cover; }
+        .profile-info { padding: 60px 20px 20px 20px; text-align: left; }
+        .profile-stats { display: flex; gap: 15px; margin: 15px 0; font-weight: bold; color: var(--nick-color); }
+        
+        .post-card { background: var(--bubble-bg); border: 1px solid var(--bubble-border); padding: 15px; border-radius: 15px; margin-top: 10px; }
+        .modal-btn { display: block; width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--bubble-border); background: var(--bubble-bg); color: var(--text-color); border-radius: 10px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">
-                <span>❤️</span> SHINDI<span style="color: #ff3366;">SOCIAL</span>
+<body class="night-mode" id="mainBody">
+
+<div class="sidebar" id="sidebar">
+    <div style="padding: 20px; text-align: center;">
+        <img id="my-avatar-img" src="" style="width:65px; height:65px; border-radius:50%; border:2px solid var(--bubble-border); object-fit: cover;">
+        <div id="my-nick-label" style="font-weight:bold; margin-top:5px; color: var(--nick-color);">...</div>
+    </div>
+    <div class="rooms-list">
+        <div class="room-item active" onclick="changeRoom('☕ კაფე-ბარი', this)">☕ კაფე-ბარი</div>
+        <div class="room-item" onclick="changeRoom('📝 ფორუმი', this)">📝 ფორუმი</div>
+        <div class="room-item" onclick="changeRoom('🃏 ჯოკერი', this)">🃏 ჯოკერი</div>
+        <div class="room-item" onclick="changeRoom('🎲 ნარდი', this)">🎲 ნარდი</div>
+    </div>
+</div>
+
+<div class="topbar">
+    <div onclick="toggleSidebar()" style="cursor:pointer; font-size:25px; color: var(--nick-color);">☰</div>
+    <div id="room-name" style="flex:1; text-align:center; color: var(--nick-color); font-weight:bold;">☕ კაფე-ბარი</div>
+    <button onclick="toggleTheme()" id="themeToggle" style="background:none; border:none; font-size:20px; cursor:pointer;">🌙</button>
+</div>
+
+<div class="chat-area" id="chat"></div>
+
+<div class="input-zone">
+    <input type="text" id="msg-input" placeholder="დაწერე მესიჯი...">
+    <button onclick="sendMsg()" style="border-radius:50%; width:45px; height:45px; background:var(--nick-color); border:none; color:white; cursor:pointer;">✈</button>
+</div>
+
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <div class="profile-cover">
+            <img id="targetAvatar" class="profile-avatar-big" src="">
+        </div>
+        <div class="profile-info">
+            <h2 id="targetName" style="margin:0; color:var(--nick-color);">...</h2>
+            <p id="targetStatus" style="font-size:13px; opacity:0.8; margin:5px 0;">🕵️ მაფიის წევრი</p>
+            
+            <div class="profile-stats">
+                <span>🏆 <span id="quizPoints">0</span> ვიქტორინა</span>
+                <span>🔐 <span id="cipherPoints">0</span> შიფრო</span>
             </div>
-            <input type="text" class="search-bar" placeholder="🔍 ძებნა...">
-            <div class="user-menu">
-                <i>🏠</i>
-                <i>👥</i>
-                <i>💬</i>
-                <i>🔔</i>
-                <div class="avatar">👤</div>
+
+            <div style="display:flex; gap:10px; margin: 15px 0;">
+                <button class="modal-btn" style="flex:1;">✉️ მიწერა</button>
+                <button class="modal-btn" style="flex:1;">➕ მეგობრობა</button>
             </div>
+
+            <hr style="border:0; border-top:1px solid var(--bubble-border); margin: 20px 0;">
+            
+            <h3 style="margin: 10px 0; color: var(--nick-color); font-size:16px;">📝 კედელი</h3>
+            <div id="userWall">
+                <div class="post-card">
+                    <p style="margin:0; font-size:14px;">მომხმარებლის პოსტები იტვირთება... 📸</p>
+                </div>
+            </div>
+            
+            <div id="adminOptions"></div>
+            <button class="modal-btn" onclick="closeModal()" style="margin-top:20px; background:var(--nick-color); color:white; border:none;">დახურვა</button>
         </div>
     </div>
+</div>
 
-    <div class="container">
-        <!-- მარცხენა საიდბარი -->
-        <div class="sidebar-left">
-            <div class="profile-card">
-                <div class="profile-avatar">👤</div>
-                <div class="profile-name">შინდის მეგობარი</div>
-                <div style="color: #888; font-size: 14px;">@shindi_lover</div>
-            </div>
-            <div class="menu-item">
-                <span>🏠</span> მთავარი
-            </div>
-            <div class="menu-item">
-                <span>👥</span> მეგობრები
-            </div>
-            <div class="menu-item">
-                <span>📷</span> ფოტოები
-            </div>
-            <div class="menu-item">
-                <span>❤️</span> ლაიქები
-            </div>
-            <div class="menu-item">
-                <span>⚙️</span> პარამეტრები
-            </div>
-        </div>
+<script>
+    const _s = supabase.createClient("https://ftfciebnywbondaiarnc.supabase.co", "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI");
+    let myNick = localStorage.getItem('nickname'), currentRoom = "☕ კაფე-ბარი";
 
-        <!-- ძირითადი ფიდი -->
-        <div class="main-feed" id="feed">
-            <div class="create-post">
-                <textarea class="post-input" id="postInput" rows="3" placeholder="რა გინდა რომ გაიზიარო? 🍷"></textarea>
-                <div class="post-actions">
-                    <div style="display: flex; gap: 10px;">
-                        <span style="cursor: pointer;">📷</span>
-                        <span style="cursor: pointer;">🎥</span>
-                        <span style="cursor: pointer;">❤️</span>
-                    </div>
-                    <button class="post-btn" onclick="createPost()">გაზიარება</button>
-                </div>
-            </div>
-
-            <!-- პოსტები აქ დაემატება -->
-        </div>
-
-        <!-- მარჯვენა საიდბარი -->
-        <div class="sidebar-right">
-            <h3 style="margin-bottom: 15px;">✨ შესაძლოა მოგეწონოს</h3>
-            <div class="suggestion">
-                <div class="suggestion-avatar">🍷</div>
-                <div>
-                    <div style="font-weight: bold;">ღვინის მოყვარული</div>
-                    <div style="font-size: 12px; color: #888;">15 მეგობარი</div>
-                </div>
-                <button class="follow-btn">მიყევი</button>
-            </div>
-            <div class="suggestion">
-                <div class="suggestion-avatar">🎵</div>
-                <div>
-                    <div style="font-weight: bold;">მუსიკის ფანი</div>
-                    <div style="font-size: 12px; color: #888;">23 მეგობარი</div>
-                </div>
-                <button class="follow-btn">მიყევი</button>
-            </div>
-            <div class="suggestion">
-                <div class="suggestion-avatar">📸</div>
-                <div>
-                    <div style="font-weight: bold;">ფოტოგრაფი</div>
-                    <div style="font-size: 12px; color: #888;">8 მეგობარი</div>
-                </div>
-                <button class="follow-btn">მიყევი</button>
-            </div>
-
-            <h3 style="margin: 20px 0 15px;">🔥 ტრენდული</h3>
-            <div style="font-size: 14px; margin: 10px 0;">#შავიშინდი</div>
-            <div style="font-size: 14px; margin: 10px 0;">#წითელიგული</div>
-            <div style="font-size: 14px; margin: 10px 0;">#ქართულისოციალური</div>
-        </div>
-    </div>
-
-    <script>
-        let posts = [
-            {
-                id: 1,
-                name: "შინდის გურმანი",
-                username: "@wine_lover",
-                avatar: "🍷",
-                content: "შავი შინდისფერი ღამეები და წითელი გულები... 💔🍷",
-                time: "2 საათის წინ",
-                likes: 24,
-                comments: 5,
-                liked: false
-            },
-            {
-                id: 2,
-                name: "მთვარის შვილი",
-                username: "@moon_child",
-                avatar: "🌙",
-                content: "შენი გული წითლად ანათებს შავ შინდისფერში ❤️",
-                time: "5 საათის წინ",
-                likes: 42,
-                comments: 12,
-                liked: true
-            }
-        ];
-
-        function renderPosts() {
-            const feed = document.getElementById('feed');
-            const postsHTML = posts.map(post => `
-                <div class="post" data-id="${post.id}">
-                    <div class="post-header">
-                        <div class="post-avatar">${post.avatar}</div>
-                        <div class="post-info">
-                            <h4>${post.name}</h4>
-                            <p>${post.username} • ${post.time}</p>
-                        </div>
-                    </div>
-                    <div class="post-content">
-                        ${post.content}
-                    </div>
-                    <div class="post-stats">
-                        <span class="like-btn" onclick="toggleLike(${post.id})" style="cursor: pointer;">
-                            ${post.liked ? '❤️' : '🤍'} ${post.likes}
-                        </span>
-                        <span>💬 ${post.comments}</span>
-                        <span>🔄 გაზიარება</span>
-                    </div>
-                </div>
-            `).join('');
-            
-            feed.innerHTML = `
-                <div class="create-post">
-                    <textarea class="post-input" id="postInput" rows="3" placeholder="რა გინდა რომ გაიზიარო? 🍷"></textarea>
-                    <div class="post-actions">
-                        <div style="display: flex; gap: 10px;">
-                            <span style="cursor: pointer;">📷</span>
-                            <span style="cursor: pointer;">🎥</span>
-                            <span style="cursor: pointer;">❤️</span>
-                        </div>
-                        <button class="post-btn" onclick="createPost()">გაზიარება</button>
-                    </div>
-                </div>
-                ${postsHTML}
-            `;
+    function toggleTheme() {
+        const b = document.body;
+        const btn = document.getElementById('themeToggle');
+        if (b.classList.contains('night-mode')) {
+            b.classList.replace('night-mode', 'day-mode');
+            btn.innerText = '☀️';
+            localStorage.setItem('theme', 'day');
+        } else {
+            b.classList.replace('day-mode', 'night-mode');
+            btn.innerText = '🌙';
+            localStorage.setItem('theme', 'night');
         }
+    }
 
-        function createPost() {
-            const input = document.getElementById('postInput');
-            const content = input.value.trim();
-            
-            if (content) {
-                const newPost = {
-                    id: Date.now(),
-                    name: "შინდის მეგობარი",
-                    username: "@shindi_lover",
-                    avatar: "👤",
-                    content: content,
-                    time: "ახლახანს",
-                    likes: 0,
-                    comments: 0,
-                    liked: false
-                };
-                posts.unshift(newPost);
-                renderPosts();
-                input.value = '';
-                
-                // ანიმაცია
-                const newPostEl = document.querySelector('.post');
-                if (newPostEl) {
-                    newPostEl.style.animation = 'heartBeat 0.5s';
-                    setTimeout(() => {
-                        newPostEl.style.animation = '';
-                    }, 500);
-                }
-            }
+    function changeRoom(n, el) {
+        if (n === "📝 ფორუმი") { window.location.href = 'forum.html'; return; }
+        currentRoom = n;
+        document.getElementById('room-name').innerText = n;
+        document.querySelectorAll('.room-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+        toggleSidebar();
+        loadMessages();
+    }
+
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+    function closeModal() { document.getElementById('userModal').style.display = "none"; }
+
+    async function openProfile(username) {
+        const { data: user } = await _s.from('profiles').select('*').eq('username', username).maybeSingle();
+        if(user) {
+            document.getElementById('targetName').innerText = user.username;
+            document.getElementById('targetAvatar').src = user.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
+            document.getElementById('quizPoints').innerText = user.points || 0;
+            document.getElementById('cipherPoints').innerText = user.cipher_points || 0;
+            document.getElementById('userModal').style.display = "flex";
         }
+    }
 
-        function toggleLike(postId) {
-            const post = posts.find(p => p.id === postId);
-            if (post) {
-                if (post.liked) {
-                    post.likes--;
-                    post.liked = false;
-                } else {
-                    post.likes++;
-                    post.liked = true;
-                }
-                renderPosts();
-            }
+    async function init() {
+        const savedTheme = localStorage.getItem('theme') || 'night';
+        if(savedTheme === 'day') toggleTheme();
+        if (!myNick) { location.href = 'index.html'; return; }
+        
+        const { data: p } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
+        if (p) {
+            document.getElementById('my-nick-label').innerText = p.username;
+            document.getElementById('my-avatar-img').src = p.avatar_url || "https://i.ibb.co/v3m6y6R/avatar.png";
         }
+        loadMessages();
+    }
 
-        // საწყისი რენდერი
-        renderPosts();
-    </script>
+    // loadMessages და sendMsg ფუნქციები აქ ჩაამატე შენი ძველი კოდიდან...
+
+    window.onload = init;
+</script>
 </body>
 </html>
