@@ -53,6 +53,7 @@
         .friend-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #2d6a4f; color: white; padding: 4px 8px; border-radius: 20px; font-size: 11px; }
         .add-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--accent); color: white; padding: 4px 8px; border-radius: 20px; font-size: 11px; cursor: pointer; }
         
+        /* ემოჯის დაფა - იგივე ყველგან */
         .emoji-panel {
             position: fixed; bottom: 80px; left: 10px; right: 10px; background: var(--card); border: 2px solid var(--accent);
             border-radius: 16px; display: none; padding: 12px; z-index: 2000; max-height: 320px; overflow-y: auto;
@@ -145,7 +146,7 @@
                 <div class="chat-header"><span class="chat-room-name" id="chatRoomName">ოთახი</span><button class="close-btn" onclick="closeChat()">✕</button></div>
                 <div id="chatMessages" class="messages"></div>
                 <div class="chat-input-area">
-                    <button class="icon-btn" onclick="toggleEmojiPanel('chat')">😊</button>
+                    <button class="icon-btn" onclick="openEmojiPanel('chat')">😊</button>
                     <button class="icon-btn" onclick="document.getElementById('chatPhotoInput').click()">📷</button>
                     <input type="text" id="messageInput" class="chat-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendMessage()">
                     <button class="send-btn" onclick="sendMessage()">➤</button>
@@ -162,9 +163,8 @@
         // ============ ვიღებთ ნიკს localStorage-დან ============
         let currentUser = localStorage.getItem('mafia_user');
         
-        // თუ ნიკი არ არის, გადავამისამართოთ რეგისტრაციაზე
         if (!currentUser || currentUser === "null" || currentUser === "undefined" || currentUser === "") {
-            alert("გთხოვთ გაიაროთ რეგისტრაცია!");
+            alert("❌ გთხოვთ გაიაროთ რეგისტრაცია!");
             window.location.href = "index.html";
         }
         
@@ -172,8 +172,10 @@
         
         let currentRoom = null;
         let currentPMUser = null;
+        let currentEmojiTarget = 'chat';
         const OWNER = "Abu007";
         
+        // ============ გლობალური მონაცემები (ყველა მომხმარებელი ერთს ხედავს) ============
         let users = [];
         let messages = [];
         let privateMessages = [];
@@ -190,6 +192,7 @@
         ];
         
         function loadData() {
+            // ყველა მომხმარებელი
             const savedUsers = localStorage.getItem('mafia_users_global');
             if (savedUsers) users = JSON.parse(savedUsers);
             else users = [
@@ -199,21 +202,27 @@
                 { username: "Nika", status: "ონლაინ", avatar: null, role: "user", online: true, joined: Date.now() }
             ];
             
+            // ყველა შეტყობინება (გლობალური)
             const savedMessages = localStorage.getItem('mafia_messages_global');
             messages = savedMessages ? JSON.parse(savedMessages) : [];
             
+            // ყველა პირადი შეტყობინება
             const savedPM = localStorage.getItem('mafia_pm_global');
             privateMessages = savedPM ? JSON.parse(savedPM) : [];
             
+            // მეგობრობის მოთხოვნები
             const savedRequests = localStorage.getItem('mafia_friend_requests');
             friendRequests = savedRequests ? JSON.parse(savedRequests) : [];
             
+            // ემოჯები
             const savedEmojis = localStorage.getItem('mafia_emojis_global');
             customEmojis = savedEmojis ? JSON.parse(savedEmojis) : [];
             
+            // ფოტო ინტერაქციები
             const savedInteractions = localStorage.getItem('mafia_photo_interactions');
             photoInteractions = savedInteractions ? JSON.parse(savedInteractions) : {};
             
+            // ალბომები
             const savedAlbums = localStorage.getItem('mafia_albums_global');
             userAlbums = savedAlbums ? JSON.parse(savedAlbums) : {};
             
@@ -233,6 +242,74 @@
         function saveEmojis() { localStorage.setItem('mafia_emojis_global', JSON.stringify(customEmojis)); }
         function saveInteractions() { localStorage.setItem('mafia_photo_interactions', JSON.stringify(photoInteractions)); }
         function saveAlbums() { localStorage.setItem('mafia_albums_global', JSON.stringify(userAlbums)); }
+        
+        // ============ ემოჯების დაფა (იგივე ჩატშიც და PM-შიც) ============
+        function openEmojiPanel(target) {
+            currentEmojiTarget = target;
+            const panel = document.getElementById('emojiPanel');
+            if (panel.classList.contains('active')) { panel.classList.remove('active'); return; }
+            
+            const defaultEmojis = ['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺', '💀', '👑', '💪', '🤡', '👻', '⭐', '🌈', '🍕', '🍺', '🎸'];
+            const allEmojis = [...defaultEmojis, ...customEmojis];
+            
+            panel.innerHTML = `<div class="emoji-grid" id="emojiGrid"></div>`;
+            const grid = document.getElementById('emojiGrid');
+            
+            allEmojis.forEach(emoji => {
+                if (typeof emoji === 'string' && emoji.startsWith('http')) {
+                    const img = document.createElement('img'); 
+                    img.src = emoji; 
+                    img.className = 'emoji-img'; 
+                    img.style.cssText = 'width:48px; height:48px; object-fit:cover; border-radius:8px; cursor:pointer;';
+                    img.onclick = () => {
+                        const input = target === 'chat' ? document.getElementById('messageInput') : document.getElementById('pmInput');
+                        if(input) input.value += ` :img:${emoji}: `;
+                        panel.classList.remove('active');
+                    };
+                    grid.appendChild(img);
+                } else {
+                    const div = document.createElement('div'); 
+                    div.className = 'emoji-item'; 
+                    div.textContent = emoji;
+                    div.onclick = () => {
+                        const input = target === 'chat' ? document.getElementById('messageInput') : document.getElementById('pmInput');
+                        if(input) input.value += emoji;
+                        panel.classList.remove('active');
+                    };
+                    grid.appendChild(div);
+                }
+            });
+            
+            // ადმინებისთვის ემოჯის დამატების ღილაკი
+            if (users.find(u => u.username === currentUser)?.role === 'admin' || currentUser === OWNER) {
+                const addBtn = document.createElement('div'); 
+                addBtn.className = 'emoji-item'; 
+                addBtn.textContent = '➕'; 
+                addBtn.style.background = 'var(--accent)'; 
+                addBtn.style.borderRadius = '8px';
+                addBtn.onclick = () => { 
+                    panel.classList.remove('active'); 
+                    document.getElementById('emojiUploadInput').click(); 
+                };
+                grid.appendChild(addBtn);
+            }
+            
+            panel.classList.add('active');
+        }
+        
+        function uploadEmojiImage(input) {
+            const file = input.files[0];
+            if (file && (users.find(u => u.username === currentUser)?.role === 'admin' || currentUser === OWNER)) {
+                const reader = new FileReader();
+                reader.onload = (e) => { 
+                    customEmojis.push(e.target.result); 
+                    saveEmojis(); 
+                    showNotification('✅ ემოჯი დაემატა!'); 
+                };
+                reader.readAsDataURL(file);
+            } else showNotification('❌ ემოჯის დამატება მხოლოდ ადმინებს შეუძლიათ!');
+            input.value = '';
+        }
         
         // ============ მეგობრები ============
         function sendFriendRequest(targetUser) {
@@ -411,9 +488,8 @@
             const pendingImage = window.pendingImage;
             if (!text && !pendingImage) return;
             
-            console.log("📨 გაგზავნა:", currentUser, text);
-            
-            messages.push({ id: Date.now(), username: currentUser, text: text || "", time: new Date().toISOString(), room: currentRoom, image: pendingImage || null });
+            const newMsg = { id: Date.now(), username: currentUser, text: text || "", time: new Date().toISOString(), room: currentRoom, image: pendingImage || null };
+            messages.push(newMsg);
             saveMessages();
             input.value = ''; window.pendingImage = null;
             renderMessages();
@@ -421,43 +497,6 @@
         
         function deleteMessage(msgId) { const msg = messages.find(m => m.id === msgId); if (!msg) return; if (currentUser === OWNER || msg.username === currentUser) { messages = messages.filter(m => m.id !== msgId); saveMessages(); renderMessages(); } else showNotification('❌ წაშლა არ შეგიძლია!'); }
         function addPhotoToMessage(input) { const file = input.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { window.pendingImage = e.target.result; showNotification('📷 ფოტო დაემატა!'); }; reader.readAsDataURL(file); } input.value = ''; }
-        
-        // ============ ემოჯები ============
-        function toggleEmojiPanel(target) {
-            const panel = document.getElementById('emojiPanel');
-            if (panel.classList.contains('active')) { panel.classList.remove('active'); return; }
-            const defaultEmojis = ['😊', '😂', '❤️', '🔥', '👍', '🎉', '😍', '🥳', '😎', '🥺', '💀', '👑', '💪', '🤡', '👻', '⭐'];
-            const allEmojis = [...defaultEmojis, ...customEmojis];
-            panel.innerHTML = `<div class="emoji-grid" id="emojiGrid"></div>`;
-            const grid = document.getElementById('emojiGrid');
-            allEmojis.forEach(emoji => {
-                if (typeof emoji === 'string' && emoji.startsWith('http')) {
-                    const img = document.createElement('img'); img.src = emoji; img.className = 'emoji-img'; img.style.cssText = 'width:48px; height:48px; object-fit:cover; border-radius:8px; cursor:pointer;';
-                    img.onclick = () => { const input = target === 'chat' ? document.getElementById('messageInput') : document.getElementById('pmInput'); if(input) { if(typeof emoji === 'string' && emoji.startsWith('http')) input.value += ` :img:${emoji}: `; else input.value += emoji; } panel.classList.remove('active'); };
-                    grid.appendChild(img);
-                } else {
-                    const div = document.createElement('div'); div.className = 'emoji-item'; div.textContent = emoji;
-                    div.onclick = () => { const input = target === 'chat' ? document.getElementById('messageInput') : document.getElementById('pmInput'); if(input) { input.value += emoji; } panel.classList.remove('active'); };
-                    grid.appendChild(div);
-                }
-            });
-            if (users.find(u => u.username === currentUser)?.role === 'admin' || currentUser === OWNER) {
-                const addBtn = document.createElement('div'); addBtn.className = 'emoji-item'; addBtn.textContent = '➕'; addBtn.style.background = 'var(--accent)'; addBtn.style.borderRadius = '8px';
-                addBtn.onclick = () => { panel.classList.remove('active'); document.getElementById('emojiUploadInput').click(); };
-                grid.appendChild(addBtn);
-            }
-            panel.classList.add('active');
-        }
-        
-        function uploadEmojiImage(input) {
-            const file = input.files[0];
-            if (file && (users.find(u => u.username === currentUser)?.role === 'admin' || currentUser === OWNER)) {
-                const reader = new FileReader();
-                reader.onload = (e) => { customEmojis.push(e.target.result); saveEmojis(); showNotification('✅ ემოჯი დაემატა!'); };
-                reader.readAsDataURL(file);
-            } else showNotification('❌ ემოჯის დამატება მხოლოდ ადმინებს შეუძლიათ!');
-            input.value = '';
-        }
         
         // ============ მომხმარებლები ============
         function showUserProfile(username) {
@@ -535,14 +574,34 @@
         function renderPrivateChat() {
             if (!currentPMUser) return;
             const pmMsgs = privateMessages.filter(m => (m.from === currentUser && m.to === currentPMUser) || (m.from === currentPMUser && m.to === currentUser)).sort((a,b) => new Date(a.time) - new Date(b.time));
-            const pmHtml = `<div class="pm-chat-container" id="pmChatWindow"><div class="pm-header" onclick="closePM()"><span>💬 ${escapeHtml(currentPMUser)}</span><span>✕</span></div><div class="pm-messages" id="pmMessages">${pmMsgs.map(msg => `<div class="pm-message ${msg.from === currentUser ? 'own' : ''}"><div style="font-size:9px;">${new Date(msg.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div><div>${escapeHtml(msg.text)}</div></div>`).join('') || '<div class="empty-state" style="padding:20px;">მიმოწერა ცარიელია</div>'}</div><div class="pm-input-area"><button class="icon-btn" style="width:36px; height:36px; font-size:18px;" onclick="toggleEmojiPanel('pm')">😊</button><input type="text" id="pmInput" class="pm-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendPM()"><button class="icon-btn" style="width:36px; height:36px;" onclick="sendPM()">➤</button></div></div>`;
+            const pmHtml = `
+                <div class="pm-chat-container" id="pmChatWindow">
+                    <div class="pm-header" onclick="closePM()"><span>💬 ${escapeHtml(currentPMUser)}</span><span>✕</span></div>
+                    <div class="pm-messages" id="pmMessages">${pmMsgs.map(msg => `<div class="pm-message ${msg.from === currentUser ? 'own' : ''}"><div style="font-size:9px;">${new Date(msg.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div><div>${escapeHtml(msg.text)}</div></div>`).join('') || '<div class="empty-state" style="padding:20px;">მიმოწერა ცარიელია</div>'}</div>
+                    <div class="pm-input-area">
+                        <button class="icon-btn" style="width:36px; height:36px; font-size:18px;" onclick="openEmojiPanel('pm')">😊</button>
+                        <input type="text" id="pmInput" class="pm-input" placeholder="დაწერე..." onkeypress="if(event.key==='Enter') sendPM()">
+                        <button class="icon-btn" style="width:36px; height:36px;" onclick="sendPM()">➤</button>
+                    </div>
+                </div>
+            `;
             document.getElementById('pmContainer').innerHTML = pmHtml;
             const pmDiv = document.getElementById('pmMessages'); if (pmDiv) pmDiv.scrollTop = pmDiv.scrollHeight;
             document.getElementById('pmInput')?.focus();
         }
         
         function closePM() { document.getElementById('pmContainer').innerHTML = ''; currentPMUser = null; }
-        function sendPM() { const input = document.getElementById('pmInput'); const text = input.value.trim(); if (!text || !currentPMUser) return; privateMessages.push({ id: Date.now(), from: currentUser, to: currentPMUser, text: text, time: new Date().toISOString() }); savePM(); input.value = ''; renderPrivateChat(); renderPrivateChatsList(); }
+        
+        function sendPM() { 
+            const input = document.getElementById('pmInput'); 
+            const text = input.value.trim(); 
+            if (!text || !currentPMUser) return; 
+            privateMessages.push({ id: Date.now(), from: currentUser, to: currentPMUser, text: text, time: new Date().toISOString() }); 
+            savePM(); 
+            input.value = ''; 
+            renderPrivateChat(); 
+            renderPrivateChatsList(); 
+        }
         
         function renderPrivateChatsList() {
             const myPMs = privateMessages.filter(m => m.from === currentUser || m.to === currentUser);
@@ -550,7 +609,11 @@
             myPMs.forEach(m => { const other = m.from === currentUser ? m.to : m.from; uniqueUsers.add(other); });
             const container = document.getElementById('pmList');
             if (uniqueUsers.size === 0) { container.innerHTML = '<div class="empty-state">ჯერ არ გქონია მიმოწერა</div>'; return; }
-            container.innerHTML = Array.from(uniqueUsers).map(username => { const lastMsg = myPMs.filter(m => (m.from === username || m.to === username)).pop(); const user = users.find(u => u.username === username); return `<div class="user-item" onclick="openPrivateChat('${username}')"><div class="user-avatar" style="${user?.avatar ? `background-image:url(${user.avatar}); background-size:cover;` : ''}">${user?.avatar ? '' : username.charAt(0).toUpperCase()}</div><div><div class="user-name">${escapeHtml(username)}</div><div class="user-status">${lastMsg ? lastMsg.text.substring(0,30) : '...'}</div></div></div>`; }).join('');
+            container.innerHTML = Array.from(uniqueUsers).map(username => { 
+                const lastMsg = myPMs.filter(m => (m.from === username || m.to === username)).pop(); 
+                const user = users.find(u => u.username === username); 
+                return `<div class="user-item" onclick="openPrivateChat('${username}')"><div class="user-avatar" style="${user?.avatar ? `background-image:url(${user.avatar}); background-size:cover;` : ''}">${user?.avatar ? '' : username.charAt(0).toUpperCase()}</div><div><div class="user-name">${escapeHtml(username)}</div><div class="user-status">${lastMsg ? lastMsg.text.substring(0,30) : '...'}</div></div></div>`; 
+            }).join('');
         }
         
         // ============ დამხმარე ============
@@ -581,6 +644,7 @@
             document.querySelectorAll('.nav-btn[data-page]').forEach(btn => { btn.addEventListener('click', () => showPage(btn.getAttribute('data-page'))); });
             showPage('home');
             console.log("✅ ჩატი გაშვებულია მომხმარებლით:", currentUser);
+            console.log("📨 სულ შეტყობინებები:", messages.length);
         }
         
         init();
