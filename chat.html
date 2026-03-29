@@ -53,7 +53,6 @@
         .friend-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #2d6a4f; color: white; padding: 4px 8px; border-radius: 20px; font-size: 11px; }
         .add-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--accent); color: white; padding: 4px 8px; border-radius: 20px; font-size: 11px; cursor: pointer; }
         
-        /* ემოჯის დაფა - იგივე ყველგან */
         .emoji-panel {
             position: fixed; bottom: 80px; left: 10px; right: 10px; background: var(--card); border: 2px solid var(--accent);
             border-radius: 16px; display: none; padding: 12px; z-index: 2000; max-height: 320px; overflow-y: auto;
@@ -163,9 +162,18 @@
         // ============ ვიღებთ ნიკს localStorage-დან ============
         let currentUser = localStorage.getItem('mafia_user');
         
+        // 🔥 თუ ნიკი არ არის, გადავამისამართოთ index.html-ზე
         if (!currentUser || currentUser === "null" || currentUser === "undefined" || currentUser === "") {
-            alert("❌ გთხოვთ გაიაროთ რეგისტრაცია!");
-            window.location.href = "index.html";
+            // სცადე სხვა სახელითაც (თუ ძველი ვერსია იყო)
+            let oldUser = localStorage.getItem('nickname');
+            if (oldUser && oldUser !== "null" && oldUser !== "") {
+                currentUser = oldUser;
+                localStorage.setItem('mafia_user', currentUser);
+                localStorage.removeItem('nickname');
+            } else {
+                alert("❌ გთხოვთ გაიაროთ რეგისტრაცია!");
+                window.location.href = "index.html";
+            }
         }
         
         console.log("✅ შესული მომხმარებელი:", currentUser);
@@ -175,7 +183,6 @@
         let currentEmojiTarget = 'chat';
         const OWNER = "Abu007";
         
-        // ============ გლობალური მონაცემები (ყველა მომხმარებელი ერთს ხედავს) ============
         let users = [];
         let messages = [];
         let privateMessages = [];
@@ -192,7 +199,6 @@
         ];
         
         function loadData() {
-            // ყველა მომხმარებელი
             const savedUsers = localStorage.getItem('mafia_users_global');
             if (savedUsers) users = JSON.parse(savedUsers);
             else users = [
@@ -202,31 +208,24 @@
                 { username: "Nika", status: "ონლაინ", avatar: null, role: "user", online: true, joined: Date.now() }
             ];
             
-            // ყველა შეტყობინება (გლობალური)
             const savedMessages = localStorage.getItem('mafia_messages_global');
             messages = savedMessages ? JSON.parse(savedMessages) : [];
             
-            // ყველა პირადი შეტყობინება
             const savedPM = localStorage.getItem('mafia_pm_global');
             privateMessages = savedPM ? JSON.parse(savedPM) : [];
             
-            // მეგობრობის მოთხოვნები
             const savedRequests = localStorage.getItem('mafia_friend_requests');
             friendRequests = savedRequests ? JSON.parse(savedRequests) : [];
             
-            // ემოჯები
             const savedEmojis = localStorage.getItem('mafia_emojis_global');
             customEmojis = savedEmojis ? JSON.parse(savedEmojis) : [];
             
-            // ფოტო ინტერაქციები
             const savedInteractions = localStorage.getItem('mafia_photo_interactions');
             photoInteractions = savedInteractions ? JSON.parse(savedInteractions) : {};
             
-            // ალბომები
             const savedAlbums = localStorage.getItem('mafia_albums_global');
             userAlbums = savedAlbums ? JSON.parse(savedAlbums) : {};
             
-            // თუ მომხმარებელი არ არის სიაში, დავამატოთ
             if (!users.find(u => u.username === currentUser)) {
                 users.push({ username: currentUser, status: "ახალი მოთამაშე", avatar: null, role: "user", online: true, joined: Date.now() });
                 saveUsers();
@@ -243,7 +242,7 @@
         function saveInteractions() { localStorage.setItem('mafia_photo_interactions', JSON.stringify(photoInteractions)); }
         function saveAlbums() { localStorage.setItem('mafia_albums_global', JSON.stringify(userAlbums)); }
         
-        // ============ ემოჯების დაფა (იგივე ჩატშიც და PM-შიც) ============
+        // ============ ემოჯების დაფა ============
         function openEmojiPanel(target) {
             currentEmojiTarget = target;
             const panel = document.getElementById('emojiPanel');
@@ -280,7 +279,6 @@
                 }
             });
             
-            // ადმინებისთვის ემოჯის დამატების ღილაკი
             if (users.find(u => u.username === currentUser)?.role === 'admin' || currentUser === OWNER) {
                 const addBtn = document.createElement('div'); 
                 addBtn.className = 'emoji-item'; 
