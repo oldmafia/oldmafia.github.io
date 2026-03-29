@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ჩემი ჩათი - მეგობრისთვის</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --dark-wine: #4a0404; /* დამპალი შინდისფერი */
+            --light-cream: #f5f5dc; /* კრემისფერი */
+            --heart-color: rgba(128, 0, 32, 0.5);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        /* ღამის რეჟიმი */
+        body.dark-mode { background-color: #000; color: #fff; }
+        body.light-mode { background-color: var(--light-cream); color: #333; }
+
+        /* მცურავი გულები */
+        .hearts-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .heart {
+            position: absolute;
+            font-size: 30px;
+            color: var(--heart-color);
+            animation: floatUp 8s infinite linear;
+            opacity: 0;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+            50% { opacity: 0.7; }
+            100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+        }
+
+        /* ძირითადი კონტეინერი */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 15px;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 1px solid var(--dark-wine);
+        }
+
+        /* ჩეთის არეალი */
+        #chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .msg {
+            margin-bottom: 15px;
+            max-width: 80%;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .msg.left { align-self: flex-start; }
+        .msg.right { align-self: flex-end; flex-direction: row-reverse; }
+
+        .avatar {
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            margin: 0 8px;
+            border: 1px solid var(--dark-wine);
+        }
+
+        .bubble {
+            padding: 10px 15px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            position: relative;
+        }
+        .dark-mode .bubble { background: rgba(74, 4, 4, 0.4); border: 1px solid #300; }
+        .light-mode .bubble { background: #fff; border: 1px solid var(--dark-wine); }
+
+        .time { font-size: 10px; opacity: 0.6; margin-top: 5px; display: block; }
+
+        /* ქვედა მენიუ */
+        nav.bottom-bar {
+            height: 70px;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 2px solid var(--dark-wine);
+        }
+
+        .nav-icon { font-size: 24px; cursor: pointer; transition: 0.2s; }
+        .nav-icon:hover { transform: scale(1.2); }
+
+        /* საწერი გრაფა */
+        .input-box {
+            display: flex;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 20px;
+            border: none;
+            outline: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <div class="hearts-bg" id="hearts"></div>
+
+    <div class="app-container">
+        <header>
+            <h3 id="room-title">ოთახი #1</h3>
+        </header>
+
+        <main id="chat-window">
+            </main>
+
+        <div class="input-box">
+            <button style="background:none; border:none; font-size:20px;">😊</button>
+            <input type="text" id="messageInput" placeholder="დაწერე რამე...">
+            <button id="sendBtn" style="background:var(--dark-wine); color:white; border:none; border-radius:50%; width:40px; height:40px; margin-left:10px;">➤</button>
+        </div>
+
+        <nav class="bottom-bar">
+            <div class="nav-icon" onclick="alert('Rooms coming soon!')">🏠</div>
+            <div class="nav-icon">💬</div>
+            <div class="nav-icon">👥</div>
+            <div class="nav-icon">👤</div>
+            <div class="nav-icon" id="themeBtn">🌙</div>
+        </nav>
+    </div>
+
+    <script>
+        // 1. Supabase-ის კონფიგურაცია
+        const _supabase = supabase.createClient(
+            'https://ftfciebnywbondaiarnc.supabase.co', 
+            'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI'
+        );
+
+        const chatWindow = document.getElementById('chat-window');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // 2. მესიჯების წამოღება
+        async function fetchMessages() {
+            const { data, error } = await _supabase
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (data) {
+                chatWindow.innerHTML = '';
+                data.forEach(msg => appendMessage(msg));
+            }
+        }
+
+        // 3. მესიჯის ეკრანზე გამოჩენა
+        function appendMessage(msg) {
+            const div = document.createElement('div');
+            div.className = `msg left`; // აქ შეგიძლია ლოგიკა დაუმატო შენი სმს-ის გასამარჯვებლად
+            div.innerHTML = `
+                <img src="https://via.placeholder.com/35" class="avatar">
+                <div class="bubble">
+                    <p style="margin:0">${msg.content || msg.text}</p>
+                    <span class="time">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            `;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // 4. მესიჯის გაგზავნა
+        sendBtn.onclick = async () => {
+            const text = messageInput.value;
+            if (!text) return;
+
+            const { error } = await _supabase
+                .from('messages')
+                .insert([{ content: text, user_id: 'guest-id' }]); // შეცვალე რეალური იუზერით
+
+            if (!error) messageInput.value = '';
+        };
+
+        // 5. REALTIME - სიახლეების ავტომატური მოსმენა
+        _supabase
+            .channel('public:messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                appendMessage(payload.new);
+            })
+            .subscribe();
+
+        // 6. გულების გენერატორი
+        function createHeart() {
+            const container = document.getElementById('hearts');
+            const heart = document.createElement('div');
+            heart.innerHTML = '❤';
+            heart.className = 'heart';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.animationDuration = (Math.random() * 3 + 5) + 's';
+            container.appendChild(heart);
+            setTimeout(() => heart.remove(), 8000);
+        }
+        setInterval(createHeart, 1500);
+
+        // 7. ღამის რეჟიმის გადამრთველი
+        document.getElementById('themeBtn').onclick = () => {
+            document.body.classList.toggle('light-mode');
+            document.body.classList.toggle('dark-mode');
+            document.getElementById('themeBtn').innerHTML = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
+        };
+
+        // ჩატვირთვისას წამოიღე მესიჯები
+        fetchMessages();
+    </script>
+</body>
+</html>
