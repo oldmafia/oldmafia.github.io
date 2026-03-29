@@ -3,142 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Old Mafia - Abu007 Full Site</title>
+    <title>Old Mafia - Emoji Board</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        :root { --accent: #ff0000; --gold: #ffcc00; }
-        body.night-mode { --bg: #000; --txt: #e0c8a8; --nav: #080808; --card: #111; --border: #222; --in-bg: #0a0a0a; }
-        body.day-mode { --bg: #ffffff; --txt: #2c2418; --nav: #f2f2f2; --card: #fff; --border: #ddd; --in-bg: #f9f9f9; }
+        :root { --accent: #ff0000; }
+        body.night-mode { --bg: #000; --txt: #e0c8a8; --nav: #050505; --card: #111; --border: #222; }
+        body.day-mode { --bg: #fff; --txt: #222; --nav: #eee; --card: #f9f9f9; --border: #ddd; }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--txt); height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--txt); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* ⬆️ NAVIGATION (FIXED AT TOP) */
-        .navigation { width: 100%; height: 65px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 5000; flex-shrink: 0; }
-        .nav-item { position: relative; cursor: pointer; font-size: 26px; opacity: 0.5; color: var(--txt); transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .nav-item.active { opacity: 1; color: var(--accent); transform: scale(1.1); }
-        .badge { position: absolute; top: -2px; right: -8px; background: red; color: white; font-size: 10px; min-width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 1px solid white; }
+        /* ⬆️ Navigation */
+        .navigation { width: 100%; height: 60px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { cursor: pointer; font-size: 24px; opacity: 0.5; color: var(--txt); }
+        .nav-item.active { opacity: 1; color: var(--accent); }
 
-        .content-area { flex: 1; overflow-y: auto; position: relative; }
-        .page { display: none; height: 100%; width: 100%; }
+        .page { display: none; flex: 1; overflow-y: auto; }
         .page.active { display: block; }
 
-        /* 🏠 ROOMS LIST (ONE LINE PER ROOM) */
-        .rooms-list { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-        .room-card { 
-            background: var(--card); padding: 22px; border-radius: 15px; 
-            border: 1px solid var(--border); border-bottom: 4px solid var(--accent); 
-            text-align: center; font-weight: bold; font-size: 19px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s;
-        }
-        .room-card:active { transform: scale(0.97); }
+        /* 🏠 Rooms */
+        .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+        .room-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-bottom: 3px solid var(--accent); text-align: center; font-weight: bold; }
 
-        /* 👤 PROFILE SECTION */
-        .profile-header { height: 150px; background: linear-gradient(180deg, var(--accent), var(--bg)); display: flex; justify-content: center; align-items: flex-end; }
-        .profile-ava { width: 110px; height: 110px; border-radius: 50%; border: 4px solid white; background: #222; overflow: hidden; transform: translateY(30px); cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .profile-ava img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-info { margin-top: 50px; text-align: center; padding: 20px; }
-
-        /* 😊 EMOJI BOARD POPUP */
+        /* 😊 Emoji Board (დაფა) */
         .emoji-board { 
-            position: absolute; bottom: 80px; left: 10px; right: 10px; 
-            background: var(--nav); border: 2px solid var(--accent); 
-            border-radius: 20px; display: none; padding: 15px; 
-            grid-template-columns: repeat(5, 1fr); gap: 12px; 
-            max-height: 280px; overflow-y: auto; z-index: 6000;
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.6);
+            position: absolute; bottom: 70px; left: 10px; right: 10px; 
+            background: var(--nav); border: 1px solid var(--accent); 
+            border-radius: 15px; display: none; padding: 10px; 
+            grid-template-columns: repeat(5, 1fr); gap: 10px; 
+            max-height: 200px; overflow-y: auto; z-index: 2000;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
         }
-        .emoji-board.active { display: grid; }
-        .emoji-img { width: 100%; aspect-ratio: 1/1; object-fit: contain; cursor: pointer; }
-        .admin-plus { border: 2px dashed var(--accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: var(--accent); cursor: pointer; height: 50px; }
+        .emoji-board.show { display: grid; }
+        .emoji-item { width: 100%; aspect-ratio: 1/1; object-fit: contain; cursor: pointer; }
+        .admin-plus-btn { 
+            border: 2px dashed var(--accent); border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 24px; color: var(--accent); cursor: pointer; 
+        }
 
-        /* 👥 LISTS (ONLINE, FRIENDS, PM) */
-        .row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,0,0,0.1); cursor: pointer; }
-        .row img { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--accent); margin-right: 15px; }
-        .row-data b { display: block; font-size: 17px; margin-bottom: 3px; }
-        .row-data span { font-size: 13px; opacity: 0.6; }
+        /* 💬 Chat Footer */
+        .chat-footer { background: var(--nav); padding: 10px; border-top: 1px solid var(--border); position: relative; }
+        .input-area { display: flex; gap: 8px; align-items: center; }
+        .icon-btn { font-size: 24px; cursor: pointer; padding: 5px; }
+        input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid var(--accent); background: none; color: var(--txt); }
 
-        /* 💬 CHAT FOOTER */
-        .chat-footer { background: var(--nav); padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
-        .chat-in-box { display: flex; gap: 10px; align-items: center; }
-        .chat-input { flex: 1; padding: 14px; border-radius: 25px; border: 1px solid var(--accent); background: var(--in-bg); color: var(--txt); font-size: 16px; }
-
-        /* ❤️ HEARTS */
-        .f-heart { position: fixed; color: #ff0000; font-size: 30px; pointer-events: none; z-index: 10; animation: floatUp 5s linear forwards; filter: drop-shadow(0 0 5px red); }
-        @keyframes floatUp { 0% { bottom: -50px; opacity: 0; transform: translateX(0); } 10% { opacity: 1; } 100% { bottom: 100%; opacity: 0; transform: translateX(50px); } }
+        /* 👥 Online */
+        .u-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid rgba(255,0,0,0.1); }
+        .u-row img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; border: 1px solid var(--accent); }
     </style>
 </head>
 <body class="night-mode">
 
     <div class="navigation">
         <div class="nav-item active" onclick="showPage('homePage', this)">🏠</div>
-        <div class="nav-item" onclick="showPage('messengerPage', this)">💬 <div id="pmBadge" class="badge">0</div></div>
-        <div class="nav-item" onclick="showPage('friendsPage', this)">💞</div>
+        <div class="nav-item" onclick="showPage('messengerPage', this)">💬</div>
         <div class="nav-item" onclick="showPage('onlinePage', this)">👥</div>
         <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
         <div class="nav-item" onclick="toggleMode()">🌗</div>
     </div>
 
-    <div class="content-area">
-        <div id="homePage" class="page active">
-            <h3 style="padding:15px; text-align:center; color:var(--accent);">🏰 სათამაშო ოთახები</h3>
-            <div class="rooms-list">
-                <div class="room-card" onclick="openRoom('კაფე-ბარი')">☕ კაფე-ბარი</div>
-                <div class="room-card" onclick="openRoom('ნარდი')">🎲 ნარდი (Backgammon)</div>
-                <div class="room-card" onclick="openRoom('ჯოკერი')">🃏 ჯოკერი (Joker)</div>
-                <div class="room-card" onclick="openRoom('ვიპ საუბრები')">💎 VIP საუბრები</div>
-                <div class="room-card" onclick="openRoom('ფორუმი')">📝 ფორუმი</div>
-                <div class="room-card" onclick="openRoom('ადმინისტრაცია')">🛠️ ადმინისტრაცია</div>
-                <div class="room-card" onclick="openRoom('იუმორი')">😂 იუმორი და გართობა</div>
-            </div>
+    <div id="homePage" class="page active">
+        <div class="rooms-grid">
+            <div class="room-card" onclick="openRoom('კაფე-ბარი')">☕ კაფე-ბარი</div>
+            <div class="room-card" onclick="openRoom('ნარდი')">🎲 ნარდი</div>
+            <div class="room-card" onclick="openRoom('ჯოკერი')">🃏 ჯოკერი</div>
+            <div class="room-card" onclick="openRoom('ადმინი')">🛠️ ადმინი</div>
         </div>
+    </div>
 
-        <div id="messengerPage" class="page">
-            <h3 style="padding:15px;">💬 პირადი მიმოწერები</h3>
-            <div id="pmHistory"></div>
+    <div id="roomChatPage" class="page" style="flex-direction: column; display: none;">
+        <div style="padding:12px; border-bottom:1px solid red; display:flex; justify-content:space-between;">
+            <b id="roomTitle">ოთახი</b> <span onclick="showPage('homePage')" style="color:red;">✖</span>
         </div>
-
-        <div id="friendsPage" class="page">
-            <h3 style="padding:15px; color:red;">💞 ჩემი მეგობრები</h3>
-            <div id="friendsList"></div>
-        </div>
-
-        <div id="onlinePage" class="page">
-            <h3 style="padding:15px;">👥 ხალხი საიტზე</h3>
-            <div id="onlineList"></div>
-        </div>
-
-        <div id="profilePage" class="page">
-            <div class="profile-header">
-                <div class="profile-ava" onclick="document.getElementById('avaUp').click()">
-                    <img id="myAva" src="https://i.ibb.co/v3m6y6R/avatar.png">
-                </div>
-            </div>
-            <div class="profile-info">
-                <h2 id="dispNick">---</h2>
-                <input type="text" id="dispStatus" onchange="updateStatus()" placeholder="დაწერე სტატუსი..." style="width:90%; padding:15px; background:none; border:1px solid red; color:var(--txt); border-radius:25px; text-align:center; margin-top:20px;">
-                <p style="margin-top:20px; opacity:0.5;">ID: #<span id="userId">007</span></p>
-            </div>
-            <input type="file" id="avaUp" hidden onchange="doAvaUpload()">
-        </div>
-
-        <div id="roomChatPage" class="page" style="flex-direction: column;">
-            <div style="padding:15px; background:var(--nav); border-bottom:1px solid red; display:flex; justify-content:space-between; align-items:center;">
-                <b id="roomTitle" style="font-size:18px; color:var(--accent);">ოთახი</b>
-                <span onclick="showPage('homePage')" style="color:red; font-size:24px; cursor:pointer;">✖</span>
-            </div>
-            <div id="roomMsgs" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="roomMsgs" style="flex:1; overflow-y:auto; padding:15px;"></div>
+        
+        <div class="chat-footer">
+            <div id="emojiBoard" class="emoji-board"></div>
             
-            <div class="chat-footer">
-                <div id="emojiBoard" class="emoji-board"></div>
-                <div class="chat-in-box">
-                    <span onclick="toggleEmojiBoard()" style="font-size:32px; cursor:pointer;">😊</span>
-                    <input type="text" id="msgInp" class="chat-input" placeholder="დაწერე შეტყობინება...">
-                    <button onclick="sendRoomMsg()" style="background:var(--accent); border:none; color:white; width:50px; height:50px; border-radius:50%; font-size:20px;">✈</button>
-                </div>
+            <div class="input-area">
+                <span class="icon-btn" onclick="toggleEmojiBoard()">😊</span>
+                <input type="text" id="msgInp" placeholder="დაწერე...">
+                <button onclick="sendMsg()" style="background:red; color:white; border:none; border-radius:50%; width:40px; height:40px;">✈</button>
             </div>
-            <input type="file" id="emojiUp" hidden onchange="doEmojiUpload()">
         </div>
+        <input type="file" id="upEmoji" hidden onchange="doUploadEmoji()">
+    </div>
+
+    <div id="onlinePage" class="page">
+        <h3 style="padding:15px;">👥 ონლაინ ხალხი</h3>
+        <div id="onlineUsers"></div>
     </div>
 
     <script>
@@ -148,101 +102,33 @@
         let currentRoom = "";
 
         async function init() {
-            document.getElementById('dispNick').innerText = myNick;
-            loadProfile();
-            loadOnline();
-            loadPMHistory();
-            loadFriends();
             loadEmojis();
-            startHearts();
-
-            // Realtime Updates
-            _s.channel('room-updates').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-                if(payload.new.room_name === currentRoom) loadRoomMsgs();
-            }).subscribe();
+            loadOnline();
+            _s.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, loadRoomMsgs).subscribe();
         }
 
-        function toggleMode() {
-            document.body.classList.toggle('night-mode');
-            document.body.classList.toggle('day-mode');
-        }
+        function toggleMode() { document.body.classList.toggle('night-mode'); document.body.classList.toggle('day-mode'); }
 
-        function toggleEmojiBoard() { document.getElementById('emojiBoard').classList.toggle('active'); }
-
-        async function loadProfile() {
-            const { data } = await _s.from('profiles').select('*').eq('username', myNick).maybeSingle();
-            if(data) {
-                if(data.avatar_url) document.getElementById('myAva').src = data.avatar_url;
-                document.getElementById('dispStatus').value = data.status || "";
-                document.getElementById('userId').innerText = data.id.substring(0,5);
-            }
-        }
-
-        async function doAvaUpload() {
-            const file = document.getElementById('avaUp').files[0];
-            const path = `avatars/${myNick}_${Date.now()}`;
-            await _s.storage.from('avatars').upload(path, file);
-            const { data } = _s.storage.from('avatars').getPublicUrl(path);
-            await _s.from('profiles').update({ avatar_url: data.publicUrl }).eq('username', myNick);
-            document.getElementById('myAva').src = data.publicUrl;
-        }
-
-        async function updateStatus() {
-            const status = document.getElementById('dispStatus').value;
-            await _s.from('profiles').update({ status }).eq('username', myNick);
-        }
-
-        async function loadOnline() {
-            const { data } = await _s.from('profiles').select('*').limit(30);
-            document.getElementById('onlineList').innerHTML = data?.map(u => `
-                <div class="row" onclick="location.href='pm.html?to=${u.username}'">
-                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                    <div class="row-data"><b>${u.username}</b><span>${u.status || 'ონლაინშია'}</span></div>
-                </div>
-            `).join('') || "";
-        }
-
-        async function loadPMHistory() {
-            const { data } = await _s.from('direct_messages').select('*').or(`sender.eq.${myNick},receiver.eq.${myNick}`).order('created_at', { ascending: false });
-            const list = document.getElementById('pmHistory');
-            const history = new Set();
-            list.innerHTML = "";
-            data?.forEach(m => {
-                const partner = m.sender === myNick ? m.receiver : m.sender;
-                if(!history.has(partner)) {
-                    history.add(partner);
-                    list.innerHTML += `<div class="row" onclick="location.href='pm.html?to=${partner}'">
-                        <img src="https://i.ibb.co/v3m6y6R/avatar.png">
-                        <div class="row-data"><b>${partner}</b><span>${m.text.substring(0, 25)}...</span></div>
-                    </div>`;
-                }
-            });
-        }
-
-        async function loadFriends() {
-            const { data } = await _s.from('friends').select('*').or(`user_me.eq.${myNick},user_friend.eq.${myNick}`).eq('status', 'accepted');
-            const list = document.getElementById('friendsList');
-            list.innerHTML = data?.length ? data.map(f => {
-                const name = f.user_me === myNick ? f.user_friend : f.user_me;
-                return `<div class="row" onclick="location.href='pm.html?to=${name}'"><img src="https://i.ibb.co/v3m6y6R/avatar.png"><div class="row-data"><b>${name}</b><span>მეგობარი</span></div></div>`;
-            }).join('') : "<p style='padding:20px; opacity:0.5;'>მეგობრები არ გყავს</p>";
+        // 😊 სმაილების დაფის მართვა
+        function toggleEmojiBoard() {
+            document.getElementById('emojiBoard').classList.toggle('show');
         }
 
         async function loadEmojis() {
             const { data } = await _s.from('custom_emojis').select('*');
             const board = document.getElementById('emojiBoard');
-            let html = admins.includes(myNick) ? `<div class="admin-plus" onclick="document.getElementById('emojiUp').click()">+</div>` : "";
-            html += data?.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('') || "";
+            let html = admins.includes(myNick) ? `<div class="admin-plus-btn" onclick="document.getElementById('upEmoji').click()">+</div>` : "";
+            html += data?.map(e => `<img src="${e.emoji_url}" class="emoji-item" onclick="addEmoji('${e.emoji_url}')">`).join('') || "";
             board.innerHTML = html;
         }
 
         function addEmoji(url) {
             document.getElementById('msgInp').value += ` :img:${url}: `;
-            toggleEmojiBoard();
+            document.getElementById('emojiBoard').classList.remove('show');
         }
 
-        async function doEmojiUpload() {
-            const file = document.getElementById('emojiUp').files[0];
+        async function doUploadEmoji() {
+            const file = document.getElementById('upEmoji').files[0];
             const path = `emojis/${Date.now()}`;
             await _s.storage.from('avatars').upload(path, file);
             const { data } = _s.storage.from('avatars').getPublicUrl(path);
@@ -250,6 +136,7 @@
             loadEmojis();
         }
 
+        // ჩატი
         function openRoom(name) {
             currentRoom = name;
             document.getElementById('roomTitle').innerText = name;
@@ -259,22 +146,27 @@
 
         async function loadRoomMsgs() {
             if(!currentRoom) return;
-            const { data } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(40);
+            const { data } = await _s.from('messages').select('*').eq('room_name', currentRoom).order('created_at', { ascending: false }).limit(30);
             const box = document.getElementById('roomMsgs');
-            box.innerHTML = data?.reverse().map(m => `
-                <div style="background:var(--card); padding:10px; border-radius:10px; border:1px solid var(--border); align-self: ${m.username === myNick ? 'flex-end' : 'flex-start'}; max-width: 85%;">
-                    <b style="color:red; font-size:12px;">${m.username}</b><br>
-                    ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:28px; vertical-align:middle;">')}
-                </div>
-            `).join('') || "";
+            box.innerHTML = data?.reverse().map(m => `<div><b>${m.username}:</b> ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:25px; vertical-align:middle;">')}</div>`).join('') || "";
             box.scrollTop = box.scrollHeight;
         }
 
-        async function sendRoomMsg() {
+        async function sendMsg() {
             const val = document.getElementById('msgInp').value;
             if(!val) return;
             await _s.from('messages').insert({ username: myNick, text: val, room_name: currentRoom });
             document.getElementById('msgInp').value = "";
+        }
+
+        async function loadOnline() {
+            const { data } = await _s.from('profiles').select('*');
+            document.getElementById('onlineUsers').innerHTML = data?.map(u => `
+                <div class="u-row" onclick="location.href='pm.html?to=${u.username}'">
+                    <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
+                    <span>${u.username}</span>
+                </div>
+            `).join('') || "";
         }
 
         function showPage(id, el) {
@@ -283,15 +175,6 @@
             t.style.display = (id === 'roomChatPage') ? 'flex' : 'block';
             t.classList.add('active');
             if(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
-        }
-
-        function startHearts() {
-            setInterval(() => {
-                const h = document.createElement('div'); h.className = 'f-heart'; h.innerText = '❤️';
-                h.style.left = Math.random() * 90 + '%';
-                document.body.appendChild(h);
-                setTimeout(() => h.remove(), 5000);
-            }, 3000);
         }
 
         window.onload = init;
