@@ -3,233 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Old Mafia - 12 ოთახი</title>
+    <title>Old Mafia</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
         :root {
-            --accent: #ff3b3b;
-            --bg: #0a0c10;
-            --txt: #e6e9f0;
-            --nav: #11151c;
-            --card: #151e2a;
-            --border: #2a3440;
-            --in-bg: #0f141c;
-        }
-
-        body.day-mode {
-            --bg: #fef8ef;
-            --txt: #2c2418;
-            --nav: #fff5e6;
-            --card: #ffffff;
-            --border: #ffe0b5;
-            --in-bg: #fffaf2;
+            --red: #e34d4d;
+            --dark: #12161f;
+            --darker: #0c0f16;
+            --card: #191e2a;
+            --text: #eef2ff;
+            --border: #262d3a;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui;
-            background: var(--bg);
-            color: var(--txt);
+            font-family: -apple-system, 'Segoe UI', system-ui;
+            background: var(--dark);
+            color: var(--text);
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: 0.2s;
         }
 
-        .navigation {
-            width: 100%;
-            height: 65px;
-            background: var(--nav);
-            border-bottom: 2px solid var(--accent);
+        /* REGISTER SCREEN */
+        .register-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.96);
+            z-index: 10000;
             display: flex;
-            justify-content: space-around;
-            align-items: center;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 100;
-        }
-
-        .nav-item {
-            cursor: pointer;
-            font-size: 28px;
-            opacity: 0.55;
-            color: var(--txt);
-            transition: 0.2s;
-            padding: 8px;
-            position: relative;
-        }
-
-        .nav-item.active {
-            opacity: 1;
-            color: var(--accent);
-            transform: scale(1.1);
-        }
-
-        .badge {
-            position: absolute;
-            top: -2px;
-            right: -8px;
-            background: red;
-            color: white;
-            font-size: 10px;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: none;
             align-items: center;
             justify-content: center;
         }
 
-        .content-area {
+        .register-box {
+            background: var(--card);
+            border-radius: 48px;
+            padding: 48px 32px;
+            width: 90%;
+            max-width: 340px;
+            text-align: center;
+            border: 2px solid var(--red);
+        }
+
+        .register-box h1 {
+            color: var(--red);
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .register-box p {
+            color: #8b92a8;
+            margin-bottom: 28px;
+        }
+
+        .register-box input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: 60px;
+            background: var(--darker);
+            color: var(--text);
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .register-box input:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+
+        .register-box button {
+            width: 100%;
+            padding: 14px;
+            background: var(--red);
+            border: none;
+            border-radius: 60px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .register-error {
+            color: var(--red);
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        /* MAIN APP */
+        .app {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .top-bar {
+            background: var(--darker);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--red);
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--red);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-name {
+            background: var(--card);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--darker);
+            padding: 0 12px;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 12px 18px;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.6;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            opacity: 1;
+            color: var(--red);
+            border-bottom-color: var(--red);
+        }
+
+        .main-content {
             flex: 1;
             overflow-y: auto;
-            position: relative;
+            padding: 16px;
         }
 
         .page {
             display: none;
-            height: 100%;
-            width: 100%;
-            overflow-y: auto;
         }
 
         .page.active {
             display: block;
         }
 
-        .rooms-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 18px;
-            background: var(--nav);
-            border-bottom: 1px solid var(--border);
-        }
-        
-        .mode-toggle-btn {
-            background: var(--accent);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
         .rooms-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            padding: 16px;
-        }
-        
-        .room-card-grid {
-            background: var(--card);
-            padding: 20px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            border-bottom: 3px solid var(--accent);
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        
-        .room-card-grid:active {
-            transform: scale(0.97);
-            background: var(--accent);
-        }
-        
-        .rooms-scroll {
-            display: flex;
-            overflow-x: auto;
-            overflow-y: hidden;
             gap: 14px;
-            padding: 16px;
-            scrollbar-width: thin;
-            -webkit-overflow-scrolling: touch;
         }
-        
-        .room-card-scroll {
-            flex: 0 0 auto;
+
+        .room-card {
             background: var(--card);
-            padding: 16px 24px;
-            border-radius: 40px;
             border: 1px solid var(--border);
-            border-bottom: 3px solid var(--accent);
-            font-weight: bold;
-            font-size: 16px;
+            border-radius: 24px;
+            padding: 20px 12px;
+            text-align: center;
             cursor: pointer;
-            white-space: nowrap;
+            transition: 0.1s;
         }
-        
-        .room-card-scroll:active {
-            transform: scale(0.96);
-            background: var(--accent);
+
+        .room-card:active {
+            background: var(--red);
+            transform: scale(0.97);
         }
-        
-        .rooms-container {
-            display: none;
+
+        .room-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
         }
-        
-        .rooms-container.active-view {
-            display: block;
+
+        .room-name {
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--card);
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .user-row:active {
+            background: var(--red);
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--red);
         }
 
         .profile-header {
-            height: 150px;
-            background: linear-gradient(145deg, var(--accent), #2a0f0f);
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
+            text-align: center;
         }
 
-        .profile-ava {
-            width: 110px;
-            height: 110px;
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            border: 4px solid white;
-            overflow: hidden;
-            transform: translateY(30px);
+            object-fit: cover;
+            border: 3px solid var(--red);
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+
+        .status-input {
+            width: 90%;
+            padding: 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            color: var(--text);
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .chat-room {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--dark);
+            z-index: 1000;
+        }
+
+        .chat-header {
+            background: var(--darker);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            background: var(--card);
+            padding: 10px 14px;
+            border-radius: 18px;
+            max-width: 85%;
+        }
+
+        .message.my {
+            align-self: flex-end;
+            background: var(--red);
+        }
+
+        .message-name {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .chat-footer {
+            background: var(--darker);
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+        }
+
+        .send-btn {
+            background: var(--red);
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 20px;
             cursor: pointer;
         }
 
-        .profile-ava img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profile-info {
-            margin-top: 55px;
-            text-align: center;
-            padding: 20px;
-        }
-
         .emoji-board {
-            position: absolute;
-            bottom: 85px;
+            position: fixed;
+            bottom: 80px;
             left: 12px;
             right: 12px;
-            background: var(--nav);
-            border: 2px solid var(--accent);
+            background: var(--card);
+            border: 1px solid var(--red);
             border-radius: 28px;
             display: none;
-            padding: 15px;
+            padding: 16px;
             grid-template-columns: repeat(5, 1fr);
             gap: 12px;
-            max-height: 280px;
+            max-height: 260px;
             overflow-y: auto;
-            z-index: 7000;
+            z-index: 1001;
         }
 
         .emoji-board.active {
@@ -238,644 +359,39 @@
 
         .emoji-img {
             width: 100%;
-            aspect-ratio: 1/1;
+            aspect-ratio: 1;
             object-fit: contain;
             cursor: pointer;
-            background: var(--card);
+            background: var(--darker);
+            border-radius: 12px;
             padding: 6px;
-            border-radius: 16px;
         }
 
         .admin-plus {
-            border: 2px dashed var(--accent);
-            border-radius: 20px;
+            border: 2px dashed var(--red);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            color: var(--accent);
+            font-size: 28px;
             cursor: pointer;
-            aspect-ratio: 1/1;
-        }
-
-        .row {
-            display: flex;
-            align-items: center;
-            padding: 14px 18px;
-            cursor: pointer;
-            background: var(--card);
-            margin-bottom: 8px;
-            border-radius: 20px;
-            transition: 0.1s;
-        }
-
-        .row:active {
-            background: var(--accent);
-        }
-
-        .row img {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            margin-right: 16px;
-            object-fit: cover;
-        }
-
-        .row-data b {
-            display: block;
-            font-size: 17px;
-        }
-
-        .row-data span {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        .room-chat-layout {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .chat-footer {
-            background: var(--nav);
-            padding: 12px;
-            border-top: 1px solid var(--border);
-        }
-
-        .chat-in-box {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 14px 18px;
-            border-radius: 40px;
-            border: 1px solid var(--accent);
-            background: var(--in-bg);
-            color: var(--txt);
-            font-size: 16px;
-        }
-
-        .send-btn {
-            background: var(--accent);
-            border: none;
-            color: white;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            font-size: 22px;
-            cursor: pointer;
+            aspect-ratio: 1;
         }
 
         .pm-modal {
             position: fixed;
-            bottom: 0;
+            top: 0;
             left: 0;
             right: 0;
-            top: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 10000;
+            bottom: 0;
+            background: var(--darker);
+            z-index: 10001;
             display: flex;
             flex-direction: column;
         }
-        
+
         .pm-header {
-            background: var(--accent);
+            background: var(--red);
             padding: 15px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .pm-messages {
-            flex: 1;
-            overflow-y: auto;
-            background: var(--bg);
-            padding: 15px;
-        }
-        
-        .pm-input-area {
-            display: flex;
-            gap: 10px;
-            padding: 12px;
-            background: var(--nav);
-        }
-
-        .heart {
-            position: fixed;
-            color: #ff3366;
-            font-size: 28px;
-            pointer-events: none;
-            z-index: 9999;
-            animation: floatHeart 5s ease-out forwards;
-        }
-
-        @keyframes floatHeart {
-            0% { bottom: -20px; opacity: 1; transform: translateX(0);}
-            100% { bottom: 100%; opacity: 0; transform: translateX(40px);}
-        }
-        
-        .room-icon {
-            font-size: 24px;
-            display: block;
-            margin-bottom: 6px;
-        }
-    </style>
-</head>
-<body class="night-mode">
-
-<div class="navigation">
-    <div class="nav-item active" onclick="showPage('homePage', this)">🏠</div>
-    <div class="nav-item" onclick="showPage('messengerPage', this)">💬 <div id="pmBadge" class="badge">0</div></div>
-    <div class="nav-item" onclick="showPage('friendsPage', this)">💞</div>
-    <div class="nav-item" onclick="showPage('onlinePage', this)">👥</div>
-    <div class="nav-item" onclick="showPage('profilePage', this)">👤</div>
-    <div class="nav-item" onclick="toggleMode()">🌗</div>
-</div>
-
-<div class="content-area">
-    <div id="homePage" class="page active">
-        <div class="rooms-header">
-            <h3 style="color:var(--accent);">🏰 12 ოთახი</h3>
-            <button class="mode-toggle-btn" onclick="toggleRoomsView()" id="viewToggleBtn">📜 სქროლი</button>
-        </div>
-        <div id="roomsGridView" class="rooms-container active-view"></div>
-        <div id="roomsScrollView" class="rooms-container"></div>
-    </div>
-
-    <div id="messengerPage" class="page">
-        <h3 style="padding: 18px;">💬 პირადი მიმოწერები</h3>
-        <div id="pmList" style="padding: 0 12px;"></div>
-    </div>
-
-    <div id="friendsPage" class="page">
-        <h3 style="padding: 18px; color:var(--accent);">💞 მეგობრები</h3>
-        <div id="friendsList"></div>
-    </div>
-
-    <div id="onlinePage" class="page">
-        <h3 style="padding: 18px;">👥 ონლაინ მოთამაშეები</h3>
-        <div id="onlineList"></div>
-    </div>
-
-    <div id="profilePage" class="page">
-        <div class="profile-header">
-            <div class="profile-ava" onclick="document.getElementById('avaInput').click()">
-                <img id="myAvatar" src="https://i.ibb.co/v3m6y6R/avatar.png">
-            </div>
-        </div>
-        <div class="profile-info">
-            <h2 id="profileNick">---</h2>
-            <input type="text" id="statusInput" onchange="updateStatus()" placeholder="📢 სტატუსი..." 
-                   style="width:90%; padding:14px; background:var(--in-bg); border:1px solid var(--accent); color:var(--txt); border-radius:40px; text-align:center; margin-top:20px;">
-            <p style="margin-top:20px;">🆔 ID: <span id="userId">---</span></p>
-            <p id="adminLabel" style="margin-top:8px; color:var(--accent);"></p>
-        </div>
-        <input type="file" id="avaInput" hidden accept="image/*" onchange="uploadAvatar()">
-    </div>
-
-    <div id="roomChatPage" class="page room-chat-layout" style="display: none;">
-        <div style="padding: 14px; background: var(--nav); border-bottom: 2px solid var(--accent); display: flex; justify-content: space-between;">
-            <b id="roomTitle" style="font-size: 18px;">📡 ოთახი</b>
-            <span onclick="closeRoom()" style="color:var(--accent); font-size:26px; cursor:pointer;">✖</span>
-        </div>
-        <div id="roomMessages" class="chat-messages"></div>
-        <div class="chat-footer">
-            <div id="emojiBoard" class="emoji-board"></div>
-            <div class="chat-in-box">
-                <span onclick="toggleEmoji()" style="font-size:32px; cursor:pointer;">😊</span>
-                <input type="text" id="msgInput" class="chat-input" placeholder="შეტყობინება...">
-                <button class="send-btn" onclick="sendMessage()">✈</button>
-            </div>
-        </div>
-        <input type="file" id="emojiUpload" hidden accept="image/*" onchange="uploadEmoji()">
-    </div>
-</div>
-
-<script>
-    const supabase = supabase.createClient(
-        "https://ftfciebnywbondaiarnc.supabase.co",
-        "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI"
-    );
-    
-    const MY_NICK = localStorage.getItem('nickname') || "Abu007";
-    const ADMINS = ["Abu007", "AdminMafia", "Lukinio"];
-    let currentRoom = "";
-    let currentPMUser = null;
-    let pmInterval = null;
-    let roomsViewMode = 'grid';
-    
-    const ROOMS = [
-        { icon: "☕", name: "კაფე-ბარი", desc: "ყავა და საუბარი" },
-        { icon: "🎲", name: "ნარდი", desc: "ნარდის მოყვარულები" },
-        { icon: "🃏", name: "ჯოკერი", desc: "ბანქოს თამაშები" },
-        { icon: "💎", name: "VIP საუბრები", desc: "ელიტური კლუბი" },
-        { icon: "📝", name: "ფორუმი", desc: "დისკუსიები" },
-        { icon: "🛠️", name: "ადმინისტრაცია", desc: "დახმარება" },
-        { icon: "😂", name: "იუმორი", desc: "მემები და ხუმრობები" },
-        { icon: "🏆", name: "შიფროგრამა", desc: "შიფროგრამა" },
-        { icon: "🎭", name: "გამოძიება", desc: "გამოძიება" },
-        { icon: "🎵", name: "მუსიკალური", desc: "სიმღერები და ვიდეო" },
-        { icon: "⁉️", name: "ვიქტორინა", desc: "ვიქტორინა" },
-        { icon: "🆘", name: "დახმარება", desc: "დახმარება" }
-    ];
-    
-    async function init() {
-        await ensureProfile();
-        document.getElementById('profileNick').innerText = MY_NICK;
-        if(ADMINS.includes(MY_NICK)) {
-            document.getElementById('adminLabel').innerHTML = '👑 ადმინი / დამფუძნებელი - სმაილების დამატება შეგიძლია';
-        }
-        loadProfile();
-        renderRooms();
-        loadOnline();
-        loadPMList();
-        loadFriends();
-        loadEmojis();
-        startHearts();
-        
-        supabase.channel('all-rooms').on('postgres_changes', 
-            { event: 'INSERT', schema: 'public', table: 'messages' }, 
-            (payload) => {
-                if(payload.new.room_name === currentRoom) loadRoomMessages();
-            }
-        ).subscribe();
-        
-        supabase.channel('pms-all').on('postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'direct_messages' },
-            () => {
-                loadPMList();
-                if(currentPMUser) loadPMMessages();
-            }
-        ).subscribe();
-        
-        supabase.channel('emojis-update').on('postgres_changes',
-            { event: '*', schema: 'public', table: 'custom_emojis' },
-            () => loadEmojis()
-        ).subscribe();
-    }
-    
-    async function ensureProfile() {
-        const { data } = await supabase.from('profiles').select('*').eq('username', MY_NICK).maybeSingle();
-        if(!data) {
-            await supabase.from('profiles').insert({
-                username: MY_NICK,
-                status: 'ახალი მაფიოზი',
-                avatar_url: 'https://i.ibb.co/v3m6y6R/avatar.png'
-            });
-        }
-    }
-    
-    async function loadProfile() {
-        const { data } = await supabase.from('profiles').select('*').eq('username', MY_NICK).maybeSingle();
-        if(data) {
-            if(data.avatar_url) document.getElementById('myAvatar').src = data.avatar_url;
-            document.getElementById('statusInput').value = data.status || '';
-            document.getElementById('userId').innerText = data.id ? data.id.slice(0,6) : '001';
-        }
-    }
-    
-    async function updateStatus() {
-        const status = document.getElementById('statusInput').value;
-        await supabase.from('profiles').update({ status }).eq('username', MY_NICK);
-    }
-    
-    async function uploadAvatar() {
-        const file = document.getElementById('avaInput').files[0];
-        if(!file) return;
-        const path = `avatars/${MY_NICK}_${Date.now()}.png`;
-        const { error } = await supabase.storage.from('avatars').upload(path, file);
-        if(error) { alert("ატვირთვა ვერ მოხერხდა"); return; }
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-        await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('username', MY_NICK);
-        document.getElementById('myAvatar').src = data.publicUrl;
-        loadOnline();
-        loadFriends();
-        loadPMList();
-    }
-    
-    function renderRooms() {
-        const gridContainer = document.getElementById('roomsGridView');
-        gridContainer.innerHTML = ROOMS.map(r => `
-            <div class="room-card-grid" onclick="openRoom('${r.name.replace(/'/g, "\\'")}')">
-                <div class="room-icon">${r.icon}</div>
-                <div>${r.name}</div>
-                <div style="font-size:10px; opacity:0.6;">${r.desc}</div>
-            </div>
-        `).join('');
-        
-        const scrollContainer = document.getElementById('roomsScrollView');
-        scrollContainer.innerHTML = `
-            <div class="rooms-scroll">
-                ${ROOMS.map(r => `
-                    <div class="room-card-scroll" onclick="openRoom('${r.name.replace(/'/g, "\\'")}')">
-                        ${r.icon} ${r.name}
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
-    
-    function toggleRoomsView() {
-        const gridView = document.getElementById('roomsGridView');
-        const scrollView = document.getElementById('roomsScrollView');
-        const btn = document.getElementById('viewToggleBtn');
-        
-        if(roomsViewMode === 'grid') {
-            gridView.classList.remove('active-view');
-            scrollView.classList.add('active-view');
-            roomsViewMode = 'scroll';
-            btn.innerHTML = '🔲 ბადე';
-        } else {
-            scrollView.classList.remove('active-view');
-            gridView.classList.add('active-view');
-            roomsViewMode = 'grid';
-            btn.innerHTML = '📜 სქროლი';
-        }
-    }
-    
-    async function loadOnline() {
-        const { data } = await supabase.from('profiles').select('*').limit(50);
-        document.getElementById('onlineList').innerHTML = data?.map(u => `
-            <div class="row" onclick="openPM('${u.username.replace(/'/g, "\\'")}')">
-                <img src="${u.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                <div class="row-data">
-                    <b>${u.username}</b>
-                    <span>${u.status || 'ონლაინში'}</span>
-                </div>
-            </div>
-        `).join('') || '<div style="padding:20px">ვერ მოიძებნა</div>';
-    }
-    
-    async function loadFriends() {
-        const { data } = await supabase.from('friends').select('*')
-            .or(`user_me.eq.${MY_NICK},user_friend.eq.${MY_NICK}`).eq('status', 'accepted');
-        if(!data || data.length === 0) {
-            document.getElementById('friendsList').innerHTML = '<p style="padding:20px; text-align:center">მეგობრები არ გყავს</p>';
-            return;
-        }
-        let html = '';
-        for(let f of data) {
-            const friend = f.user_me === MY_NICK ? f.user_friend : f.user_me;
-            const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('username', friend).maybeSingle();
-            html += `
-                <div class="row" onclick="openPM('${friend.replace(/'/g, "\\'")}')">
-                    <img src="${prof?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                    <div class="row-data"><b>${friend}</b><span>მეგობარი</span></div>
-                </div>
-            `;
-        }
-        document.getElementById('friendsList').innerHTML = html;
-    }
-    
-    async function loadPMList() {
-        const { data } = await supabase.from('direct_messages')
-            .select('*').or(`sender.eq.${MY_NICK},receiver.eq.${MY_NICK}`)
-            .order('created_at', { ascending: false });
-        
-        const partners = new Map();
-        data?.forEach(m => {
-            const partner = m.sender === MY_NICK ? m.receiver : m.sender;
-            if(!partners.has(partner)) partners.set(partner, m.text);
-        });
-        
-        const container = document.getElementById('pmList');
-        if(partners.size === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center">ჯერ არ გაქვს პირადი საუბრები</div>';
-            document.getElementById('pmBadge').style.display = 'none';
-            return;
-        }
-        
-        document.getElementById('pmBadge').style.display = 'flex';
-        document.getElementById('pmBadge').innerText = partners.size;
-        
-        let html = '';
-        for(let [partner, lastMsg] of partners) {
-            const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('username', partner).maybeSingle();
-            html += `
-                <div class="row" onclick="openPM('${partner.replace(/'/g, "\\'")}')">
-                    <img src="${prof?.avatar_url || 'https://i.ibb.co/v3m6y6R/avatar.png'}">
-                    <div class="row-data">
-                        <b>${partner}</b>
-                        <span>${lastMsg.substring(0, 35)}...</span>
-                    </div>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-    }
-    
-    function openPM(username) {
-        if(currentPMUser === username && document.getElementById('pmModal')) return;
-        closePM();
-        currentPMUser = username;
-        const modal = document.createElement('div');
-        modal.id = 'pmModal';
-        modal.className = 'pm-modal';
-        modal.innerHTML = `
-            <div class="pm-header">
-                <b>💬 ${username}</b>
-                <span onclick="closePM()" style="font-size:24px; cursor:pointer;">✖</span>
-            </div>
-            <div id="pmMessagesList" class="pm-messages"></div>
-            <div class="pm-input-area">
-                <input type="text" id="pmInput" class="chat-input" placeholder="შეტყობინება...">
-                <button class="send-btn" onclick="sendPM()">✈</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        loadPMMessages();
-        
-        if(pmInterval) clearInterval(pmInterval);
-        pmInterval = setInterval(() => { if(currentPMUser) loadPMMessages(); }, 3000);
-    }
-    
-    async function loadPMMessages() {
-        if(!currentPMUser) return;
-        const { data } = await supabase.from('direct_messages')
-            .select('*')
-            .or(`and(sender.eq.${MY_NICK},receiver.eq.${currentPMUser}),and(sender.eq.${currentPMUser},receiver.eq.${MY_NICK})`)
-            .order('created_at', { ascending: true });
-        
-        const container = document.getElementById('pmMessagesList');
-        if(!container) return;
-        container.innerHTML = data?.map(m => `
-            <div style="display:flex; justify-content:${m.sender === MY_NICK ? 'flex-end' : 'flex-start'}; margin-bottom:10px;">
-                <div style="background:${m.sender === MY_NICK ? 'var(--accent)' : 'var(--card)'}; padding:12px; border-radius:18px; max-width:80%;">
-                    <b style="font-size:11px;">${m.sender === MY_NICK ? 'მე' : m.sender}</b><br>
-                    ${m.text}
-                </div>
-            </div>
-        `).join('') || '<div style="text-align:center">ცარიელია</div>';
-        container.scrollTop = container.scrollHeight;
-    }
-    
-    async function sendPM() {
-        const input = document.getElementById('pmInput');
-        const text = input.value.trim();
-        if(!text || !currentPMUser) return;
-        await supabase.from('direct_messages').insert({
-            sender: MY_NICK,
-            receiver: currentPMUser,
-            text: text
-        });
-        input.value = '';
-        loadPMMessages();
-        loadPMList();
-    }
-    
-    function closePM() {
-        if(pmInterval) clearInterval(pmInterval);
-        currentPMUser = null;
-        const modal = document.getElementById('pmModal');
-        if(modal) modal.remove();
-    }
-    
-    function openRoom(name) {
-        closePM();
-        currentRoom = name;
-        document.getElementById('roomTitle').innerHTML = `📡 ${name}`;
-        const roomPage = document.getElementById('roomChatPage');
-        roomPage.style.display = 'flex';
-        roomPage.classList.add('active');
-        document.querySelectorAll('.page').forEach(p => {
-            if(p.id !== 'roomChatPage') p.style.display = 'none';
-        });
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        loadRoomMessages();
-    }
-    
-    async function loadRoomMessages() {
-        if(!currentRoom) return;
-        const { data } = await supabase.from('messages')
-            .select('*').eq('room_name', currentRoom)
-            .order('created_at', { ascending: false }).limit(50);
-        const container = document.getElementById('roomMessages');
-        if(data && data.length > 0) {
-            container.innerHTML = data.reverse().map(m => `
-                <div style="background:var(--card); padding:10px; border-radius:15px; align-self:${m.username === MY_NICK ? 'flex-end' : 'flex-start'}; max-width:85%;">
-                    <b style="color:var(--accent);">${escapeHtml(m.username)}</b><br>
-                    ${m.text.replace(/:img:(.*?):/g, '<img src="$1" style="width:28px; vertical-align:middle;">')}
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = '<div style="text-align:center; opacity:0.5">ცარიელია, დაწერე პირველი შეტყობინება!</div>';
-        }
-        container.scrollTop = container.scrollHeight;
-    }
-    
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    async function sendMessage() {
-        const input = document.getElementById('msgInput');
-        const text = input.value.trim();
-        if(!text || !currentRoom) return;
-        await supabase.from('messages').insert({
-            username: MY_NICK,
-            text: text,
-            room_name: currentRoom
-        });
-        input.value = '';
-    }
-    
-    function closeRoom() {
-        currentRoom = "";
-        document.getElementById('roomChatPage').style.display = 'none';
-        showPage('homePage', document.querySelector('.nav-item'));
-    }
-    
-    async function loadEmojis() {
-        const { data } = await supabase.from('custom_emojis').select('*');
-        const board = document.getElementById('emojiBoard');
-        let html = '';
-        if(ADMINS.includes(MY_NICK)) {
-            html += `<div class="admin-plus" onclick="document.getElementById('emojiUpload').click()">➕</div>`;
-        }
-        if(data && data.length > 0) {
-            html += data.map(e => `<img src="${e.emoji_url}" class="emoji-img" onclick="addEmoji('${e.emoji_url}')">`).join('');
-        } else {
-            html += '<div style="grid-column:1/-1; text-align:center;">სმაილები არ არის</div>';
-        }
-        board.innerHTML = html;
-    }
-    
-    function addEmoji(url) {
-        const input = document.getElementById('msgInput');
-        input.value += ` :img:${url}: `;
-        input.focus();
-        toggleEmoji();
-    }
-    
-    async function uploadEmoji() {
-        if(!ADMINS.includes(MY_NICK)) {
-            alert("მხოლოდ ადმინს/დამფუძნებელს შეუძლია სმაილების დამატება!");
-            return;
-        }
-        const file = document.getElementById('emojiUpload').files[0];
-        if(!file) return;
-        const path = `emojis/${Date.now()}_${file.name}`;
-        const { error } = await supabase.storage.from('avatars').upload(path, file);
-        if(error) { alert("ატვირთვა ვერ მოხერხდა"); return; }
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-        await supabase.from('custom_emojis').insert({ emoji_url: data.publicUrl });
-        alert('✅ სმაილი დაემატა! ყველა ოთახში ხელმისაწვდომია');
-        loadEmojis();
-        document.getElementById('emojiUpload').value = '';
-    }
-    
-    function toggleEmoji() {
-        document.getElementById('emojiBoard').classList.toggle('active');
-    }
-    
-    function showPage(id, el) {
-        closeRoom();
-        closePM();
-        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-        const target = document.getElementById(id);
-        if(target) target.style.display = 'block';
-        if(el) {
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-        }
-        if(id === 'messengerPage') loadPMList();
-        if(id === 'friendsPage') loadFriends();
-        if(id === 'onlinePage') loadOnline();
-    }
-    
-    function toggleMode() {
-        document.body.classList.toggle('night-mode');
-        document.body.classList.toggle('day-mode');
-    }
-    
-    function startHearts() {
-        setInterval(() => {
-            const heart = document.createElement('div');
-            heart.className = 'heart';
-            heart.innerHTML = '❤️';
-            heart.style.left = Math.random() * 90 + '%';
-            document.body.appendChild(heart);
-            setTimeout(() => heart.remove(), 5000);
-        }, 4000);
-    }
-    
-    window.onload = init;
-</script>
-</body>
-</html>
+            justify-content:
