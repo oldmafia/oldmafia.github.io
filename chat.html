@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - საჩუქარი ❤️</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        /* Day Mode */
+        body.day-mode {
+            --bg: #fff8f0;
+            --text: #4a2c2c;
+            --card-bg: #fff0e0;
+            --border: #8b3a3a;
+            --shadow: rgba(139, 58, 58, 0.2);
+            --heart: rgba(139, 58, 58, 0.15);
+            --input-bg: #fff5ea;
+        }
+
+        /* Night Mode */
+        body.night-mode {
+            --bg: #1a0f0f;
+            --text: #e8d8d8;
+            --card-bg: #2a1a1a;
+            --border: #8b3a3a;
+            --shadow: rgba(0, 0, 0, 0.5);
+            --heart: rgba(139, 58, 58, 0.3);
+            --input-bg: #2f1e1e;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Floating Hearts Animation */
+        .heart {
+            position: fixed;
+            color: #8b3a3a;
+            font-size: 24px;
+            pointer-events: none;
+            animation: floatUp 6s linear forwards;
+            z-index: 9999;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sidebar Menu */
+        .menu-bar {
+            width: 70px;
+            background-color: var(--card-bg);
+            border-right: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 25px;
+            box-shadow: 4px 0 10px var(--shadow);
+        }
+
+        .menu-icon {
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            color: var(--text);
+        }
+
+        .menu-icon:hover {
+            transform: scale(1.1);
+            color: #8b3a3a;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Rooms Panel */
+        .rooms-panel {
+            width: 200px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .room-item {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 8px;
+            background-color: var(--bg);
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .room-item.active {
+            background-color: #8b3a3a;
+            color: white;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            background-color: var(--input-bg);
+            padding: 10px;
+            border-radius: 12px;
+            max-width: 70%;
+            align-self: flex-start;
+            border-left: 4px solid #8b3a3a;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #8b3a3a;
+        }
+
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #8b3a3a;
+            display: inline-block;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .message-time {
+            font-size: 10px;
+            margin-left: auto;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            background-color: var(--input-bg);
+            color: var(--text);
+        }
+
+        .emoji-btn, .send-btn {
+            padding: 10px 20px;
+            background-color: #8b3a3a;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        /* Right Panel (Friends/Online) */
+        .right-panel {
+            width: 260px;
+            background-color: var(--card-bg);
+            border-left: 1px solid var(--border);
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .group-title {
+            font-weight: bold;
+            border-bottom: 2px solid #8b3a3a;
+            margin-bottom: 8px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+
+        .user-item:hover {
+            background-color: var(--bg);
+        }
+
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #4caf50;
+            display: inline-block;
+            margin-left: auto;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        /* Profile Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            width: 400px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        button {
+            background-color: #8b3a3a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text);
+        }
+
+        .private-chat-modal {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            background-color: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 15px;
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+        }
+
+        .private-chat-header {
+            background-color: #8b3a3a;
+            padding: 10px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body class="day-mode">
+    <div id="heart-container"></div>
+
+    <div class="app-container">
+        <!-- Menu Bar -->
+        <div class="menu-bar">
+            <div class="menu-icon" onclick="showRoomsMenu()">🏠</div>
+            <div class="menu-icon" onclick="showMessenger()">💬</div>
+            <div class="menu-icon" onclick="showProfile()">👤</div>
+            <div class="menu-icon" onclick="showFriends()">👥</div>
+            <div class="menu-icon" onclick="showUsers()">🌍</div>
+            <div class="menu-icon" onclick="toggleTheme()">🌓</div>
+        </div>
+
+        <!-- Main -->
+        <div class="main-content">
+            <!-- Rooms Panel -->
+            <div class="rooms-panel" id="roomsPanel"></div>
+
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <h3 id="currentRoomTitle">Room 1</h3>
+                <div class="messages-container" id="messagesContainer"></div>
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message...">
+                    <button class="emoji-btn" onclick="openEmojiPanel()">😊</button>
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel" id="rightPanel"></div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h2>👤 Profile</h2>
+            <input type="file" id="avatarUpload" accept="image/*">
+            <input type="text" id="statusInput" placeholder="Status...">
+            <button onclick="updateProfile()">Update Profile</button>
+            <h3>📸 My Photos</h3>
+            <div id="userPhotos"></div>
+            <h3>💬 Comments</h3>
+            <div id="profileComments"></div>
+            <input type="text" id="newComment" placeholder="Write a comment...">
+            <button onclick="addComment()">Post Comment</button>
+            <button onclick="closeModal('profileModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- Private Chat Modal -->
+    <div id="privateChatModal" class="private-chat-modal">
+        <div class="private-chat-header">
+            <span id="privateChatUser">User</span>
+            <button onclick="closePrivateChat()">✖</button>
+        </div>
+        <div id="privateMessages" style="flex:1; overflow-y:auto; padding:10px;"></div>
+        <div style="padding:10px;">
+            <input type="text" id="privateMessageInput" placeholder="Message...">
+            <button onclick="sendPrivateMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== SUPABASE CONFIG ==========
+        const supabaseUrl = 'https://ftfciebnywbondaiarnc.supabase.co';
+        const supabaseKey = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // ========== GLOBAL VARIABLES ==========
+        let currentUser = null;
+        let currentRoom = 'Room 1';
+        let allUsers = [];
+        let onlineUsers = new Set();
+        let currentPrivateChatWith = null;
+        let allEmojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '🥰', '😍'];
+
+        // ========== FLOATING HEARTS ==========
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.innerHTML = '❤️';
+            heart.classList.add('heart');
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            heart.style.animationDuration = (Math.random() * 4 + 4) + 's';
+            document.getElementById('heart-container').appendChild(heart);
+            setTimeout(() => heart.remove(), 6000);
+        }
+        setInterval(createHeart, 800);
+
+        // ========== THEME TOGGLE ==========
+        function toggleTheme() {
+            document.body.classList.toggle('night-mode');
+            document.body.classList.toggle('day-mode');
+        }
+
+        // ========== AUTH & LOAD USER ==========
+        async function loadUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+            
+            // Check if profile exists
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single();
+            
+            if (!existingProfile) {
+                await supabase.from('profiles').insert([{ 
+                    id: currentUser.id, 
+                    username: currentUser.email.split('@')[0], 
+                    avatar: null, 
+                    status: 'Hello! I am new here! ❤️',
+                    role: 'member'
+                }]);
+            }
+            
+            await loadAllUsers();
+            loadRooms();
+            loadRightPanel();
+            loadMessages();
+            listenMessages();
+            updateOnlineStatus();
+            setInterval(() => updateOnlineStatus(), 10000);
+            listenPrivateMessages();
+        }
+
+        async function loadAllUsers() {
+            const { data } = await supabase.from('profiles').select('*');
+            allUsers = data || [];
+        }
+
+        // ========== ROOMS (12 ROOMS) ==========
+        const rooms = Array.from({ length: 12 }, (_, i) => `Room ${i+1}`);
+
+        function loadRooms() {
+            const panel = document.getElementById('roomsPanel');
+            panel.innerHTML = rooms.map(room => `
+                <div class="room-item ${room === currentRoom ? 'active' : ''}" onclick="joinRoom('${room}')">
+                    ${room}
+                </div>
+            `).join('');
+        }
+
+        function joinRoom(room) {
+            currentRoom = room;
+            document.getElementById('currentRoomTitle').innerText = room;
+            loadRooms();
+            loadMessages();
+        }
+
+        // ========== MESSAGES ==========
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            if (!input.value.trim()) return;
+            
+            await supabase.from('messages').insert([{
+                room: currentRoom,
+                user_id: currentUser.id,
+                username: currentUser.email.split('@')[0],
+                message: input.value,
+                created_at: new Date()
+            }]);
+            input.value = '';
+        }
+
+        async function loadMessages() {
+            const { data } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('room', currentRoom)
+                .order('created_at', { ascending: true });
+            
+            displayMessages(data || []);
+        }
+
+        async function displayMessages(messages) {
+            const container = document.getElementById('messagesContainer');
+            const currentUserRole = currentUser?.user_metadata?.role || 'member';
+            
+            container.innerHTML = messages.map(msg => `
+                <div class="message">
+                    <div class="message-header">
+                        <div class="avatar">${(msg.username || '?')[0].toUpperCase()}</div>
+                        <strong>${msg.username || 'Unknown'}</strong>
+                        <span class="message-time">${new Date(msg.created_at).toLocaleTimeString()}</span>
+                        ${(currentUserRole === 'founder' || currentUserRole === 'admin' || msg.user_id === currentUser?.id) ? 
+                            `<button onclick="deleteMessage('${msg.id}')" style="margin-left:auto; padding:2px 8px;">🗑️</button>` : ''}
+                    </div>
+                    <div>${msg.message}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function deleteMessage(id) {
+            await supabase.from('messages').delete().eq('id', id);
+            loadMessages();
+        }
+
+        function listenMessages() {
+            supabase
+                .channel('messages-channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadMessages())
+                .subscribe();
+        }
+
+        // ========== RIGHT PANEL (USERS WITH ROLES) ==========
+        async function loadRightPanel() {
+            const { data: profiles } = await supabase.from('profiles').select('*');
+            allUsers = profiles || [];
+            
+            const founders = allUsers.filter(p => p.role === 'founder');
+            const admins = allUsers.filter(p => p.role === 'admin');
+            const members = allUsers.filter(p => !p.role || p.role === 'member');
+            
+            const currentUserRole = allUsers.find(u => u.id === currentUser?.id)?.role;
+            
+            const html = `
+                <input type="text" class="search-box" id="userSearch" placeholder="🔍 Search users..." onkeyup="filterUsers()">
+                <div id="usersList">
+                    ${renderUserGroup('👑 FOUNDERS', founders, currentUserRole)}
+                    ${renderUserGroup('⚙️ ADMINS', admins, currentUserRole)}
+                    ${renderUserGroup('👥 MEMBERS', members, currentUserRole)}
+                </div>
+                <div style="margin-top:10px;">
+                    <div class="group-title">📊 Online: ${onlineUsers.size}</div>
+                </div>
+            `;
+            document.getElementById('rightPanel').innerHTML = html;
+        }
+
+        function renderUserGroup(title, users, currentUserRole) {
+            if (!users.length) return '';
+            return `
+                <div class="group-title">${title}</div>
+                ${users.map(u => `
+                    <div class="user-item" onclick="openPrivateChat('${u.id}', '${u.username}')">
+                        <div class="avatar">${(u.username || '?')[0].toUpperCase()}</div>
+                        <span>${u.username || 'Unknown'}</span>
+                        ${onlineUsers.has(u.id) ? '<span class="online-indicator"></span>' : '<span style="width:10px;"></span>'}
+                        ${currentUserRole === 'founder' && u.id !== currentUser?.id ? `
+                            <button onclick="event.stopPropagation(); changeRole('${u.id}', 'admin')" style="font-size:10px;">👑</button>
+                            <button onclick="event.stopPropagation(); changeRole('${u.id}', 'member')" style="font-size:10px;">⬇️</button>
+                            <button onclick="event.stopPropagation(); blockUser('${u.id}')" style="font-size:10px;">🚫</button>
+                        ` : ''}
+                        ${currentUserRole === 'admin' && u.id !== currentUser?.id ? `
+                            <button onclick="event.stopPropagation(); blockUser('${u.id}')" style="font-size:10px;">🚫</button>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function filterUsers() {
+            const search = document.getElementById('userSearch')?.value.toLowerCase() || '';
+            const filtered = allUsers.filter(u => u.username?.toLowerCase().includes(search));
+            const founders = filtered.filter(p => p.role === 'founder');
+            const admins = filtered.filter(p => p.role === 'admin');
+            const members = filtered.filter(p => !p.role || p.role === 'member');
+            const currentUserRole = allUsers.find(u => u.id === currentUser?.id)?.role;
+            
+            document.getElementById('usersList').innerHTML = 
+                renderUserGroup('👑 FOUNDERS', founders, currentUserRole) +
+                renderUserGroup('⚙️ ADMINS', admins, currentUserRole) +
+                renderUserGroup('👥 MEMBERS', members, currentUserRole);
+        }
+
+        // ========== ONLINE STATUS ==========
+        async function updateOnlineStatus() {
+            if (!currentUser) return;
+            await supabase.from('profiles').update({ last_seen: new Date() }).eq('id', currentUser.id);
+            const { data } = await supabase.from('profiles').select('id').gt('last_seen', new Date(Date.now() - 60000));
+            onlineUsers = new Set(data?.map(d => d.id) || []);
+            loadRightPanel();
+        }
+
+        // ========== ROLE MANAGEMENT ==========
+        async function changeRole(userId, newRole) {
+            await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+            await loadAllUsers();
+            loadRightPanel();
+        }
+
+        async function blockUser(userId) {
+            const reason = prompt('Enter block reason:');
+            if (reason) {
+                await supabase.from('profiles').update({ blocked: true, block_reason: reason }).eq('id', userId);
+                alert(`User blocked! Reason: ${reason}`);
+            }
+        }
+
+        // ========== PROFILE FUNCTIONS ==========
+        function showProfile() {
+            document.getElementById('profileModal').style.display = 'flex';
+            loadUserPhotos();
+            loadProfileComments();
+        }
+
+        async function updateProfile() {
+            const status = document.getElementById('statusInput').value;
+            await supabase.from('profiles').update({ status }).eq('id', currentUser.id);
+            
+            const file = document.getElementById('avatarUpload').files[0];
+            if (file) {
+                const fileName = `${currentUser.id}_${Date.now()}`;
+                const { data } = await supabase.storage.from('avatars').upload(fileName, file);
+                if (data) {
+                    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                    await supabase.from('profiles').update({ avatar: urlData.publicUrl }).eq('id', currentUser.id);
+                }
+            }
+            alert('Profile updated!');
+            closeModal('profileModal');
+        }
+
+        async function loadUserPhotos() {
+            const { data } = await supabase.from('user_photos').select('*').eq('user_id', currentUser.id);
+            document.getElementById('userPhotos').innerHTML = data?.map(p => `<img src="${p.url}" width="50" style="margin:5px; border-radius:10px;">`).join('') || 'No photos yet';
+        }
+
+        async function loadProfileComments() {
+            const { data } = await supabase.from('profile_comments').select('*').eq('profile_id', currentUser.id).order('created_at', { ascending: false });
+            document.getElementById('profileComments').innerHTML = data?.map(c => `<div><strong>${c.username}</strong>: ${c.comment}</div>`).join('') || 'No comments';
+        }
+
+        async function addComment() {
+            const comment = document.getElementById('newComment').value;
+            if (!comment) return;
+            await supabase.from('profile_comments').insert([{ 
+                profile_id: currentUser.id, 
+                username: currentUser.email.split('@')[0], 
+                comment,
+                created_at: new Date()
+            }]);
+            document.getElementById('newComment').value = '';
+            loadProfileComments();
+        }
+
+        // ========== PRIVATE MESSAGES ==========
+        function openPrivateChat(userId, username) {
+            currentPrivateChatWith = userId;
+            document.getElementById('privateChatUser').innerText = username;
+            document.getElementById('privateChatModal').style.display = 'flex';
+            loadPrivateMessages();
+        }
+
+        function closePrivateChat() {
+            document.getElementById('privateChatModal').style.display = 'none';
+            currentPrivateChatWith = null;
+        }
+
+        async function loadPrivateMessages() {
+            if (!currentPrivateChatWith) return;
+            
+            const { data } = await supabase
+                .from('private_messages')
+                .select('*')
+                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentPrivateChatWith}),and(sender_id.eq.${currentPrivateChatWith},receiver_id.eq.${currentUser.id})`)
+                .order('created_at', { ascending: true });
+            
+            const container = document.getElementById('privateMessages');
+            container.innerHTML = data?.map(msg => `
+                <div style="text-align: ${msg.sender_id === currentUser.id ? 'right' : 'left'}; margin:5px;">
+                    <span style="background-color: #8b3a3a; padding:5px 10px; border-radius:15px; display:inline-block;">
+                        ${msg.message}
+                    </span>
+                    <div style="font-size:10px;">${new Date(msg.created_at).toLocaleTimeString()}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendPrivateMessage() {
+            const input = document.getElementById('privateMessageInput');
+            if (!input.value.trim() || !currentPrivateChatWith) return;
+            
+            await supabase.from('private_messages').insert([{
+                sender_id: currentUser.id,
+                receiver_id: currentPrivateChatWith,
+                message: input.value,
+                created_at: new Date(),
+                is_read: false
+            }]);
+            input.value = '';
+            loadPrivateMessages();
+        }
+
+        function listenPrivateMessages() {
+            supabase
+                .channel('private-channel')
+                .on('postgres_changes', { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'private_messages',
+                    filter: `receiver_id=eq.${currentUser?.id}`
+                }, () => {
+                    if (currentPrivateChatWith) loadPrivateMessages();
+                    // Show notification
+                    const notification = document.createElement('div');
+                    notification.style.position = 'fixed';
+                    notification.style.bottom = '20px';
+                    notification.style.right = '20px';
+                    notification.style.backgroundColor = '#8b3a3a';
+                    notification.style.color = 'white';
+                    notification.style.padding = '10px';
+                    notification.style.borderRadius = '10px';
+                    notification.innerText = '💬 New private message!';
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                })
+                .subscribe();
+        }
+
+        // ========== EMOJI PANEL ==========
+        function openEmojiPanel() {
+            const currentUserRole = allUsers.find(u => u.id === currentUser?.id)?.role;
+            const isAdmin = currentUserRole === 'founder' || currentUserRole === 'admin';
+            
+            let emojiHtml = '<div style="position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:var(--card-bg); border:2px solid #8b3a3a; border-radius:20px; padding:15px; z-index:1002;">';
+            emojiHtml += '<div style="display:flex; gap:10px; flex-wrap:wrap;">';
+            allEmojis.forEach(emoji => {
+                emojiHtml += `<span style="font-size:30px; cursor:pointer;" onclick="insertEmoji('${emoji}')">${emoji}</span>`;
+            });
+            emojiHtml += '</div>';
+            if (isAdmin) {
+                emojiHtml += '<input type="text" id="newEmoji" placeholder="New emoji..."><button onclick="addEmoji()">Add Emoji</button>';
+                emojiHtml += '<div><button onclick="removeEmoji()">Remove Last Emoji</button></div>';
+            }
+            emojiHtml += '<button onclick="closeEmojiPanel()">Close</button></div>';
+            
+            const existing = document.getElementById('emojiPanel');
+            if (existing) existing.remove();
+            
+            const panel = document.createElement('div');
+            panel.id = 'emojiPanel';
+            panel.innerHTML = emojiHtml;
+            document.body.appendChild(panel);
+        }
+        
+        function insertEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+        }
+        
+        function addEmoji() {
+            const newEmoji = document.getElementById('newEmoji')?.value;
+            if (newEmoji && !allEmojis.includes(newEmoji)) {
+                allEmojis.push(newEmoji);
+                openEmojiPanel(); // refresh
+            }
+        }
+        
+        function removeEmoji() {
+            allEmojis.pop();
+            openEmojiPanel();
+        }
+        
+        function closeEmojiPanel() {
+            document.getElementById('emojiPanel')?.remove();
+        }
+
+        // ========== MENU FUNCTIONS ==========
+        function showRoomsMenu() { alert('🏠 Select a room from the left panel'); }
+        function showMessenger() { alert('💬 Private messages - click on any user to chat'); }
+        function showFriends() { alert('👥 Friends feature coming soon!'); }
+        function showUsers() { alert('🌍 All users are shown in the right panel'); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // ========== INIT ==========
+        loadUser();
+    </script>
+</body>
+</html>
