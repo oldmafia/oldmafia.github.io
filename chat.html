@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Old Mafia - ჩატი</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui;}
+        body{--bg:#0a0508;--text:#f0e6e8;--card:#1a0f12;--border:#8b3a3a;--nav:#120a0c;--accent:#8b0000;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+        body.day-mode{--bg:#fdf5e6;--text:#3a2a2a;--card:#fff;--border:#d9b0a0;--nav:#fae6d8;--accent:#9b2e2e;}
+        .nav-bar{display:flex;justify-content:space-around;align-items:center;background:var(--nav);padding:6px 4px;border-bottom:2px solid var(--accent);}
+        .nav-btn{font-size:18px;background:none;border:none;color:#aa8a8a;cursor:pointer;padding:6px 10px;border-radius:30px;}
+        .nav-btn.active{color:var(--accent);background:rgba(139,0,0,0.2);}
+        .logout-btn{background:#8b0000;color:white;border:none;padding:6px 10px;border-radius:20px;cursor:pointer;font-size:13px;}
+        #themeBtn{background:none;border:none;font-size:18px;cursor:pointer;padding:6px 10px;}
+        .pages{flex:1;position:relative;overflow:hidden;}
+        .page{position:absolute;top:0;left:0;width:100%;height:100%;overflow-y:auto;display:none;padding:10px;}
+        .page.active{display:block;}
+        .section-title{font-size:15px;margin:8px 0 10px;color:var(--accent);border-left:3px solid var(--accent);padding-left:8px;}
+        .room-card{background:var(--card);padding:13px;border-radius:10px;border-left:4px solid var(--accent);cursor:pointer;margin-bottom:7px;font-weight:bold;font-size:14px;}
+        .chat-container{display:flex;flex-direction:column;height:100%;}
+        .chat-header{background:var(--card);padding:9px 12px;border-radius:12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+        .chat-header span{font-weight:bold;font-size:14px;}
+        .chat-header button{background:#5a0000;padding:5px 11px;margin:0;border-radius:20px;font-size:12px;color:white;border:none;cursor:pointer;}
+        .messages{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px;}
+        .msg-row{display:flex;align-items:flex-end;gap:6px;}
+        .msg-row.own{flex-direction:row-reverse;align-self:flex-end;}
+        .msg-row{align-self:flex-start;}
+        .msg-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background-size:cover;background-position:center;cursor:pointer;overflow:hidden;}
+        .message{background:var(--card);padding:7px 10px;border-radius:12px;position:relative;word-break:break-word;max-width:220px;}
+        .msg-row.own .message{background:var(--accent);}
+        .message-name{font-weight:bold;color:#ff8888;cursor:pointer;font-size:11px;}
+        .msg-row.own .message-name{color:#ffcccc;}
+        .message-time{font-size:10px;opacity:0.6;margin-left:5px;}
+        .message-text{font-size:13px;margin-top:3px;line-height:1.4;}
+        .message-img{max-width:150px;border-radius:8px;margin-top:5px;cursor:pointer;display:block;}
+        .delete-msg{position:absolute;right:4px;top:3px;background:rgba(0,0,0,0.5);border:none;color:white;cursor:pointer;font-size:9px;opacity:0;border-radius:4px;padding:2px 4px;}
+        .message:hover .delete-msg{opacity:1;}
+        .chat-input-area{display:flex;gap:5px;padding:7px;background:var(--card);border-radius:12px;margin-top:5px;align-items:center;}
+        .chat-input{flex:1;padding:9px 12px;border-radius:25px;border:1px solid var(--accent);background:var(--bg);color:var(--text);font-size:14px;outline:none;min-width:0;}
+        .send-btn{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;color:white;cursor:pointer;font-size:16px;flex-shrink:0;margin:0;padding:0;}
+        .icon-btn{width:34px;height:34px;border-radius:50%;background:#5a0000;border:none;color:white;cursor:pointer;font-size:14px;flex-shrink:0;margin:0;padding:0;}
+        #pendingImgWrap{display:none;padding:3px 8px;align-items:center;gap:5px;}
+        #pendingImgWrap img{max-height:40px;border-radius:6px;border:2px solid var(--accent);}
+        #pendingImgWrap button{margin:0;padding:2px 7px;font-size:11px;border-radius:12px;background:#5a0000;color:white;border:none;cursor:pointer;}
+        .user-item{background:var(--card);padding:10px;border-radius:12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;position:relative;}
+        .user-avatar{width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background-size:cover;background-position:center;position:relative;overflow:hidden;}
+        .online-dot{position:absolute;bottom:0;right:0;width:11px;height:11px;background:#2ecc71;border-radius:50%;border:2px solid var(--card);}
+        .profile-avatar{width:88px;height:88px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:42px;margin:8px auto;cursor:pointer;background-size:cover;background-position:center;}
+        .status-input{width:82%;padding:9px;margin:7px auto;border-radius:25px;border:1px solid var(--accent);background:var(--bg);color:var(--text);text-align:center;display:block;outline:none;font-size:13px;}
+        .album-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px;}
+        .album-photo{aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid var(--accent);width:100%;}
+        button{background:var(--accent);color:white;border:none;padding:8px 16px;border-radius:25px;cursor:pointer;margin-top:7px;font-size:13px;}
+        .upload-btn{background:var(--accent);border:none;color:white;padding:9px;border-radius:25px;margin:5px 0;cursor:pointer;width:100%;font-size:13px;}
+        .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:3000;}
+        .modal-content{background:var(--card);border-radius:20px;padding:16px;max-width:330px;width:92%;text-align:center;max-height:84vh;overflow-y:auto;}
+        .action-btn{background:var(--accent);border:none;color:white;padding:7px 11px;border-radius:20px;cursor:pointer;margin:4px;font-size:12px;}
+        .action-btn.danger{background:#8b0000;}
+        .action-btn.success{background:#2d6a4f;}
+        .pm-window{position:fixed;bottom:16px;right:10px;width:285px;height:370px;background:var(--card);border:2px solid var(--accent);border-radius:16px;display:flex;flex-direction:column;z-index:2000;}
+        .pm-header{background:var(--accent);padding:9px 13px;border-radius:14px 14px 0 0;color:white;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:13px;}
+        .pm-messages{flex:1;overflow-y:auto;padding:9px;}
+        .pm-input{display:flex;padding:7px;gap:5px;border-top:1px solid var(--accent);}
+        .pm-input input{flex:1;padding:7px 11px;border-radius:20px;border:1px solid var(--accent);background:var(--bg);color:var(--text);outline:none;font-size:13px;}
+        .pm-input button{margin:0;padding:7px 11px;border-radius:20px;font-size:13px;}
+        .notification{position:fixed;top:65px;right:10px;background:var(--accent);padding:9px 14px;border-radius:20px;z-index:10000;animation:slideIn 0.3s;max-width:240px;font-size:13px;}
+        @keyframes slideIn{from{transform:translateX(110%);}to{transform:translateX(0);}}
+        .heart{position:fixed;bottom:0;pointer-events:none;animation:floatUp 5s forwards;z-index:9999;}
+        @keyframes floatUp{0%{bottom:0;opacity:1;}100%{bottom:100%;opacity:0;transform:scale(1.5);}}
+        .empty-state{text-align:center;padding:30px;opacity:0.5;font-size:13px;}
+        .friend-badge{position:absolute;right:8px;background:#2d6a4f;padding:3px 7px;border-radius:20px;font-size:11px;}
+        .add-badge{position:absolute;right:8px;background:var(--accent);padding:3px 7px;border-radius:20px;font-size:11px;cursor:pointer;}
+        .photo-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:4000;}
+        .photo-modal-content{background:var(--card);border-radius:18px;max-width:380px;width:92%;border:2px solid var(--accent);overflow:hidden;}
+        .photo-modal-img{width:100%;max-height:52vh;object-fit:contain;}
+        .photo-comments{padding:9px;max-height:130px;overflow-y:auto;border-top:1px solid var(--border);}
+        .comment-item{padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);}
+        .comment-input-area{display:flex;gap:7px;padding:9px;border-top:1px solid var(--border);}
+        .comment-input{flex:1;padding:7px;border-radius:20px;border:1px solid var(--accent);background:var(--bg);color:var(--text);outline:none;font-size:13px;}
+        .emoji-panel{position:fixed;bottom:75px;left:8px;right:8px;background:var(--card);border-radius:14px;display:none;padding:9px;z-index:2000;max-height:260px;overflow-y:auto;border:1px solid var(--accent);}
+        .emoji-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+        .emoji-item{font-size:24px;text-align:center;cursor:pointer;padding:5px;border-radius:8px;}
+        .emoji-item:hover{background:rgba(139,0,0,0.3);}
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <button class="nav-btn active" data-page="home">🏠</button>
+        <button class="nav-btn" data-page="messages">💬</button>
+        <button class="nav-btn" data-page="friends">👥</button>
+        <button class="nav-btn" data-page="online">🌐</button>
+        <button class="nav-btn" data-page="profile">👤</button>
+        <button id="themeBtn">🌙</button>
+        <button class="logout-btn" onclick="logout()">🚪</button>
+    </div>
+    <div class="pages">
+        <div id="homePage" class="page active">
+            <div class="section-title">🏰 სათამაშო ოთახები</div>
+            <div id="roomsList"></div>
+        </div>
+        <div id="messagesPage" class="page">
+            <div class="section-title">💬 პირადი მიმოწერა</div>
+            <div id="pmList"></div>
+        </div>
+        <div id="friendsPage" class="page">
+            <div class="section-title">👥 მეგობრები</div>
+            <div id="friendsList"></div>
+            <div class="section-title">📨 მოთხოვნები</div>
+            <div id="requestsList"></div>
+        </div>
+        <div id="onlinePage" class="page">
+            <div class="section-title">🌐 ყველა მომხმარებელი</div>
+            <div id="usersList"></div>
+        </div>
+        <div id="profilePage" class="page">
+            <div class="profile-avatar" id="profileAvatar" onclick="document.getElementById('avatarFile').click()">👤</div>
+            <div style="text-align:center;margin-bottom:4px;">
+                <small style="opacity:0.6;font-size:11px;">ავატარის შესაცვლელად დააჭირე ფოტოს</small>
+            </div>
+            <button class="upload-btn" style="background:#5a0000;" onclick="removeAvatar()">🗑️ ავატარის წაშლა</button>
+            <h2 id="profileName" style="text-align:center;margin:6px 0;"></h2>
+            <input type="text" id="statusInput" class="status-input" placeholder="სტატუსი...">
+            <button class="upload-btn" onclick="saveStatus()">💾 სტატუსის შენახვა</button>
+            <div class="section-title">📸 ალბომი</div>
+            <button class="upload-btn" onclick="document.getElementById('albumFile').click()">➕ ფოტოს დამატება</button>
+            <div id="albumGrid" class="album-grid"></div>
+            <input type="file" id="avatarFile" hidden accept="image/*" onchange="uploadAvatar(this)">
+            <input type="file" id="albumFile" hidden accept="image/*" onchange="addToAlbum(this)">
+            <input type="file" id="emojiFile" hidden accept="image/*" onchange="uploadEmoji(this)">
+        </div>
+        <div id="chatPage" class="page">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <span id="chatRoomName"></span>
+                    <button onclick="closeChat()">✕ გასვლა</button>
+                </div>
+                <div id="chatMessages" class="messages"></div>
+                <div id="pendingImgWrap">
+                    <img id="pendingImgPreview" src="">
+                    <button onclick="clearPendingImg()">✕</button>
+                </div>
+                <div class="chat-input-area">
+                    <button class="icon-btn" onclick="toggleEmojiPanel()">😊</button>
+                    <button class="icon-btn" onclick="document.getElementById('chatPhoto').click()">📷</button>
+                    <input type="text" id="messageInput" class="chat-input" placeholder="დაწერე...">
+                    <button class="send-btn" onclick="sendMessage()">➤</button>
+                </div>
+                <input type="file" id="chatPhoto" hidden accept="image/*" onchange="addChatPhoto(this)">
+            </div>
+        </div>
+    </div>
+    <div id="emojiPanel" class="emoji-panel"></div>
+    <div id="hearts"></div>
+    <div id="pmContainer"></div>
+    <script src="chat.js"></script>
+</body>
+</html>
