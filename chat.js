@@ -1,6 +1,6 @@
 // ==================== SUPABASE INIT ====================
 const supabaseUrl = 'https://ftfciebnywbondaiarnc.supabase.co';
-const supabaseKey = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0ZmNpZWJueXdib25kYWlhcm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMjYwNTYsImV4cCI6MjA4NjkwMjA1Nn0.2A5wgpS2gaFmgnGB2mWH7dpmjLvo75IE0QPRPrtUbzI';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // ==================== STATE ====================
@@ -12,15 +12,45 @@ let messageSubscription = null;
 let pmSubscription = null;
 let onlineInterval = null;
 let unreadPM = {};
-const ADMIN_ID = null; // will be set after login check
+
+// ==================== HEARTS ====================
+const HEART_SYMBOLS = ['❤️','🌹','💜','✨','🔮','💫','🌙','⭐','💎','🦋','🌸','🍷'];
+const heartStyle = document.createElement('style');
+heartStyle.textContent = `
+  @keyframes floatUp {
+    0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 0.9; }
+    25%  { transform: translateY(-25vh) rotate(-10deg) scale(1.15); opacity: 0.75; }
+    50%  { transform: translateY(-52vh) rotate(8deg) scale(0.95); opacity: 0.55; }
+    75%  { transform: translateY(-75vh) rotate(-6deg) scale(1.05); opacity: 0.3; }
+    100% { transform: translateY(-108vh) rotate(12deg) scale(0.7); opacity: 0; }
+  }
+`;
+document.head.appendChild(heartStyle);
+
+function spawnHeart() {
+  const container = document.getElementById('hearts');
+  if (!container) return;
+  const h = document.createElement('div');
+  h.style.cssText = `
+    position:fixed;
+    bottom:-60px;
+    left:${Math.random() * 93}%;
+    font-size:${18 + Math.random() * 30}px;
+    pointer-events:none;
+    z-index:9999;
+    animation:floatUp ${4.5 + Math.random() * 4}s ease-in forwards;
+    filter:drop-shadow(0 0 8px rgba(160,0,255,0.65));
+  `;
+  h.textContent = HEART_SYMBOLS[Math.floor(Math.random() * HEART_SYMBOLS.length)];
+  container.appendChild(h);
+  setTimeout(() => h.remove(), 9000);
+}
+setInterval(spawnHeart, 2200);
 
 // ==================== INIT ====================
 async function init() {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    showLoginModal();
-    return;
-  }
+  if (!session) { showLoginModal(); return; }
   currentUser = session.user;
   await loadProfile();
   setupUI();
@@ -38,16 +68,15 @@ async function init() {
 // ==================== AUTH ====================
 function showLoginModal() {
   const m = document.createElement('div');
-  m.className = 'modal';
-  m.id = 'loginModal';
+  m.className = 'modal'; m.id = 'loginModal';
   m.innerHTML = `
     <div class="modal-content">
       <h2 style="color:var(--accent);margin-bottom:15px;">🏴 Old Mafia</h2>
-      <input type="email" id="loginEmail" placeholder="ელ-ფოსტა" style="width:100%;padding:10px;border-radius:20px;border:1px solid var(--accent);background:var(--bg);color:var(--text);margin-bottom:8px;outline:none;">
-      <input type="password" id="loginPass" placeholder="პაროლი" style="width:100%;padding:10px;border-radius:20px;border:1px solid var(--accent);background:var(--bg);color:var(--text);margin-bottom:10px;outline:none;">
+      <input type="email" id="loginEmail" placeholder="ელ-ფოსტა" style="width:100%;padding:10px;border-radius:20px;border:1px solid var(--accent);background:var(--bg);color:var(--text);margin-bottom:8px;outline:none;display:block;">
+      <input type="password" id="loginPass" placeholder="პაროლი" style="width:100%;padding:10px;border-radius:20px;border:1px solid var(--accent);background:var(--bg);color:var(--text);margin-bottom:10px;outline:none;display:block;">
       <button onclick="doLogin()" style="width:100%;margin-bottom:5px;">შესვლა</button>
       <button onclick="doRegister()" style="width:100%;background:#5a0000;">რეგისტრაცია</button>
-      <div id="loginError" style="color:#ff6666;margin-top:8px;font-size:12px;"></div>
+      <div id="loginError" style="color:#ff6666;margin-top:8px;font-size:12px;text-align:center;"></div>
     </div>`;
   document.body.appendChild(m);
 }
@@ -55,40 +84,46 @@ function showLoginModal() {
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) { document.getElementById('loginError').textContent = 'შეავსე ყველა ველი'; return; }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
   if (error) { document.getElementById('loginError').textContent = error.message; return; }
   currentUser = data.user;
   document.getElementById('loginModal').remove();
   await loadProfile();
-  setupUI();
-  loadRooms();
-  loadUsers();
-  loadFriends();
-  loadPMList();
-  startOnlinePresence();
-  setupNavigation();
-  setupTheme();
-  buildEmojiPanel();
-  subscribeToNotifications();
+  setupUI(); loadRooms(); loadUsers(); loadFriends(); loadPMList();
+  startOnlinePresence(); setupNavigation(); setupTheme(); buildEmojiPanel(); subscribeToNotifications();
 }
 
 async function doRegister() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) { document.getElementById('loginError').textContent = 'შეავსე ყველა ველი'; return; }
   const username = email.split('@')[0];
   const { data, error } = await supabase.auth.signUp({ email, password: pass });
   if (error) { document.getElementById('loginError').textContent = error.message; return; }
   if (data.user) {
-    await supabase.from('profiles').insert({ id: data.user.id, username, avatar_url: null, status: '' });
-    document.getElementById('loginError').textContent = 'დარეგისტრირდი! შედი ანგარიშში.';
+    await supabase.from('profiles').upsert({ id: data.user.id, username, avatar_url: null, status: '', role: 'user', is_online: false, is_banned: false });
+    const err = document.getElementById('loginError');
+    err.style.color = '#88ff88';
+    err.textContent = '✓ დარეგისტრირდი! შედი ანგარიშში.';
   }
 }
 
 async function logout() {
   if (onlineInterval) clearInterval(onlineInterval);
-  await supabase.from('profiles').update({ is_online: false, last_seen: new Date().toISOString() }).eq('id', currentUser.id);
+  if (currentUser) await supabase.from('profiles').update({ is_online: false, last_seen: new Date().toISOString() }).eq('id', currentUser.id);
   await supabase.auth.signOut();
   location.reload();
+}
+
+// ==================== ROLE HELPERS ====================
+function getRole() { return currentProfile?.role || 'user'; }
+function isFounder() { return getRole() === 'founder'; }
+function isAdmin() { return getRole() === 'admin' || isFounder(); }
+function roleBadge(role) {
+  if (role === 'founder') return ' <span style="font-size:9px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;border-radius:4px;padding:1px 4px;font-weight:bold;">👑 დამფ.</span>';
+  if (role === 'admin') return ' <span style="font-size:9px;background:#8b0000;color:#fff;border-radius:4px;padding:1px 4px;font-weight:bold;">⚔️ ადმინი</span>';
+  return '';
 }
 
 // ==================== PROFILE ====================
@@ -98,8 +133,9 @@ async function loadProfile() {
     currentProfile = data;
   } else {
     const username = currentUser.email.split('@')[0];
-    await supabase.from('profiles').insert({ id: currentUser.id, username, avatar_url: null, status: '' });
-    currentProfile = { id: currentUser.id, username, avatar_url: null, status: '', is_admin: false };
+    const ins = { id: currentUser.id, username, avatar_url: null, status: '', role: 'user', is_online: false, is_banned: false };
+    await supabase.from('profiles').insert(ins);
+    currentProfile = ins;
   }
 }
 
@@ -107,10 +143,7 @@ function setupUI() {
   document.getElementById('profileName').textContent = currentProfile.username;
   document.getElementById('statusInput').value = currentProfile.status || '';
   const av = document.getElementById('profileAvatar');
-  if (currentProfile.avatar_url) {
-    av.style.backgroundImage = `url(${currentProfile.avatar_url})`;
-    av.textContent = '';
-  }
+  if (currentProfile.avatar_url) { av.style.backgroundImage = `url(${currentProfile.avatar_url})`; av.textContent = ''; }
   loadAlbum();
 }
 
@@ -122,19 +155,16 @@ async function saveStatus() {
 }
 
 async function uploadAvatar(input) {
-  const file = input.files[0];
-  if (!file) return;
+  const file = input.files[0]; if (!file) return;
   const ext = file.name.split('.').pop();
   const path = `avatars/${currentUser.id}.${ext}`;
   const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
   if (error) { showNotification('შეცდომა: ' + error.message); return; }
   const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-  const url = urlData.publicUrl;
-  await supabase.from('profiles').update({ avatar_url: url }).eq('id', currentUser.id);
-  currentProfile.avatar_url = url;
+  await supabase.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', currentUser.id);
+  currentProfile.avatar_url = urlData.publicUrl;
   const av = document.getElementById('profileAvatar');
-  av.style.backgroundImage = `url(${url})`;
-  av.textContent = '';
+  av.style.backgroundImage = `url(${urlData.publicUrl})`; av.textContent = '';
   showNotification('ავატარი განახლდა ✓');
 }
 
@@ -142,44 +172,37 @@ async function removeAvatar() {
   await supabase.from('profiles').update({ avatar_url: null }).eq('id', currentUser.id);
   currentProfile.avatar_url = null;
   const av = document.getElementById('profileAvatar');
-  av.style.backgroundImage = '';
-  av.textContent = '👤';
+  av.style.backgroundImage = ''; av.textContent = '👤';
   showNotification('ავატარი წაიშალა');
 }
 
 async function loadAlbum() {
   const { data } = await supabase.from('user_photos').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-  const grid = document.getElementById('albumGrid');
-  if (!grid) return;
+  const grid = document.getElementById('albumGrid'); if (!grid) return;
   grid.innerHTML = '';
   (data || []).forEach(p => {
     const img = document.createElement('img');
-    img.className = 'album-photo';
-    img.src = p.photo_url;
+    img.className = 'album-photo'; img.src = p.photo_url;
     img.onclick = () => openPhotoModal(p);
     grid.appendChild(img);
   });
 }
 
 async function addToAlbum(input) {
-  const file = input.files[0];
-  if (!file) return;
+  const file = input.files[0]; if (!file) return;
   const path = `album/${currentUser.id}/${Date.now()}.${file.name.split('.').pop()}`;
   const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: false });
   if (error) { showNotification('შეცდომა: ' + error.message); return; }
   const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
   await supabase.from('user_photos').insert({ user_id: currentUser.id, photo_url: urlData.publicUrl });
-  loadAlbum();
-  showNotification('ფოტო დაემატა ✓');
+  loadAlbum(); showNotification('ფოტო დაემატა ✓');
 }
 
 // ==================== PHOTO MODAL ====================
 function openPhotoModal(photo) {
-  const existing = document.getElementById('photoModal');
-  if (existing) existing.remove();
+  document.getElementById('photoModal')?.remove();
   const m = document.createElement('div');
-  m.className = 'photo-modal';
-  m.id = 'photoModal';
+  m.className = 'photo-modal'; m.id = 'photoModal';
   m.innerHTML = `
     <div class="photo-modal-content">
       <img class="photo-modal-img" src="${photo.photo_url}">
@@ -196,18 +219,15 @@ function openPhotoModal(photo) {
 
 async function loadPhotoComments(photoId) {
   const { data } = await supabase.from('photo_comments').select('*, profiles(username)').eq('photo_id', photoId).order('created_at');
-  const div = document.getElementById('photoComments');
-  if (!div) return;
-  div.innerHTML = (data || []).map(c => `<div class="comment-item"><b>${c.profiles?.username}</b>: ${c.content}</div>`).join('');
+  const div = document.getElementById('photoComments'); if (!div) return;
+  div.innerHTML = (data || []).map(c => `<div class="comment-item"><b>${c.profiles?.username||'?'}</b>: ${escapeHtml(c.content)}</div>`).join('');
 }
 
 async function addPhotoComment(photoId) {
   const inp = document.getElementById('commentInput');
-  const content = inp.value.trim();
-  if (!content) return;
+  const content = inp.value.trim(); if (!content) return;
   await supabase.from('photo_comments').insert({ photo_id: photoId, user_id: currentUser.id, content });
-  inp.value = '';
-  loadPhotoComments(photoId);
+  inp.value = ''; loadPhotoComments(photoId);
 }
 
 // ==================== NAVIGATION ====================
@@ -234,20 +254,20 @@ function showPage(pageId) {
 // ==================== THEME ====================
 function setupTheme() {
   const btn = document.getElementById('themeBtn');
-  const saved = localStorage.getItem('theme');
+  const saved = localStorage.getItem('om_theme');
   if (saved === 'day') { document.body.classList.add('day-mode'); btn.textContent = '☀️'; }
   btn.addEventListener('click', () => {
     document.body.classList.toggle('day-mode');
     const isDay = document.body.classList.contains('day-mode');
     btn.textContent = isDay ? '☀️' : '🌙';
-    localStorage.setItem('theme', isDay ? 'day' : 'night');
+    localStorage.setItem('om_theme', isDay ? 'day' : 'night');
   });
 }
 
-// ==================== ONLINE PRESENCE ====================
+// ==================== ONLINE ====================
 function startOnlinePresence() {
   updateOnline();
-  onlineInterval = setInterval(updateOnline, 30000);
+  onlineInterval = setInterval(updateOnline, 25000);
   window.addEventListener('beforeunload', () => {
     supabase.from('profiles').update({ is_online: false, last_seen: new Date().toISOString() }).eq('id', currentUser.id);
   });
@@ -261,26 +281,31 @@ async function updateOnline() {
 async function updateOnlineBadge() {
   const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_online', true);
   const btn = document.querySelector('.nav-btn[data-page="online"]');
-  if (btn) {
-    btn.innerHTML = `🌐${count > 0 ? `<span style="position:absolute;top:2px;right:2px;background:#2ecc71;color:white;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;">${count}</span>` : ''}`;
-    btn.style.position = 'relative';
+  if (!btn) return;
+  btn.style.position = 'relative';
+  btn.innerHTML = '🌐';
+  if (count > 0) {
+    const badge = document.createElement('span');
+    badge.style.cssText = 'position:absolute;top:0;right:0;background:#2ecc71;color:white;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:bold;';
+    badge.textContent = count;
+    btn.appendChild(badge);
   }
 }
 
 // ==================== ROOMS ====================
 const ROOMS = [
-  { id: 'general', name: '🏙️ მთავარი მოედანი', desc: 'ზოგადი საუბარი' },
-  { id: 'mafia', name: '🕵️ მაფიის სახლი', desc: 'სტრატეგია და ინტრიგა' },
-  { id: 'casino', name: '🎰 კაზინო', desc: 'სათამაშო ადგილი' },
-  { id: 'bar', name: '🍷 ბარი', desc: 'დასვენება და ჩეთი' },
-  { id: 'market', name: '💼 ბაზარი', desc: 'ვაჭრობა და გარიგება' },
-  { id: 'prison', name: '⛓️ ციხე', desc: 'პატიმართა სექცია' },
-  { id: 'vip', name: '👑 VIP ლაუნჯი', desc: 'პრემიუმ წევრები' },
-  { id: 'war', name: '⚔️ ომის ოთახი', desc: 'ბრძოლის გეგმები' },
-  { id: 'music', name: '🎵 მუსიკის კლუბი', desc: 'გართობა' },
-  { id: 'sport', name: '⚽ სპორტი', desc: 'სპორტული ჩეთი' },
-  { id: 'politics', name: '🗳️ პოლიტიკა', desc: 'დიდი ბოსების კრება' },
-  { id: 'secret', name: '🔐 საიდუმლო ოთახი', desc: 'მხოლოდ ელიტისთვის' },
+  { id: 'general',  name: '🏙️ მთავარი მოედანი',  desc: 'ზოგადი საუბარი' },
+  { id: 'mafia',    name: '🕵️ მაფიის სახლი',      desc: 'სტრატეგია და ინტრიგა' },
+  { id: 'casino',   name: '🎰 კაზინო',             desc: 'სათამაშო ადგილი' },
+  { id: 'bar',      name: '🍷 ბარი',               desc: 'დასვენება და ჩეთი' },
+  { id: 'market',   name: '💼 ბაზარი',             desc: 'ვაჭრობა და გარიგება' },
+  { id: 'prison',   name: '⛓️ ციხე',              desc: 'პატიმართა სექცია' },
+  { id: 'vip',      name: '👑 VIP ლაუნჯი',         desc: 'პრემიუმ წევრები' },
+  { id: 'war',      name: '⚔️ ომის ოთახი',         desc: 'ბრძოლის გეგმები' },
+  { id: 'music',    name: '🎵 მუსიკის კლუბი',      desc: 'გართობა' },
+  { id: 'sport',    name: '⚽ სპორტი',              desc: 'სპორტული ჩეთი' },
+  { id: 'politics', name: '🗳️ პოლიტიკა',           desc: 'დიდი ბოსების კრება' },
+  { id: 'secret',   name: '🔐 საიდუმლო ოთახი',     desc: 'მხოლოდ ელიტისთვის' },
 ];
 
 function loadRooms() {
@@ -301,8 +326,7 @@ function openRoom(room) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('chatPage').classList.add('active');
   document.getElementById('chatMessages').innerHTML = '';
-  loadRoomMessages();
-  subscribeRoom();
+  loadRoomMessages(); subscribeRoom();
   document.getElementById('messageInput').onkeydown = e => { if (e.key === 'Enter') sendMessage(); };
 }
 
@@ -316,7 +340,7 @@ function closeChat() {
 
 async function loadRoomMessages() {
   const { data } = await supabase.from('messages')
-    .select('*, profiles(username, avatar_url, is_admin)')
+    .select('*, profiles(username, avatar_url, role)')
     .eq('room_id', currentRoom)
     .order('created_at', { ascending: true })
     .limit(60);
@@ -330,7 +354,7 @@ function subscribeRoom() {
   if (messageSubscription) supabase.removeChannel(messageSubscription);
   messageSubscription = supabase.channel('room:' + currentRoom)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${currentRoom}` }, async payload => {
-      const { data } = await supabase.from('messages').select('*, profiles(username, avatar_url, is_admin)').eq('id', payload.new.id).single();
+      const { data } = await supabase.from('messages').select('*, profiles(username, avatar_url, role)').eq('id', payload.new.id).single();
       if (data) {
         const container = document.getElementById('chatMessages');
         renderMessage(data, container);
@@ -338,8 +362,7 @@ function subscribeRoom() {
       }
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, payload => {
-      const el = document.getElementById('msg-' + payload.old.id);
-      if (el) el.remove();
+      document.getElementById('msg-' + payload.old.id)?.remove();
     })
     .subscribe();
 }
@@ -349,19 +372,20 @@ function renderMessage(msg, container) {
   const row = document.createElement('div');
   row.className = 'msg-row' + (isOwn ? ' own' : '');
   row.id = 'msg-' + msg.id;
-  const avatarStyle = msg.profiles?.avatar_url ? `style="background-image:url(${msg.profiles.avatar_url});background-color:transparent;"` : '';
-  const avatarText = msg.profiles?.avatar_url ? '' : (msg.profiles?.username?.[0]?.toUpperCase() || '?');
-  const adminBadge = msg.profiles?.is_admin ? ' <span style="font-size:9px;background:gold;color:#000;border-radius:4px;padding:1px 3px;">ADMIN</span>' : '';
+  const avStyle = msg.profiles?.avatar_url ? `style="background-image:url(${msg.profiles.avatar_url});background-color:transparent;"` : '';
+  const avText = msg.profiles?.avatar_url ? '' : (msg.profiles?.username?.[0]?.toUpperCase() || '?');
+  const badge = roleBadge(msg.profiles?.role);
   const time = new Date(msg.created_at).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' });
-  const deleteBtn = (isOwn || currentProfile?.is_admin) ? `<button class="delete-msg" onclick="deleteMessage('${msg.id}')">✕</button>` : '';
+  const canDelete = isOwn || isAdmin();
+  const deleteBtn = canDelete ? `<button class="delete-msg" onclick="deleteMessage('${msg.id}')">✕</button>` : '';
   let content = '';
   if (msg.image_url) content += `<img src="${msg.image_url}" class="message-img" onclick="window.open('${msg.image_url}','_blank')">`;
   if (msg.content) content += `<div class="message-text">${escapeHtml(msg.content)}</div>`;
   row.innerHTML = `
-    <div class="msg-avatar" ${avatarStyle} onclick="openUserProfile('${msg.user_id}')">${avatarText}</div>
+    <div class="msg-avatar" ${avStyle} onclick="openUserProfile('${msg.user_id}')">${avText}</div>
     <div class="message">
       ${deleteBtn}
-      <span class="message-name" onclick="openUserProfile('${msg.user_id}')">${msg.profiles?.username || '?'}${adminBadge}</span>
+      <span class="message-name" onclick="openUserProfile('${msg.user_id}')">${msg.profiles?.username||'?'}${badge}</span>
       <span class="message-time">${time}</span>
       ${content}
     </div>`;
@@ -375,12 +399,7 @@ async function sendMessage() {
   if (!text && !pendingImg) return;
   if (!currentRoom) return;
   input.value = '';
-  await supabase.from('messages').insert({
-    room_id: currentRoom,
-    user_id: currentUser.id,
-    content: text || null,
-    image_url: pendingImg || null
-  });
+  await supabase.from('messages').insert({ room_id: currentRoom, user_id: currentUser.id, content: text || null, image_url: pendingImg || null });
   clearPendingImg();
 }
 
@@ -388,15 +407,12 @@ async function deleteMessage(id) {
   await supabase.from('messages').delete().eq('id', id);
 }
 
-// ==================== IMAGE IN CHAT ====================
 function addChatPhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
+  const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
-    const base64 = e.target.result;
     const path = `chat/${currentRoom}/${Date.now()}.${file.name.split('.').pop()}`;
-    const res = await fetch(base64);
+    const res = await fetch(e.target.result);
     const blob = await res.blob();
     const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: false });
     if (error) { showNotification('შეცდომა: ' + error.message); return; }
@@ -405,8 +421,7 @@ function addChatPhoto(input) {
     document.getElementById('pendingImgPreview').src = data.publicUrl;
     document.getElementById('pendingImgWrap').style.display = 'flex';
   };
-  reader.readAsDataURL(file);
-  input.value = '';
+  reader.readAsDataURL(file); input.value = '';
 }
 
 function clearPendingImg() {
@@ -419,23 +434,22 @@ function clearPendingImg() {
 async function buildEmojiPanel() {
   const panel = document.getElementById('emojiPanel');
   const { data: customEmojis } = await supabase.from('emojis').select('*').order('created_at');
-  const defaultEmojis = ['😀','😂','🥰','😎','🤔','😢','😡','🤯','👍','👎','❤️','🔥','💀','🎉','🍷','🎰','⚔️','💼','🕵️','👑','🏴','💣','🌹','🐍','🦅','🎭','💰','🔫','🗡️','🏆','🎲','🃏','🌙','⭐','💎','🔐','🎵','⚽','🗳️','🌐'];
+  const defaultEmojis = ['😀','😂','🥰','😎','🤔','😢','😡','🤯','👍','👎','❤️','🔥','💀','🎉','🍷','🎰','⚔️','💼','🕵️','👑','🏴','💣','🌹','🐍','🦅','🎭','💰','🗡️','🏆','🎲','🌙','⭐','💎','🔐','🎵','⚽','🗳️','🌐','😈','💪','🧨','🥃','🎯','👁️','🤫','💜','✨'];
   panel.innerHTML = '<div class="emoji-grid" id="emojiGrid"></div>';
-  if (currentProfile?.is_admin) {
-    panel.innerHTML += `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
-      <small style="opacity:0.6;">ემოჯის დამატება (მხოლოდ ადმინი)</small>
-      <div style="display:flex;gap:5px;margin-top:5px;">
-        <input id="emojiNameInput" placeholder="სახელი" style="flex:1;padding:5px;border-radius:15px;border:1px solid var(--accent);background:var(--bg);color:var(--text);outline:none;font-size:12px;">
-        <button onclick="document.getElementById('emojiFile').click()" style="padding:5px 10px;font-size:12px;margin:0;">📁</button>
-        <button onclick="addCustomEmoji()" style="padding:5px 10px;font-size:12px;margin:0;">➕</button>
-      </div>
-    </div>`;
+  if (isFounder()) {
+    panel.innerHTML += `
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <small style="opacity:0.6;">👑 ემოჯის დამატება (მხოლოდ დამფუძვნებელი)</small>
+        <div style="display:flex;gap:5px;margin-top:5px;">
+          <input id="emojiNameInput" placeholder="სახელი" style="flex:1;padding:5px;border-radius:15px;border:1px solid var(--accent);background:var(--bg);color:var(--text);outline:none;font-size:12px;">
+          <button onclick="document.getElementById('emojiFile').click()" style="padding:5px 10px;font-size:12px;margin:0;">📁 ატვირთვა</button>
+        </div>
+      </div>`;
   }
   const grid = document.getElementById('emojiGrid');
   defaultEmojis.forEach(e => {
     const span = document.createElement('span');
-    span.className = 'emoji-item';
-    span.textContent = e;
+    span.className = 'emoji-item'; span.textContent = e;
     span.onclick = () => insertEmoji(e);
     grid.appendChild(span);
   });
@@ -455,8 +469,7 @@ function insertEmoji(val, isUrl = false) {
     document.getElementById('pendingImgPreview').src = val;
     document.getElementById('pendingImgWrap').style.display = 'flex';
   } else {
-    input.value += val;
-    input.focus();
+    input.value += val; input.focus();
   }
   document.getElementById('emojiPanel').style.display = 'none';
 }
@@ -466,25 +479,17 @@ function toggleEmojiPanel() {
   p.style.display = p.style.display === 'block' ? 'none' : 'block';
 }
 
-async function addCustomEmoji() {
-  const name = document.getElementById('emojiNameInput')?.value.trim();
-  if (!name) { showNotification('სახელი შეიყვანე'); return; }
-  document.getElementById('emojiFile').click();
-  window._pendingEmojiName = name;
-}
-
 async function uploadEmoji(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const name = window._pendingEmojiName || 'emoji';
+  if (!isFounder()) { showNotification('მხოლოდ დამფუძვნებელს შეუძლია!'); return; }
+  const file = input.files[0]; if (!file) return;
+  const name = document.getElementById('emojiNameInput')?.value.trim() || 'emoji';
   const path = `emojis/${Date.now()}.${file.name.split('.').pop()}`;
   const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: false });
   if (error) { showNotification('შეცდომა'); return; }
   const { data } = supabase.storage.from('avatars').getPublicUrl(path);
   await supabase.from('emojis').insert({ name, url: data.publicUrl, created_by: currentUser.id });
   showNotification('ემოჯი დაემატა ✓');
-  buildEmojiPanel();
-  input.value = '';
+  buildEmojiPanel(); input.value = '';
 }
 
 // ==================== USERS LIST ====================
@@ -497,10 +502,10 @@ async function loadUsers() {
   const friendIds = (myFriends || []).map(f => f.friend_id);
   data.forEach(user => {
     if (user.id === currentUser.id) return;
+    if (user.is_banned) return;
     const isFriend = friendIds.includes(user.id);
     const div = document.createElement('div');
-    div.className = 'user-item';
-    div.onclick = () => openUserProfile(user.id);
+    div.className = 'user-item'; div.onclick = () => openUserProfile(user.id);
     const avStyle = user.avatar_url ? `style="background-image:url(${user.avatar_url});background-color:transparent;"` : '';
     const avText = user.avatar_url ? '' : (user.username?.[0]?.toUpperCase() || '?');
     div.innerHTML = `
@@ -508,11 +513,10 @@ async function loadUsers() {
         ${user.is_online ? '<div class="online-dot"></div>' : ''}
       </div>
       <div style="flex:1;">
-        <div style="font-weight:bold;font-size:13px;">${user.username}${user.is_admin ? ' 👑' : ''}</div>
+        <div style="font-weight:bold;font-size:13px;">${user.username}${roleBadge(user.role)}</div>
         <div style="font-size:11px;opacity:0.6;">${user.status || (user.is_online ? '🟢 ონლაინ' : '⚫ ოფლაინ')}</div>
       </div>
-      ${isFriend ? '<span class="friend-badge">✓ მეგობარი</span>' : `<span class="add-badge" onclick="event.stopPropagation();sendFriendRequest('${user.id}')">➕</span>`}
-    `;
+      ${isFriend ? '<span class="friend-badge">✓ მეგობარი</span>' : `<span class="add-badge" onclick="event.stopPropagation();sendFriendRequest('${user.id}')">➕</span>`}`;
     list.appendChild(div);
   });
 }
@@ -528,57 +532,104 @@ async function openUserProfile(userId) {
   const { data: user } = await supabase.from('profiles').select('*').eq('id', userId).single();
   if (!user) return;
   const { data: photos } = await supabase.from('user_photos').select('*').eq('user_id', userId).limit(6);
-  const { data: fr } = await supabase.from('friends').select('*').eq('user_id', currentUser.id).eq('friend_id', userId).single();
+  const { data: fr } = await supabase.from('friends').select('*').eq('user_id', currentUser.id).eq('friend_id', userId).maybeSingle();
   const isFriend = !!fr;
-  const existing = document.getElementById('userProfileModal');
-  if (existing) existing.remove();
+  document.getElementById('userProfileModal')?.remove();
   const m = document.createElement('div');
-  m.className = 'modal';
-  m.id = 'userProfileModal';
+  m.className = 'modal'; m.id = 'userProfileModal';
   const avStyle = user.avatar_url ? `style="background-image:url(${user.avatar_url});background-color:transparent;background-size:cover;background-position:center;"` : '';
   const avText = user.avatar_url ? '' : (user.username?.[0]?.toUpperCase() || '?');
   const photoGrid = (photos || []).map(p => `<img src="${p.photo_url}" class="album-photo" onclick="openPhotoModal({id:'${p.id}',photo_url:'${p.photo_url}'})">`).join('');
+
+  let roleButtons = '';
+  if (isFounder() && user.id !== currentUser.id) {
+    roleButtons = `
+      <div style="margin:8px 0;padding:8px;background:rgba(139,0,0,0.15);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:11px;opacity:0.7;margin-bottom:6px;">👑 როლის მართვა</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">
+          ${user.role !== 'founder' ? `<button class="action-btn" onclick="setUserRole('${user.id}','founder')" style="font-size:11px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;margin:2px;">👑 დამფ.</button>` : ''}
+          ${user.role !== 'admin'   ? `<button class="action-btn" onclick="setUserRole('${user.id}','admin')"   style="font-size:11px;margin:2px;">⚔️ ადმინი</button>` : ''}
+          ${user.role !== 'user'    ? `<button class="action-btn" onclick="setUserRole('${user.id}','user')"    style="font-size:11px;background:#444;margin:2px;">👤 ჩახსნა</button>` : ''}
+          ${!user.is_banned
+            ? `<button class="action-btn danger" onclick="banUser('${user.id}')"   style="font-size:11px;margin:2px;">🚫 ბანი</button>`
+            : `<button class="action-btn success" onclick="unbanUser('${user.id}')" style="font-size:11px;margin:2px;">✅ ბანის მოხსნა</button>`}
+        </div>
+      </div>`;
+  } else if (isAdmin() && user.id !== currentUser.id && user.role === 'user') {
+    roleButtons = `<div style="margin:8px 0;">
+      ${!user.is_banned
+        ? `<button class="action-btn danger" onclick="banUser('${user.id}')"   style="font-size:11px;width:100%;">🚫 ბანი</button>`
+        : `<button class="action-btn success" onclick="unbanUser('${user.id}')" style="font-size:11px;width:100%;">✅ ბანის მოხსნა</button>`}
+    </div>`;
+  }
+
   m.innerHTML = `
     <div class="modal-content">
       <div class="profile-avatar" ${avStyle} style="pointer-events:none;">${avText}</div>
-      <h3 style="text-align:center;">${user.username}${user.is_admin ? ' 👑' : ''}</h3>
+      <h3 style="text-align:center;">${user.username}${roleBadge(user.role)}</h3>
       <p style="text-align:center;opacity:0.6;font-size:12px;margin:4px 0;">${user.status || ''}</p>
-      <p style="text-align:center;font-size:12px;margin:4px 0;">${user.is_online ? '🟢 ონლაინ' : '⚫ ოფლაინ'}</p>
+      <p style="text-align:center;font-size:12px;margin:4px 0;">${user.is_online ? '🟢 ონლაინ' : '⚫ ოფლაინ'}${user.is_banned ? ' 🚫 დაბლოკილი' : ''}</p>
       <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0;">
         <button class="action-btn" onclick="openPM('${user.id}','${user.username}')">💬 მიწერე</button>
-        ${!isFriend ? `<button class="action-btn" onclick="sendFriendRequest('${user.id}')">👥 მეგობრობა</button>` : '<button class="action-btn success">✓ მეგობარი</button>'}
-        ${currentProfile?.is_admin ? `<button class="action-btn danger" onclick="banUser('${user.id}')">🚫 ბანი</button>` : ''}
+        ${!isFriend
+          ? `<button class="action-btn" onclick="sendFriendRequest('${user.id}')">👥 მეგობრობა</button>`
+          : '<button class="action-btn success">✓ მეგობარი</button>'}
       </div>
+      ${roleButtons}
       ${photoGrid ? `<div class="album-grid" style="margin-top:8px;">${photoGrid}</div>` : ''}
       <button onclick="document.getElementById('userProfileModal').remove()" style="width:100%;margin-top:10px;background:#5a0000;">დახურვა</button>
     </div>`;
   document.body.appendChild(m);
 }
 
+// ==================== ROLE MANAGEMENT ====================
+async function setUserRole(userId, role) {
+  if (!isFounder()) { showNotification('მხოლოდ დამფუძვნებელს შეუძლია!'); return; }
+  const labels = { founder: 'დამფუძვნებელი', admin: 'ადმინი', user: 'მომხმარებელი' };
+  if (!confirm(`დარწმუნებული ხარ? როლი → ${labels[role]}`)) return;
+  await supabase.from('profiles').update({ role }).eq('id', userId);
+  showNotification(`✓ როლი შეიცვალა: ${labels[role]}`);
+  document.getElementById('userProfileModal')?.remove();
+  loadUsers();
+}
+
+async function banUser(userId) {
+  if (!isAdmin()) return;
+  if (!confirm('მომხმარებელი დაიბლოკება. დარწმუნებული ხარ?')) return;
+  await supabase.from('profiles').update({ is_banned: true }).eq('id', userId);
+  await supabase.from('messages').delete().eq('user_id', userId);
+  showNotification('მომხმარებელი დაიბლოკა 🚫');
+  document.getElementById('userProfileModal')?.remove();
+  loadUsers();
+}
+
+async function unbanUser(userId) {
+  if (!isAdmin()) return;
+  await supabase.from('profiles').update({ is_banned: false }).eq('id', userId);
+  showNotification('ბანი მოიხსნა ✅');
+  document.getElementById('userProfileModal')?.remove();
+  loadUsers();
+}
+
 // ==================== FRIENDS ====================
 async function sendFriendRequest(toId) {
-  const { data: existing } = await supabase.from('friend_requests').select('*').eq('from_id', currentUser.id).eq('to_id', toId).single();
+  const { data: existing } = await supabase.from('friend_requests').select('*').eq('from_id', currentUser.id).eq('to_id', toId).maybeSingle();
   if (existing) { showNotification('უკვე გაგზავნილია'); return; }
-  await supabase.from('friend_requests').insert({ from_id: currentUser.id, to_id: toId });
+  await supabase.from('friend_requests').insert({ from_id: currentUser.id, to_id: toId, status: 'pending' });
   showNotification('მოთხოვნა გაიგზავნა ✓');
-  const modal = document.getElementById('userProfileModal');
-  if (modal) modal.remove();
+  document.getElementById('userProfileModal')?.remove();
 }
 
 async function loadFriends() {
   const { data: friends } = await supabase.from('friends').select('friend_id, profiles!friends_friend_id_fkey(*)').eq('user_id', currentUser.id);
   const { data: requests } = await supabase.from('friend_requests').select('from_id, profiles!friend_requests_from_id_fkey(*)').eq('to_id', currentUser.id).eq('status', 'pending');
-  const fl = document.getElementById('friendsList');
-  const rl = document.getElementById('requestsList');
-  fl.innerHTML = '';
-  rl.innerHTML = '';
+  const fl = document.getElementById('friendsList'); fl.innerHTML = '';
+  const rl = document.getElementById('requestsList'); rl.innerHTML = '';
   if (!friends || friends.length === 0) fl.innerHTML = '<div class="empty-state">მეგობრები არ გყავს</div>';
   (friends || []).forEach(f => {
-    const u = f.profiles;
-    if (!u) return;
+    const u = f.profiles; if (!u) return;
     const div = document.createElement('div');
-    div.className = 'user-item';
-    div.onclick = () => openUserProfile(u.id);
+    div.className = 'user-item'; div.onclick = () => openUserProfile(u.id);
     const avStyle = u.avatar_url ? `style="background-image:url(${u.avatar_url});background-color:transparent;"` : '';
     div.innerHTML = `
       <div class="user-avatar" ${avStyle}>${u.avatar_url ? '' : (u.username?.[0]?.toUpperCase() || '?')}
@@ -593,15 +644,13 @@ async function loadFriends() {
   });
   if (!requests || requests.length === 0) rl.innerHTML = '<div class="empty-state">მოთხოვნები არ არის</div>';
   (requests || []).forEach(r => {
-    const u = r.profiles;
-    if (!u) return;
-    const div = document.createElement('div');
-    div.className = 'user-item';
+    const u = r.profiles; if (!u) return;
+    const div = document.createElement('div'); div.className = 'user-item';
     div.innerHTML = `
       <div class="user-avatar">${u.username?.[0]?.toUpperCase() || '?'}</div>
       <div style="flex:1;"><div style="font-weight:bold;font-size:13px;">${u.username}</div></div>
       <button class="action-btn success" onclick="acceptFriend('${r.from_id}')" style="font-size:11px;padding:5px 9px;margin:0;">✓</button>
-      <button class="action-btn danger" onclick="declineFriend('${r.from_id}')" style="font-size:11px;padding:5px 9px;margin:0;margin-left:4px;">✕</button>`;
+      <button class="action-btn danger"  onclick="declineFriend('${r.from_id}')" style="font-size:11px;padding:5px 9px;margin:0;margin-left:4px;">✕</button>`;
     rl.appendChild(div);
   });
 }
@@ -609,33 +658,27 @@ async function loadFriends() {
 async function acceptFriend(fromId) {
   await supabase.from('friend_requests').update({ status: 'accepted' }).eq('from_id', fromId).eq('to_id', currentUser.id);
   await supabase.from('friends').insert([{ user_id: currentUser.id, friend_id: fromId }, { user_id: fromId, friend_id: currentUser.id }]);
-  showNotification('მეგობარი დაემატა ✓');
-  loadFriends();
+  showNotification('მეგობარი დაემატა ✓'); loadFriends();
 }
-
 async function declineFriend(fromId) {
   await supabase.from('friend_requests').delete().eq('from_id', fromId).eq('to_id', currentUser.id);
   loadFriends();
 }
-
 async function removeFriend(friendId) {
   await supabase.from('friends').delete().eq('user_id', currentUser.id).eq('friend_id', friendId);
   await supabase.from('friends').delete().eq('user_id', friendId).eq('friend_id', currentUser.id);
-  showNotification('მეგობარი წაიშალა');
-  loadFriends();
+  showNotification('მეგობარი წაიშალა'); loadFriends();
 }
 
-// ==================== PRIVATE MESSAGES (MESSENGER STYLE) ====================
+// ==================== PRIVATE MESSAGES ====================
 async function loadPMList() {
   const { data } = await supabase.from('direct_messages')
     .select('*')
     .or(`from_id.eq.${currentUser.id},to_id.eq.${currentUser.id}`)
     .order('created_at', { ascending: false });
-  const list = document.getElementById('pmList');
-  list.innerHTML = '';
+  const list = document.getElementById('pmList'); list.innerHTML = '';
   if (!data || data.length === 0) { list.innerHTML = '<div class="empty-state">მიმოწერა არ არის</div>'; return; }
-  const seen = new Set();
-  const convs = [];
+  const seen = new Set(); const convs = [];
   for (const msg of data) {
     const otherId = msg.from_id === currentUser.id ? msg.to_id : msg.from_id;
     if (!seen.has(otherId)) { seen.add(otherId); convs.push({ otherId, lastMsg: msg }); }
@@ -645,8 +688,7 @@ async function loadPMList() {
     if (!user) continue;
     const unread = unreadPM[conv.otherId] || 0;
     const div = document.createElement('div');
-    div.className = 'user-item';
-    div.onclick = () => openPM(user.id, user.username);
+    div.className = 'user-item'; div.onclick = () => openPM(user.id, user.username);
     const avStyle = user.avatar_url ? `style="background-image:url(${user.avatar_url});background-color:transparent;"` : '';
     div.innerHTML = `
       <div class="user-avatar" ${avStyle}>${user.avatar_url ? '' : (user.username?.[0]?.toUpperCase() || '?')}
@@ -656,26 +698,25 @@ async function loadPMList() {
         <div style="font-weight:bold;font-size:13px;">${user.username}</div>
         <div style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">${conv.lastMsg.content || '📷 ფოტო'}</div>
       </div>
-      ${unread > 0 ? `<span style="background:var(--accent);color:white;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">${unread}</span>` : ''}`;
+      ${unread > 0 ? `<span style="background:var(--accent);color:white;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">${unread}</span>` : ''}`;
     list.appendChild(div);
   }
 }
 
 function openPM(userId, username) {
-  const existing = document.getElementById('userProfileModal');
-  if (existing) existing.remove();
+  document.getElementById('userProfileModal')?.remove();
   currentPMUser = { id: userId, username };
-  unreadPM[userId] = 0;
-  updatePMBadge();
-  const old = document.getElementById('pmWindow');
-  if (old) old.remove();
+  unreadPM[userId] = 0; updatePMBadge();
+  document.getElementById('pmWindow')?.remove();
   const win = document.createElement('div');
-  win.className = 'pm-window';
-  win.id = 'pmWindow';
+  win.className = 'pm-window'; win.id = 'pmWindow';
   win.innerHTML = `
     <div class="pm-header" onclick="togglePMWindow()">
       <span>💬 ${username}</span>
-      <span id="pmMinIcon">▼</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="pmMinIcon" style="font-size:12px;">▼</span>
+        <span onclick="event.stopPropagation();document.getElementById('pmWindow').remove()" style="cursor:pointer;opacity:0.7;">✕</span>
+      </div>
     </div>
     <div class="pm-messages" id="pmMessages"></div>
     <div class="pm-input">
@@ -683,19 +724,19 @@ function openPM(userId, username) {
       <button onclick="sendPM()" style="margin:0;padding:7px 12px;">➤</button>
     </div>`;
   document.body.appendChild(win);
-  loadPMMessages();
-  subscribePM();
+  loadPMMessages(); subscribePM();
 }
 
 let pmMinimized = false;
 function togglePMWindow() {
   const messages = document.getElementById('pmMessages');
-  const input = document.querySelector('.pm-input');
+  const inputArea = document.querySelector('.pm-input');
   const icon = document.getElementById('pmMinIcon');
   if (!messages) return;
   pmMinimized = !pmMinimized;
   messages.style.display = pmMinimized ? 'none' : 'flex';
-  if (input) input.style.display = pmMinimized ? 'none' : 'flex';
+  messages.style.flexDirection = 'column';
+  if (inputArea) inputArea.style.display = pmMinimized ? 'none' : 'flex';
   if (icon) icon.textContent = pmMinimized ? '▲' : '▼';
 }
 
@@ -705,8 +746,7 @@ async function loadPMMessages() {
     .or(`and(from_id.eq.${currentUser.id},to_id.eq.${currentPMUser.id}),and(from_id.eq.${currentPMUser.id},to_id.eq.${currentUser.id})`)
     .order('created_at', { ascending: true })
     .limit(50);
-  const container = document.getElementById('pmMessages');
-  if (!container) return;
+  const container = document.getElementById('pmMessages'); if (!container) return;
   container.innerHTML = '';
   (data || []).forEach(msg => renderPMMessage(msg, container));
   container.scrollTop = container.scrollHeight;
@@ -731,6 +771,9 @@ async function sendPM() {
   const text = input.value.trim();
   if (!text || !currentPMUser) return;
   input.value = '';
+  const tempMsg = { from_id: currentUser.id, to_id: currentPMUser.id, content: text, created_at: new Date().toISOString() };
+  const container = document.getElementById('pmMessages');
+  if (container) { renderPMMessage(tempMsg, container); container.scrollTop = container.scrollHeight; }
   await supabase.from('direct_messages').insert({ from_id: currentUser.id, to_id: currentPMUser.id, content: text });
 }
 
@@ -761,18 +804,18 @@ function updatePMBadge() {
   const btn = document.querySelector('.nav-btn[data-page="messages"]');
   if (!btn) return;
   btn.style.position = 'relative';
-  const old = btn.querySelector('.pm-badge');
-  if (old) old.remove();
+  btn.innerHTML = '💬';
   if (total > 0) {
-    btn.innerHTML = `💬<span class="pm-badge" style="position:absolute;top:2px;right:2px;background:var(--accent);color:white;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;">${total}</span>`;
-  } else {
-    btn.innerHTML = '💬';
+    const badge = document.createElement('span');
+    badge.style.cssText = 'position:absolute;top:0;right:0;background:var(--accent);color:white;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:bold;';
+    badge.textContent = total;
+    btn.appendChild(badge);
   }
 }
 
 // ==================== NOTIFICATIONS ====================
 function subscribeToNotifications() {
-  supabase.channel('notifications:' + currentUser.id)
+  supabase.channel('notif:' + currentUser.id)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'friend_requests', filter: `to_id=eq.${currentUser.id}` }, async payload => {
       const { data: sender } = await supabase.from('profiles').select('username').eq('id', payload.new.from_id).single();
       showNotification(`👥 ${sender?.username || '?'} გიგზავნის მეგობრობის მოთხოვნას`);
@@ -782,37 +825,12 @@ function subscribeToNotifications() {
 }
 
 function showNotification(msg) {
-  const old = document.querySelector('.notification');
-  if (old) old.remove();
+  document.querySelector('.notification')?.remove();
   const n = document.createElement('div');
-  n.className = 'notification';
-  n.textContent = msg;
+  n.className = 'notification'; n.textContent = msg;
   document.body.appendChild(n);
   setTimeout(() => n.remove(), 3500);
 }
-
-// ==================== ADMIN ====================
-async function banUser(userId) {
-  if (!currentProfile?.is_admin) return;
-  if (!confirm('დარწმუნებული ხარ?')) return;
-  await supabase.from('profiles').update({ is_banned: true }).eq('id', userId);
-  await supabase.from('messages').delete().eq('user_id', userId);
-  showNotification('მომხმარებელი დაიბანა');
-  const modal = document.getElementById('userProfileModal');
-  if (modal) modal.remove();
-}
-
-// ==================== HEARTS ====================
-function spawnHeart() {
-  const h = document.createElement('div');
-  h.className = 'heart';
-  h.textContent = ['❤️','🌹','💀','🔥','💎'][Math.floor(Math.random() * 5)];
-  h.style.left = Math.random() * 90 + '%';
-  h.style.fontSize = (16 + Math.random() * 20) + 'px';
-  document.getElementById('hearts').appendChild(h);
-  setTimeout(() => h.remove(), 5000);
-}
-setInterval(spawnHeart, 8000);
 
 // ==================== UTILS ====================
 function escapeHtml(str) {
