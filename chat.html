@@ -539,4 +539,116 @@
                 div.innerHTML = `<div style="background:${isOwn ? 'var(--accent)' : 'var(--card)'};padding:6px 10px;border-radius:12px;max-width:180px;">${escapeHtml(msg.content)}</div>`;
                 container.appendChild(div);
             });
-            container.scrollTop = container.sc
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        async function sendPM() {
+            const input = document.getElementById('pmInput');
+            const text = input.value.trim();
+            if (!text || !currentPMUser) return;
+            input.value = '';
+            await supabaseClient.from('direct_messages').insert({ from_id: currentUser.id, to_id: currentPMUser.id, content: text });
+            loadPMMessages();
+        }
+        
+        function subscribePM() {
+            if (pmSubscription) supabaseClient.removeChannel(pmSubscription);
+            pmSubscription = supabaseClient.channel('pm:' + currentUser.id)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: `to_id=eq.${currentUser.id}` }, async payload => {
+                    if (currentPMUser && payload.new.from_id === currentPMUser.id) {
+                        loadPMMessages();
+                    } else {
+                        showNotification(`💬 ახალი შეტყობინება`);
+                        loadPMList();
+                    }
+                })
+                .subscribe();
+        }
+        
+        // ==================== ONLINE ====================
+        function startOnlinePresence() {
+            updateOnline();
+            onlineInterval = setInterval(updateOnline, 30000);
+            window.addEventListener('beforeunload', () => {
+                supabaseClient.from('profiles').update({ is_online: false }).eq('id', currentUser.id);
+            });
+        }
+        
+        async function updateOnline() {
+            await supabaseClient.from('profiles').update({ is_online: true, last_seen: new Date().toISOString() }).eq('id', currentUser.id);
+        }
+        
+        // ==================== EMOJI ====================
+        async function buildEmojiPanel() {
+            const panel = document.getElementById('emojiPanel');
+            const emojis = ['😀','😂','🥰','😎','🤔','😢','😡','👍','❤️','🔥','💀','🎉','🍷','🎰','⚔️','👑','💰','🎲','🌙','⭐','💎'];
+            panel.innerHTML = `<div class="emoji-grid">${emojis.map(e => `<div class="emoji-item" onclick="insertEmoji('${e}')">${e}</div>`).join('')}</div>`;
+        }
+        
+        function insertEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+            input.focus();
+            document.getElementById('emojiPanel').style.display = 'none';
+        }
+        
+        function toggleEmojiPanel() {
+            const p = document.getElementById('emojiPanel');
+            p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // ==================== NOTIFICATIONS ====================
+        function subscribeToNotifications() {
+            supabaseClient.channel('notif:' + currentUser.id)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'friend_requests', filter: `to_id=eq.${currentUser.id}` }, () => {
+                    showNotification('👥 ახალი მეგობრობის მოთხოვნა');
+                    loadFriends();
+                })
+                .subscribe();
+        }
+        
+        function showNotification(msg) {
+            const n = document.createElement('div');
+            n.className = 'notification';
+            n.textContent = msg;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 3000);
+        }
+        
+        // ==================== NAVIGATION ====================
+        function setupNavigation() {
+            document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = btn.dataset.page;
+                    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    document.getElementById(page + 'Page').classList.add('active');
+                    if (page === 'online') loadUsers();
+                    if (page === 'friends') loadFriends();
+                    if (page === 'messages') loadPMList();
+                });
+            });
+        }
+        
+        // ==================== THEME ====================
+        function setupTheme() {
+            const btn = document.getElementById('themeBtn');
+            const saved = localStorage.getItem('om_theme');
+            if (saved === 'day') document.body.classList.add('day-mode');
+            btn.addEventListener('click', () => {
+                document.body.classList.toggle('day-mode');
+                btn.textContent = document.body.classList.contains('day-mode') ? '☀️' : '🌙';
+                localStorage.setItem('om_theme', document.body.classList.contains('day-mode') ? 'day' : 'night');
+            });
+        }
+        
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
+        // ==================== START ====================
+        init();
+    </script>
+</body>
+</html>
