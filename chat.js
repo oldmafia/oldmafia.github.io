@@ -1,6 +1,11 @@
 // ========== კონფიგურაცია და ცვლადები ==========
 const SUPABASE_URL = 'https://ftfciebnywbondaiarnc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI';
+
+// დავამატოთ შემოწმება, რომ supabase ობიექტი არსებობს
+if (typeof supabase === 'undefined') {
+    console.error("Supabase library არ არის ჩატვირთული!");
+}
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const currentUser = localStorage.getItem('mafia_user');
@@ -20,7 +25,7 @@ const ROOMS = [
     "🎵 მუსიკა", "⁉️ ვიქტორინა", "🆘 დახმარება"
 ];
 
-// ========== დამხმარე ფუნქციები ==========
+// ========== დამხმარე ფუნქციები (უცვლელია) ==========
 function saveLocal() {
     localStorage.setItem('mafia_users', JSON.stringify(users));
     localStorage.setItem('mafia_blocked', JSON.stringify(blockedUsers));
@@ -41,14 +46,19 @@ function showNotification(msg) {
     setTimeout(() => n.remove(), 3000);
 }
 
-// ========== ინიციალიზაცია (მთავარი ფუნქცია) ==========
+// ========== ინიციალიზაცია (გასწორებული) ==========
 async function initData() {
     try {
+        // მონაცემების წამოღება
         const { data: profilesData, error } = await db.from('profiles').select('*');
-        if (error) throw error;
+        
+        // თუ შეცდომაა, მაინც გავაგრძელოთ, რომ ოთახები გამოჩნდეს
+        if (error) {
+            console.warn("Profiles ვერ ჩაიტვირთა:", error.message);
+        }
 
-        // მომხმარებლების სიის სუფთად აწყობა
-        users = profilesData.map(p => ({
+        // მომხმარებლების სიის აწყობა (უსაფრთხო map)
+        users = (profilesData || []).map(p => ({
             username: p.username,
             status: p.status || "ონლაინ",
             avatar: p.avatar || null,
@@ -66,24 +76,27 @@ async function initData() {
 
         saveLocal();
         
-        // UI ელემენტების განახლება
         const profileNameEl = document.getElementById('profileName');
         if (profileNameEl) profileNameEl.textContent = currentUser;
         
         const statusInp = document.getElementById('statusInput');
         if (statusInp) statusInp.value = me.status || "";
 
+        // ამას გამოვიტანთ try-ს ბოლოში, რომ არაფერმა დააბლოკოს
         renderRooms();
+        
         if (typeof updateProfileAvatarUI === "function") updateProfileAvatarUI();
         if (typeof listenToFriendRequests === "function") listenToFriendRequests();
 
     } catch (err) {
-        console.error("კრიტიკული შეცდომა ჩატვირთვისას:", err.message);
-        showNotification("მონაცემების ჩატვირთვა ვერ მოხერხდა");
+        console.error("კრიტიკული შეცდომა:", err.message);
+        // თუ ბაზამ საერთოდ გაჭედა, ოთახები მაინც დავარენდეროთ მასივიდან
+        renderRooms();
+        showNotification("კავშირის ხარვეზი");
     }
 }
 
-// ========== ოთახების მართვა ==========
+// ========== ოთახების მართვა (უცვლელია) ==========
 function renderRooms() {
     const list = document.getElementById('roomsList');
     if (!list) return;
@@ -95,134 +108,4 @@ function renderRooms() {
     `).join('');
 }
 
-async function openRoom(roomName) {
-    if (currentRoom === roomName) return;
-
-    // ძველი არხის დახურვა (რომ არ გაჭედოს)
-    if (messagesChannel) {
-        await db.removeChannel(messagesChannel);
-        messagesChannel = null;
-    }
-
-    currentRoom = roomName;
-    const chatTitle = document.getElementById('chatTitle');
-    if (chatTitle) chatTitle.textContent = roomName;
-
-    // მესიჯების ჩატვირთვა და მოსმენა
-    await renderRoomMessages(roomName);
-    listenToRoom(roomName);
-    
-    // ჩატის ფანჯრის ჩვენება (თუ მობილურზეა)
-    document.getElementById('roomsScreen').style.display = 'none';
-    document.getElementById('chatScreen').style.display = 'flex';
-}
-
-function listenToRoom(roomName) {
-    messagesChannel = db.channel(`room-${roomName}`)
-        .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'messages', 
-            filter: `room=eq.${roomName}` 
-        }, payload => {
-            if (currentRoom === roomName) appendMessage(payload.new);
-        })
-        .subscribe();
-}
-
-// ========== ვიქტორინის ლოგიკა ==========
-let quizQuestions = [], quizIndex = 0, quizScore = 0;
-
-async function startQuiz() {
-    const { data, error } = await db.from('quiz_questions').select('*');
-    if (error || !data || data.length === 0) {
-        showNotification('კითხვები ვერ მოიძებნა!');
-        return;
-    }
-    quizQuestions = data.sort(() => Math.random() - 0.5);
-    quizIndex = 0;
-    quizScore = 0;
-    showQuizQuestion();
-}
-
-function showQuizQuestion() {
-    let ex = document.getElementById('quizBox');
-    if (ex) ex.remove();
-
-    if (quizIndex >= quizQuestions.length) {
-        showNotification(`ვიქტორინა დასრულდა! ქულა: ${quizScore}`);
-        return;
-    }
-
-    let q = quizQuestions[quizIndex];
-    let options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-
-    let box = document.createElement('div');
-    box.id = 'quizBox';
-    box.style.cssText = 'position:fixed; bottom:80px; left:10px; right:10px; background:#1a1a1a; border:2px solid orange; border-radius:15px; padding:15px; z-index:3000; color:white;';
-    
-    box.innerHTML = `
-        <div style="font-size:12px; margin-bottom:5px;">კითხვა ${quizIndex + 1}/${quizQuestions.length}</div>
-        <div style="font-weight:bold; margin-bottom:10px;">${escapeHtml(q.question)}</div>
-        <div id="quizOptions" style="display:flex; flex-direction:column; gap:8px;">
-            ${(options || []).map((opt, i) => `
-                <button onclick="answerQuiz(${i})" style="background:#333; color:white; border:1px solid #444; padding:10px; border-radius:8px; text-align:left;">
-                    ${escapeHtml(String(opt))}
-                </button>
-            `).join('')}
-        </div>
-    `;
-    document.body.appendChild(box);
-}
-
-async function answerQuiz(sel) {
-    // სპამისგან დაცვა
-    const buttons = document.querySelectorAll('#quizOptions button');
-    if (buttons[0].disabled) return;
-
-    let q = quizQuestions[quizIndex];
-    let options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-    let correct = typeof q.answer === 'number' ? q.answer : options.indexOf(q.answer);
-
-    buttons.forEach((btn, i) => {
-        btn.disabled = true;
-        if (i === correct) btn.style.background = '#2d6a4f';
-        else if (i === sel) btn.style.background = '#8b0000';
-    });
-
-    if (sel === correct) quizScore++;
-
-    quizIndex++;
-    
-    if (quizIndex >= quizQuestions.length) {
-        await db.from('profiles').update({ points: quizScore }).eq('username', currentUser);
-    }
-
-    setTimeout(() => {
-        let b = document.getElementById('quizBox');
-        if (b) b.remove();
-        showQuizQuestion();
-    }, 1500);
-}
-
-// ========== ეფექტები ==========
-function startHearts() {
-    const container = document.getElementById('hearts');
-    if (!container) return;
-
-    setInterval(() => {
-        if (!document.getElementById('hearts')) return;
-        let h = document.createElement('div');
-        h.className = 'heart';
-        h.innerHTML = '❤️';
-        h.style.left = Math.random() * 100 + '%';
-        container.appendChild(h);
-        setTimeout(() => h.remove(), 5000);
-    }, 4000);
-}
-
-// ========== გაშვება ==========
-window.addEventListener('DOMContentLoaded', () => {
-    initData();
-    startHearts();
-});
+// დანარჩენი ფუნქციები (openRoom, listenToRoom, Quiz და Hearts) დატოვე როგორც გაქვს...
