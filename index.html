@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: radial-gradient(circle, #330000 0%, #000 70%); 
+            font-family: Arial, sans-serif; 
+        }
+        
+        .card-wrapper { 
+            position: relative; 
+            width: 350px; 
+            z-index: 1;
+        }
+        
+        .card-wrapper::before { 
+            content: ""; 
+            position: absolute; 
+            inset: -5px; 
+            background: red; 
+            border-radius: 30px; 
+            transform: rotate(-3deg); 
+            box-shadow: 0 0 80px red; 
+            z-index: -1; 
+        }
+        
+        .card { 
+            position: relative; 
+            background: #0d0d0d; 
+            padding: 40px 25px; 
+            border-radius: 30px; 
+            z-index: 1; 
+            text-align: center; 
+        }
+        
+        h1 { 
+            color: white; 
+            text-shadow: 0 0 20px red; 
+            margin-bottom: 25px; 
+            font-size: 28px;
+        }
+        
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border-radius: 12px; 
+            border: none; 
+            background: #1a1a1a; 
+            color: white; 
+            box-sizing: border-box; 
+            outline: none; 
+            border: 1px solid #ff3333;
+            font-size: 16px;
+        }
+        
+        input:focus {
+            border-color: red;
+            box-shadow: 0 0 10px rgba(255,0,0,0.3);
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 20px; 
+            background: red; 
+            color: white; 
+            font-weight: bold; 
+            margin-bottom: 12px; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
+        
+        button:hover { 
+            background: darkred; 
+        }
+        
+        .hidden { 
+            display: none; 
+        }
+        
+        #message { 
+            color: #ff8888; 
+            margin-top: 10px; 
+            min-height: 20px; 
+            font-size: 13px; 
+        }
+        
+        .back-link { 
+            color: #888; 
+            cursor: pointer; 
+            font-size: 12px; 
+            display: block; 
+            margin-top: 10px; 
+            text-decoration: underline; 
+        }
+        
+        .back-link:hover {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<div class="card-wrapper">
+    <div class="card">
+        <h1>კაიფმანია 😎🔥</h1>
+        
+        <!-- ღილაკები -->
+        <div id="mainButtons">
+            <button onclick="showForm('reg')">📝 რეგისტრაცია</button>
+            <button onclick="showForm('log')">🔑 შესვლა</button>
+        </div>
+        
+        <!-- ფორმა (თავიდან დამალული) -->
+        <div id="formSection" style="display: none;">
+            <input type="text" id="nickname" placeholder="👤 ნიკნეიმი" autocomplete="off">
+            <input type="password" id="password" placeholder="🔒 პაროლი">
+            <button id="submitBtn" onclick="handleAuth()">გაგზავნა</button>
+            <span class="back-link" onclick="resetForm()">◀ უკან დაბრუნება</span>
+        </div>
+        
+        <p id="message"></p>
+    </div>
+</div>
+
+<script>
+    const supabaseUrl = 'https://ftfciebnywbondaiarnc.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0ZmNpZWJueXdib25kYWlhcm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMjYwNTYsImV4cCI6MjA4NjkwMjA1Nn0.2A5wgpS2gaFmgnGB2mWH7dpmjLvo75IE0QPRPrtUbzI';
+    
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    let mode = '';
+
+    function showForm(m) {
+        mode = m;
+        // დამალე ღილაკები
+        document.getElementById('mainButtons').style.display = 'none';
+        // აჩვენე ფორმა
+        document.getElementById('formSection').style.display = 'block';
+        // შეცვალე ღილაკის ტექსტი
+        document.getElementById('submitBtn').innerText = m === 'reg' ? '✅ რეგისტრაცია' : '🚪 შესვლა';
+        // გაასუფთავე შეცდომა
+        document.getElementById('message').innerText = '';
+        // გაასუფთავე ველები
+        document.getElementById('nickname').value = '';
+        document.getElementById('password').value = '';
+    }
+
+    function resetForm() {
+        // დამალე ფორმა
+        document.getElementById('formSection').style.display = 'none';
+        // აჩვენე ღილაკები
+        document.getElementById('mainButtons').style.display = 'block';
+        // გაასუფთავე შეცდომა
+        document.getElementById('message').innerText = '';
+    }
+
+    async function handleAuth() {
+        const nick = document.getElementById('nickname').value.trim();
+        const pass = document.getElementById('password').value.trim();
+        const msgEl = document.getElementById('message');
+        
+        if (!nick || !pass) {
+            msgEl.innerText = '⚠️ გთხოვთ შეავსოთ ყველა ველი!';
+            return;
+        }
+
+        if (mode === 'reg') {
+            // რეგისტრაცია
+            const { data: existing } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('username', nick)
+                .maybeSingle();
+            
+            if (existing) {
+                msgEl.innerText = '❌ ეს ნიკი უკვე დაკავებულია!';
+                return;
+            }
+            
+            const { error } = await supabase
+                .from('profiles')
+                .insert([{ 
+                    username: nick, 
+                    password: pass,
+                    role: 'user',
+                    is_online: false,
+                    is_banned: false
+                }]);
+            
+            if (error) {
+                msgEl.innerText = '❌ შეცდომა: ' + error.message;
+            } else {
+                alert('✅ წარმატებით დარეგისტრირდი! ახლა შედი სისტემაში.');
+                resetForm();
+            }
+        } else {
+            // შესვლა
+            const { data: user } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('username', nick)
+                .maybeSingle();
+            
+            if (user && user.password === pass) {
+                localStorage.setItem('mafia_user', user.username);
+                localStorage.setItem('mafia_user_id', user.id);
+                window.location.href = 'chat.html';
+            } else {
+                msgEl.innerText = '❌ ნიკნეიმი ან პაროლი არასწორია!';
+            }
+        }
+    }
+</script>
+</body>
+</html>
