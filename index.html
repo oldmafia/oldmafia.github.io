@@ -39,7 +39,6 @@ button:hover{background:darkred;}
 </div>
 
 <script>
-// Supabase კონფიგურაცია
 const SUPABASE_URL = "https://ftfciebnywbondaiarnc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_eQZDSu_Jy1gWmXJFF800Pw_TP2kBRLI";
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -65,51 +64,65 @@ async function handleAuth() {
     }
 
     if (mode === "reg") {
-        // რეგისტრაცია
-        const fakeEmail = `${nick}@kaifmania.local`;
+        // ვამოწმებთ ნიკი თავისუფალია თუ არა
+        const { data: existingUser, error: findError } = await supabase
+            .from('users')
+            .select('nickname')
+            .eq('nickname', nick)
+            .maybeSingle();
         
-        const { data, error } = await supabase.auth.signUp({
-            email: fakeEmail,
-            password: pass,
-            options: {
-                data: { username: nick }
-            }
-        });
-
-        if (error) {
-            msg.innerText = "❌ შეცდომა: " + error.message;
+        if (existingUser) {
+            msg.innerText = "❌ ეს ნიკნეიმი უკვე დაკავებულია!";
+            return;
+        }
+        
+        // ვქმნით ახალ მომხმარებელს
+        const { error: insertError } = await supabase
+            .from('users')
+            .insert([{
+                nickname: nick,
+                password: pass,
+                role: 'Member',
+                status: 'online',
+                shipro_score: 0,
+                quiz_score: 0,
+                hang_score: 0,
+                joker_score: 0,
+                nardi_score: 0,
+                avatar_url: null,
+                is_banned: false
+            }]);
+        
+        if (insertError) {
+            msg.innerText = "❌ შეცდომა: " + insertError.message;
         } else {
-            alert("✅ წარმატებით დარეგისტრირდი! ახლა შედი.");
+            alert("✅ წარმატებით დარეგისტრირდი! ახლა შედი სისტემაში.");
             location.reload();
         }
         
     } else if (mode === "log") {
-        // შესვლა
-        const fakeEmail = `${nick}@kaifmania.local`;
+        // შესვლა - ვამოწმებთ nickname და password
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('nickname', nick)
+            .eq('password', pass)
+            .maybeSingle();
         
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: fakeEmail,
-            password: pass
-        });
-
         if (error) {
-            msg.innerText = "❌ ნიკი ან პაროლი არასწორია!";
-        } else {
-            localStorage.setItem('nickname', nick);
-            localStorage.setItem('userId', data.user.id);
+            msg.innerText = "❌ შეცდომა: " + error.message;
+            return;
+        }
+        
+        if (user) {
+            localStorage.setItem('nickname', user.nickname);
+            localStorage.setItem('userId', user.id);
             window.location.href = "chat.html";
+        } else {
+            msg.innerText = "❌ ნიკნეიმი ან პაროლი არასწორია!";
         }
     }
 }
-
-// შეამოწმე უკვე შესულია თუ არა
-async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        window.location.href = "chat.html";
-    }
-}
-checkSession();
 </script>
 </body>
 </html>
