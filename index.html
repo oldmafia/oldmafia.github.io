@@ -1,74 +1,107 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-<meta charset="UTF-8">
-<title>კაიფმანია</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-body {
-    background: radial-gradient(circle, #330000 0%, #000 70%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-family: Arial;
-    margin: 0;
-}
-.card {
-    background: #0d0d0d;
-    padding: 40px;
-    border-radius: 30px;
-    text-align: center;
-    border: 2px solid red;
-    box-shadow: 0 0 50px rgba(255,0,0,0.3);
-    width: 320px;
-}
-h1 {
-    color: white;
-    text-shadow: 0 0 10px red;
-    margin-bottom: 30px;
-}
-input {
-    display: block;
-    width: 100%;
-    margin: 10px 0;
-    padding: 12px;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    color: white;
-    border-radius: 12px;
-    box-sizing: border-box;
-}
-button {
-    background: red;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    margin: 5px;
-    font-size: 16px;
-    font-weight: bold;
-}
-button:hover {
-    background: darkred;
-}
-.hidden {
-    display: none;
-}
-#message {
-    color: #ff6666;
-    margin-top: 15px;
-    font-size: 13px;
-}
-.back-link {
-    color: #888;
-    cursor: pointer;
-    font-size: 12px;
-    margin-top: 10px;
-    display: inline-block;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>კაიფმანია</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: radial-gradient(circle, #330000 0%, #000 70%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        .card {
+            background: #0d0d0d;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            border: 2px solid red;
+            box-shadow: 0 0 50px rgba(255,0,0,0.3);
+            width: 350px;
+        }
+        
+        h1 {
+            color: white;
+            text-shadow: 0 0 10px red;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        input {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: red;
+        }
+        
+        button {
+            background: red;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: darkred;
+            transform: scale(1.02);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #message {
+            color: #ff6666;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        #success {
+            color: #66ff66;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        .back-link {
+            color: #888;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        .back-link:hover {
+            color: red;
+        }
+    </style>
 </head>
 <body>
 
@@ -88,6 +121,7 @@ button:hover {
     </div>
     
     <p id="message"></p>
+    <p id="success"></p>
 </div>
 
 <script>
@@ -101,14 +135,17 @@ function showForm(m) {
     mode = m;
     document.getElementById("mainButtons").classList.add("hidden");
     document.getElementById("formSection").classList.remove("hidden");
-    document.getElementById("submitBtn").innerText = (m === 'reg') ? "📝 რეგისტრაცია" : "🔑 შესვლა";
+    const btn = document.getElementById("submitBtn");
+    btn.innerText = (m === 'reg') ? "📝 რეგისტრაცია" : "🔑 შესვლა";
     document.getElementById("message").innerText = "";
+    document.getElementById("success").innerText = "";
 }
 
 async function handleAuth() {
     const nick = document.getElementById("nickname").value.trim();
     const pass = document.getElementById("password").value.trim();
     const msg = document.getElementById("message");
+    const success = document.getElementById("success");
 
     if (!nick || !pass) {
         msg.innerText = "⚠️ შეავსე ყველა ველი!";
@@ -116,16 +153,15 @@ async function handleAuth() {
     }
 
     if (mode === "reg") {
-        console.log("რეგისტრაცია:", nick);
+        // რეგისტრაცია
+        msg.innerText = "🔄 მოწმდება...";
         
-        // ვამოწმებთ არსებობს თუ არა უკვე
         const { data: existing, error: checkError } = await supabase
             .from('users')
             .select('nickname')
             .eq('nickname', nick);
         
         if (checkError) {
-            console.error("შემოწმების შეცდომა:", checkError);
             msg.innerText = "❌ შეცდომა: " + checkError.message;
             return;
         }
@@ -135,33 +171,26 @@ async function handleAuth() {
             return;
         }
         
-        // ახალი მომხმარებლის დამატება
-        const { data, error } = await supabase
+        const { error: insertError } = await supabase
             .from('users')
             .insert([{
                 nickname: nick,
                 password: pass,
                 role: 'Member',
-                status: 'online',
-                shipro_score: 0,
-                quiz_score: 0,
-                hang_score: 0,
-                joker_score: 0,
-                nardi_score: 0,
-                avatar_url: '',
-                is_banned: false
+                status: 'online'
             }]);
         
-        if (error) {
-            console.error("ჩაწერის შეცდომა:", error);
-            msg.innerText = "❌ შეცდომა: " + error.message;
+        if (insertError) {
+            msg.innerText = "❌ შეცდომა: " + insertError.message;
         } else {
-            alert("✅ წარმატებით დარეგისტრირდი! 🎉");
-            location.reload();
+            success.innerText = "✅ რეგისტრაცია წარმატებულია! ახლა შედი.";
+            msg.innerText = "";
+            setTimeout(() => location.reload(), 2000);
         }
         
     } else if (mode === "log") {
-        console.log("შესვლა:", nick);
+        // შესვლა
+        msg.innerText = "🔄 მოწმდება...";
         
         const { data, error } = await supabase
             .from('users')
@@ -170,18 +199,22 @@ async function handleAuth() {
             .eq('password', pass);
         
         if (error) {
-            console.error("შესვლის შეცდომა:", error);
             msg.innerText = "❌ შეცდომა: " + error.message;
         } else if (data && data.length > 0) {
             localStorage.setItem('nickname', nick);
-            localStorage.setItem('userId', data[0].id);
-            alert("✅ წარმატებით შეხვედი! 👋");
-            // window.location.href = "chat.html";
+            success.innerText = "✅ შესვლა წარმატებულია!";
+            msg.innerText = "";
+            setTimeout(() => {
+                alert("კეთილი იყოს შენი მობრძანება, " + nick + "! 🎉");
+            }, 500);
         } else {
             msg.innerText = "❌ ნიკნეიმი ან პაროლი არასწორია!";
         }
     }
 }
+
+console.log("საიტი ჩაიტვირთა!");
+console.log("Supabase URL:", SUPABASE_URL);
 </script>
 </body>
 </html>
