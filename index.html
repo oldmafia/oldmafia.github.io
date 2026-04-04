@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>კაიფმანია</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 body{margin:0;height:100vh;display:flex;justify-content:center;align-items:center;background:radial-gradient(circle,#330000 0%,#000 70%);font-family:Arial;overflow:hidden;}
 .card-wrapper{position:relative;width:350px;}
@@ -65,45 +65,27 @@ async function handleAuth() {
     }
 
     if (mode === "reg") {
-        // რეგისტრაცია Supabase Auth-ით
-        const fakeEmail = `${nick}@kaifmania.temp`;
+        // რეგისტრაცია
+        const fakeEmail = `${nick}@kaifmania.local`;
         
         const { data, error } = await supabase.auth.signUp({
             email: fakeEmail,
             password: pass,
             options: {
-                data: {
-                    username: nick,
-                    role: 'Member'
-                }
+                data: { username: nick }
             }
         });
 
         if (error) {
             msg.innerText = "❌ შეცდომა: " + error.message;
         } else {
-            // წარმატებული რეგისტრაცია - ვქმნით პროფილს
-            if (data.user) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([{
-                        id: data.user.id,
-                        username: nick,
-                        role: 'Member',
-                        created_at: new Date()
-                    }]);
-                
-                if (profileError) {
-                    console.error("Profile error:", profileError);
-                }
-            }
-            alert("✅ წარმატებით დარეგისტრირდი! ახლა შედი სისტემაში.");
+            alert("✅ წარმატებით დარეგისტრირდი! ახლა შედი.");
             location.reload();
         }
         
     } else if (mode === "log") {
         // შესვლა
-        const fakeEmail = `${nick}@kaifmania.temp`;
+        const fakeEmail = `${nick}@kaifmania.local`;
         
         const { data, error } = await supabase.auth.signInWithPassword({
             email: fakeEmail,
@@ -113,13 +95,21 @@ async function handleAuth() {
         if (error) {
             msg.innerText = "❌ ნიკი ან პაროლი არასწორია!";
         } else {
-            // წარმატებული შესვლა
             localStorage.setItem('nickname', nick);
             localStorage.setItem('userId', data.user.id);
             window.location.href = "chat.html";
         }
     }
 }
+
+// შეამოწმე უკვე შესულია თუ არა
+async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        window.location.href = "chat.html";
+    }
+}
+checkSession();
 </script>
 </body>
 </html>
